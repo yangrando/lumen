@@ -7,12 +7,25 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		579841652EFF60C800367D47 /* Lumen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lumen.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		579841F22EFF62EC00367D47 /* Lumen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lumen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		579841F42EFF62F400367D47 /* Exceptions for "Lumen" folder in "Lumen" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 579841642EFF60C800367D47 /* Lumen */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		579841672EFF60C800367D47 /* Lumen */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				579841F42EFF62F400367D47 /* Exceptions for "Lumen" folder in "Lumen" target */,
+			);
 			path = Lumen;
 			sourceTree = "<group>";
 		};
@@ -33,16 +46,8 @@
 			isa = PBXGroup;
 			children = (
 				579841672EFF60C800367D47 /* Lumen */,
-				579841662EFF60C800367D47 /* Products */,
+				579841F22EFF62EC00367D47 /* Lumen.app */,
 			);
-			sourceTree = "<group>";
-		};
-		579841662EFF60C800367D47 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				579841652EFF60C800367D47 /* Lumen.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -67,7 +72,7 @@
 			packageProductDependencies = (
 			);
 			productName = Lumen;
-			productReference = 579841652EFF60C800367D47 /* Lumen.app */;
+			productReference = 579841F22EFF62EC00367D47 /* Lumen.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -91,11 +96,20 @@
 			knownRegions = (
 				en,
 				Base,
+				fr,
+				de,
+				it,
+				"pt-BR",
+				"pt-PT",
+				es,
+				ru,
+				ja,
+				"zh-Hant",
 			);
 			mainGroup = 5798415C2EFF60C800367D47;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 579841662EFF60C800367D47 /* Products */;
+			productRefGroup = 5798415C2EFF60C800367D47;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -253,6 +267,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Lumen/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -284,6 +299,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Lumen/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

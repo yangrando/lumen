@@ -1,0 +1,69 @@
+/* 
+  Localizable.strings
+  Lumen
+
+  Created by Yan Felipe Grando on 29/12/25.
+  
+*/
+// MARK: - Welcome Screen
+"welcome.title.part1" = "Learn English by reading about ";
+"welcome.title.part2" = "what you love.";
+"welcome.description" = "Personalized feed with real-time AI feedback.";
+"welcome.button.apple" = "Continue with Apple";
+"welcome.button.google" = "Continue with Google";
+"welcome.button.email" = "Sign up with Email";
+"welcome.terms" = "By continuing, you agree to our";
+"welcome.terms.link1" = "Terms of Service";
+"welcome.terms.link2" = "Privacy Policy";
+
+"welcome.terms.link2" = "Privacy Policy";
+
+
+// MARK: - Level Selection Screen (Module 3) - Complete English
+"level.selection.title" = "What's your English level?";
+"level.selection.description" = "Choose the level that best describes your current proficiency";
+"level.beginner" = "Beginner";
+"level.beginner.description" = "Just starting out";
+"level.elementary" = "Elementary";
+"level.elementary.description" = "Basic understanding";
+"level.intermediate" = "Intermediate";
+"level.intermediate.description" = "Conversational level";
+"level.upperIntermediate" = "Upper-Intermediate";
+"level.upper.intermediate.description" = "Advanced understanding";
+"level.advanced" = "Advanced";
+"level.advanced.description" = "Fluent and confident";
+"level.continue.button" = "Continue";
+
+// MARK: - Interests Selection Screen (Module 4)
+"interests.title" = "What are your interests?";
+"interests.description" = "Select topics you'd like to learn about";
+"interests.continue.button" = "Continue";
+
+// MARK: - Objectives Selection Screen (Module 5)
+"objectives.title" = "What are your goals?";
+"objectives.description" = "Select what you want to achieve with English";
+"objectives.complete.button" = "Complete Setup";
+
+// MARK: - Completion Screen (Module 5)
+"completion.title" = "You're all set!";
+"completion.description" = "Your personalized learning experience is ready";
+"completion.start.button" = "Start Learning";
+
+// MARK: - Completion Screen (Module 5)
+"level.selection.title" = "What are your goals?";
+"level.selection.description" = "Select what you want to achieve with English";
+"level.selection.start.button" = "Continue";
+
+// MARK: - Main Feed Screen (Module 6)
+"feed.title" = "Learn by Reading";
+"feed.empty.title" = "No phrases available";
+"feed.empty.description" = "Try adjusting your filters";
+"feed.save.button" = "Save";
+"feed.unsave.button" = "Remove";
+"feed.ai.feedback" = "AI Feedback";
+"feed.ask.ai" = "Ask AI";
+"feed.translate" = "Translate";
+"feed.difficulty" = "Difficulty";
+"feed.category" = "Category";
+"feed.saved.phrases" = "Saved Phrases";
+"feed.all.phrases" = "All Phrases";

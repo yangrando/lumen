@@ -1,0 +1,63 @@
+/* 
+  Localizable.strings
+  Lumen
+
+  Created by Yan Felipe Grando on 29/12/25.
+  
+*/
+// MARK: - Welcome Screen
+"welcome.title.part1" = "Aprende inglés leyendo sobre ";
+"welcome.title.part2" = "lo que amas.";
+"welcome.description" = "Feed personalizado con retroalimentación de IA en tiempo real.";
+"welcome.button.apple" = "Continuar con Apple";
+"welcome.button.google" = "Continuar con Google";
+"welcome.button.email" = "Registrarse con correo electrónico";
+"welcome.terms" = "Al continuar, aceptas nuestros";
+"welcome.terms.link1" = "Términos de servicio";
+"welcome.terms.link2" = "Política de privacidad";
+
+
+// MARK: - Level Selection Screen (Module 3) - Complete Spanish
+"level.selection.title" = "¿Cuál es tu nivel de inglés?";
+"level.selection.description" = "Elige el nivel que mejor describe tu proficiencia actual";
+"level.beginner" = "Principiante";
+"level.beginner.description" = "Apenas comenzando";
+"level.elementary" = "Elemental";
+"level.elementary.description" = "Comprensión básica";
+"level.intermediate" = "Intermedio";
+"level.intermediate.description" = "Nivel conversacional";
+"level.upperIntermediate" = "Intermedio Superior";
+"level.upper.intermediate.description" = "Comprensión avanzada";
+"level.advanced" = "Avanzado";
+"level.advanced.description" = "Fluido y confiado";
+"level.continue.button" = "Continuar";
+
+
+// MARK: - Interests Selection Screen (Module 4)
+"interests.title" = "¿Cuáles son tus intereses?";
+"interests.description" = "Selecciona los temas que te gustaría aprender";
+"interests.continue.button" = "Continuar";
+
+// MARK: - Objectives Selection Screen (Module 5)
+"objectives.title" = "¿Cuáles son tus objetivos?";
+"objectives.description" = "Selecciona lo que quieres lograr con el inglés";
+"objectives.complete.button" = "Completar Configuración";
+
+// MARK: - Completion Screen (Module 5)
+"completion.title" = "¡Todo listo!";
+"completion.description" = "Tu experiencia de aprendizaje personalizada está lista";
+"completion.start.button" = "Comenzar a Aprender";
+
+// MARK: - Main Feed Screen (Module 6)
+"feed.title" = "Aprende Leyendo";
+"feed.empty.title" = "No hay frases disponibles";
+"feed.empty.description" = "Intenta ajustar tus filtros";
+"feed.save.button" = "Guardar";
+"feed.unsave.button" = "Eliminar";
+"feed.ai.feedback" = "Retroalimentación de IA";
+"feed.ask.ai" = "Preguntar a la IA";
+"feed.translate" = "Traducir";
+"feed.difficulty" = "Dificultad";
+"feed.category" = "Categoría";
+"feed.saved.phrases" = "Frases Guardadas";
+"feed.all.phrases" = "Todas las Frases";
