@@ -28,23 +28,29 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Python
+        if: ${{ hashFiles('backend/requirements.txt') != '' }}
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install dependencies
+        if: ${{ hashFiles('backend/requirements.txt') != '' }}
+        working-directory: backend
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pip-audit
 
       - name: Dependency audit
+        if: ${{ hashFiles('backend/requirements.txt') != '' }}
+        working-directory: backend
         run: pip-audit
+
+      - name: Skip backend audit (backend not in this repo)
+        if: ${{ hashFiles('backend/requirements.txt') == '' }}
+        run: echo "backend/requirements.txt not found. Backend checks are skipped in this repository."
