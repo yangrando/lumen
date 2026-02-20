@@ -138,3 +138,7 @@ For physical device, use the machine LAN IP.
 - Add robust error handling UX and traceability (`request_id` surfacing).
 - Expand AI-assisted interactions directly inside phrase consumption flow.
 - Add stronger test coverage for parsing, networking, and view model behavior.
+
+## License
+
+This project is licensed under the MIT License. See `/Users/yanfelipegrando/Documents/GitHub/Lumen/LICENSE`.
