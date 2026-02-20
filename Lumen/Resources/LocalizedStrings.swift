@@ -46,4 +46,11 @@ struct LocalizedStrings {
     static var feedCategory: String { NSLocalizedString("feed.category", comment: "") }
     static var feedSavedPhrases: String { NSLocalizedString("feed.saved.phrases", comment: "") }
     static var feedAllPhrases: String { NSLocalizedString("feed.all.phrases", comment: "") }
+    
+    static let feedLoadingTitle = NSLocalizedString("feed.loading.title", comment: "")
+    static let feedLoadingDescription = NSLocalizedString("feed.loading.description", comment: "")
+    static let feedErrorTitle = NSLocalizedString("feed.error.title", comment: "")
+    static let feedErrorDescription = NSLocalizedString("feed.error.description", comment: "")
+    static let feedErrorRetry = NSLocalizedString("feed.error.retry", comment: "")
 }
+

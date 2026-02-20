@@ -59,3 +59,9 @@
 "feed.category" = "Categoria";
 "feed.saved.phrases" = "Frases Salvas";
 "feed.all.phrases" = "Todas as Frases";
+
+"feed.loading.title" = "Carregando Novas Frases...";
+"feed.loading.description" = "Estamos preparando conteúdo personalizado para você.";
+"feed.error.title" = "Ocorreu um Erro";
+"feed.error.description" = "Não foi possível carregar novas frases. Por favor, tente novamente mais tarde.";
+"feed.error.retry" = "Tentar Novamente";

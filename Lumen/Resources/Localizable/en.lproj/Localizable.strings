@@ -67,3 +67,10 @@
 "feed.category" = "Category";
 "feed.saved.phrases" = "Saved Phrases";
 "feed.all.phrases" = "All Phrases";
+
+
+"feed.loading.title" = "Loading New Phrases...";
+"feed.loading.description" = "We are preparing personalized content for you.";
+"feed.error.title" = "An Error Occurred";
+"feed.error.description" = "Could not load new phrases. Please try again later.";
+"feed.error.retry" = "Retry";
