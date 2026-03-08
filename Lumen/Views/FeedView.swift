@@ -2,8 +2,16 @@ import SwiftUI
 
 struct FeedView: View {
     @StateObject private var viewModel = FeedViewModel()
+    @StateObject private var audioService = AudioService.shared
+    @StateObject private var sessionService = SessionService.shared
+    @State private var showLogoutConfirm = false
+    @State private var showDeleteConfirm = false
+    @State private var accountActionError: String?
     
     var body: some View {
+        if !sessionService.isAuthenticated {
+            OnboardingView()
+        } else {
         ZStack {
             // Background
             LumenColors.navyDark
@@ -65,6 +73,10 @@ struct FeedView: View {
                         PhraseCard(
                             phrase: phrase,
                             isSaved: viewModel.savedPhraseIDs.contains(phrase.id),
+                            isAudioPlaying: audioService.currentlyPlayingPhraseID == phrase.id,
+                            onPlayAudio: {
+                                audioService.togglePlayback(for: phrase.id, text: phrase.text)
+                            },
                             onAskAI: {
                                 // TODO: Show AI feedback in a modal or sheet
                                 Task {
@@ -72,7 +84,7 @@ struct FeedView: View {
                                     print("AI Feedback: \(feedback)")
                                 }
                             },
-                            onSave: { isSaved in
+                            onSave: {
                                 viewModel.toggleSavePhrase(phrase.id)
                             }
                         )
@@ -98,6 +110,62 @@ struct FeedView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button(role: .none) {
+                        showLogoutConfirm = true
+                    } label: {
+                        Label(LocalizedStrings.accountLogout, systemImage: "rectangle.portrait.and.arrow.right")
+                    }
+
+                    Button(role: .destructive) {
+                        showDeleteConfirm = true
+                    } label: {
+                        Label(LocalizedStrings.accountDelete, systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "person.crop.circle")
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+        .alert(LocalizedStrings.accountLogoutConfirmTitle, isPresented: $showLogoutConfirm) {
+            Button(LocalizedStrings.accountCancel, role: .cancel) {}
+            Button(LocalizedStrings.accountLogout, role: .destructive) {
+                Task {
+                    await sessionService.logout()
+                }
+            }
+        } message: {
+            Text(LocalizedStrings.accountLogoutConfirmMessage)
+        }
+        .alert(LocalizedStrings.accountDeleteConfirmTitle, isPresented: $showDeleteConfirm) {
+            Button(LocalizedStrings.accountCancel, role: .cancel) {}
+            Button(LocalizedStrings.accountDelete, role: .destructive) {
+                Task {
+                    do {
+                        try await sessionService.deleteAccount()
+                    } catch {
+                        accountActionError = error.localizedDescription
+                    }
+                }
+            }
+        } message: {
+            Text(LocalizedStrings.accountDeleteConfirmMessage)
+        }
+        .alert(LocalizedStrings.feedErrorTitle, isPresented: Binding(
+            get: { accountActionError != nil },
+            set: { isPresented in if !isPresented { accountActionError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(accountActionError ?? "")
+        }
+        .onDisappear {
+            audioService.stop()
+        }
+    }
     }
 }
 

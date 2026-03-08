@@ -3,10 +3,12 @@ import SwiftUI
 struct PhraseCard: View {
     let phrase: EnglishPhrase
     let isSaved: Bool
+    let isAudioPlaying: Bool
     @State private var isTranslationVisible = false
     @State private var localIsSaved = false
+    let onPlayAudio: () -> Void
     let onAskAI: () -> Void
-    let onSave: (Bool) -> Void
+    let onSave: () -> Void
     
     var body: some View {
         ZStack {
@@ -36,7 +38,7 @@ struct PhraseCard: View {
                     // Save button
                     Button(action: {
                         localIsSaved.toggle()
-                        onSave(localIsSaved)
+                        onSave()
                     }) {
                         Image(systemName: localIsSaved ? "heart.fill" : "heart")
                             .font(.system(size: 20))
@@ -77,6 +79,19 @@ struct PhraseCard: View {
                 
                 // Bottom action buttons
                 VStack(spacing: 12) {
+                    // Play audio button
+                    Button(action: onPlayAudio) {
+                        HStack {
+                            Image(systemName: isAudioPlaying ? "stop.fill" : "play.fill")
+                            Text(isAudioPlaying ? LocalizedStrings.feedStopAudio : LocalizedStrings.feedListen)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .foregroundStyle(.white)
+                        .background(Color.white.opacity(0.2))
+                        .clipShape(Capsule())
+                    }
+
                     // Toggle translation button
                     Button(action: {
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -113,6 +128,9 @@ struct PhraseCard: View {
         .onAppear {
             localIsSaved = isSaved
         }
+        .onChange(of: isSaved) { _, newValue in
+            localIsSaved = newValue
+        }
     }
 }
 
@@ -120,7 +138,9 @@ struct PhraseCard: View {
     PhraseCard(
         phrase: EnglishPhrase.mockPhrases[0],
         isSaved: false,
+        isAudioPlaying: false,
+        onPlayAudio: {},
         onAskAI: {},
-        onSave: { _ in }
+        onSave: {}
     )
 }

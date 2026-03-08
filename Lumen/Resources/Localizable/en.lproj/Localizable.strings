@@ -12,9 +12,22 @@
 "welcome.button.apple" = "Continue with Apple";
 "welcome.button.google" = "Continue with Google";
 "welcome.button.email" = "Sign up with Email";
+"welcome.button.apple.signin" = "Sign in with Apple";
+"welcome.button.apple.signup" = "Sign up with Apple";
+"welcome.button.google.signin" = "Sign in with Google";
+"welcome.button.google.signup" = "Sign up with Google";
+"welcome.button.email.signin" = "Sign in with Email";
+"welcome.button.email.signup" = "Sign up with Email";
+"welcome.mode.signin" = "Sign in";
+"welcome.mode.signup" = "Create account";
+"welcome.auth.hint" = "Choose your access mode and continue with Apple or Google.";
 "welcome.terms" = "By continuing, you agree to our";
 "welcome.terms.link1" = "Terms of Service";
 "welcome.terms.link2" = "Privacy Policy";
+"auth.login.failed" = "Authentication failed. Check backend connection and try again.";
+"auth.apple.token.unavailable" = "Could not retrieve Apple identity token.";
+"auth.google.not.configured" = "Google Sign-In is not configured in this build.";
+"auth.google.failed" = "Could not authenticate with Google. Please try again.";
 
 "welcome.terms.link2" = "Privacy Policy";
 
@@ -62,11 +75,38 @@
 "feed.unsave.button" = "Remove";
 "feed.ai.feedback" = "AI Feedback";
 "feed.ask.ai" = "Ask AI";
+"feed.listen" = "Listen";
+"feed.stop.audio" = "Stop Audio";
 "feed.translate" = "Translate";
 "feed.difficulty" = "Difficulty";
 "feed.category" = "Category";
 "feed.saved.phrases" = "Saved Phrases";
 "feed.all.phrases" = "All Phrases";
+"library.empty.title" = "No saved phrases";
+"library.empty.description" = "Save phrases from the feed to review them later.";
+"library.search.placeholder" = "Search saved phrases";
+"signup.back" = "Back";
+"signup.title" = "Create account";
+"signup.subtitle" = "Sign up with email to start your learning journey.";
+"signin.title" = "Sign in";
+"signin.subtitle" = "Sign in with email to continue your learning journey.";
+"signup.name" = "Full name";
+"signup.email" = "Email";
+"signup.password" = "Password";
+"signup.confirm.password" = "Confirm password";
+"signup.create.button" = "Create account";
+"signin.button" = "Sign in";
+"signup.error.required.fields" = "Please fill in all fields.";
+"signup.error.invalid.email" = "Please enter a valid email.";
+"signup.error.password.length" = "Password must be at least 6 characters.";
+"signup.error.password.mismatch" = "Passwords do not match.";
+"account.logout" = "Log out";
+"account.delete" = "Delete account";
+"account.cancel" = "Cancel";
+"account.logout.confirm.title" = "Log out?";
+"account.logout.confirm.message" = "You will need to sign in again to continue.";
+"account.delete.confirm.title" = "Delete account?";
+"account.delete.confirm.message" = "This action is permanent and cannot be undone.";
 
 
 "feed.loading.title" = "Loading New Phrases...";
@@ -74,3 +114,6 @@
 "feed.error.title" = "An Error Occurred";
 "feed.error.description" = "Could not load new phrases. Please try again later.";
 "feed.error.retry" = "Retry";
+
+"signin.loading" = "Signing in...";
+"signup.loading" = "Creating account...";

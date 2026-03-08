@@ -148,6 +148,10 @@ class AIService {
     
     private func callOpenAI(prompt: String, task: String?) async throws -> String {
         logger.debug("Preparing backend AI request")
+        let accessToken = await MainActor.run { SessionService.shared.accessToken }
+        guard let accessToken else {
+            throw AIServiceError.unauthenticated
+        }
         
         // Prepare the request
         guard let url = URL(string: baseURL) else {
@@ -158,6 +162,7 @@ class AIService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         
         logger.logAPIRequest(url: baseURL, method: "POST")
         
@@ -285,6 +290,7 @@ enum AIServiceError: LocalizedError {
     case networkError(String)
     case decodingError(String)
     case invalidAPIKey
+    case unauthenticated
     
     var errorDescription: String? {
         switch self {
@@ -294,6 +300,8 @@ enum AIServiceError: LocalizedError {
             return "Decoding Error: \(message)"
         case .invalidAPIKey:
             return "Invalid API Key"
+        case .unauthenticated:
+            return "Authentication required. Please sign in again."
         }
     }
 }

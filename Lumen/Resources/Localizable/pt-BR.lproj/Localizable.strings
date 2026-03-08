@@ -12,9 +12,22 @@
 "welcome.button.apple" = "Continuar com a Apple";
 "welcome.button.google" = "Continuar com o Google";
 "welcome.button.email" = "Cadastrar com E-mail";
+"welcome.button.apple.signin" = "Entrar com Apple";
+"welcome.button.apple.signup" = "Criar conta com Apple";
+"welcome.button.google.signin" = "Entrar com Google";
+"welcome.button.google.signup" = "Criar conta com Google";
+"welcome.button.email.signin" = "Entrar com E-mail";
+"welcome.button.email.signup" = "Criar conta com E-mail";
+"welcome.mode.signin" = "Entrar";
+"welcome.mode.signup" = "Criar conta";
+"welcome.auth.hint" = "Escolha o modo de acesso e continue com Apple ou Google.";
 "welcome.terms" = "Ao continuar, você concorda com nossos";
 "welcome.terms.link1" = "Termos de Serviço";
 "welcome.terms.link2" = "Política de Privacidade";
+"auth.login.failed" = "Falha na autenticação. Verifique o backend e tente novamente.";
+"auth.apple.token.unavailable" = "Não foi possível obter o token da Apple.";
+"auth.google.not.configured" = "Login com Google não está configurado neste build.";
+"auth.google.failed" = "Não foi possível autenticar com Google. Tente novamente.";
 
 // MARK: - Level Selection Screen (Module 3) - Complete Portuguese
 "level.selection.title" = "Qual é seu nível de inglês?";
@@ -54,14 +67,44 @@
 "feed.unsave.button" = "Remover";
 "feed.ai.feedback" = "Feedback da IA";
 "feed.ask.ai" = "Perguntar à IA";
+"feed.listen" = "Ouvir";
+"feed.stop.audio" = "Parar áudio";
 "feed.translate" = "Traduzir";
 "feed.difficulty" = "Dificuldade";
 "feed.category" = "Categoria";
 "feed.saved.phrases" = "Frases Salvas";
 "feed.all.phrases" = "Todas as Frases";
+"library.empty.title" = "Nenhuma frase salva";
+"library.empty.description" = "Salve frases no feed para revisar depois.";
+"library.search.placeholder" = "Buscar em frases salvas";
+"signup.back" = "Voltar";
+"signup.title" = "Criar conta";
+"signup.subtitle" = "Cadastre-se com e-mail para começar seu aprendizado.";
+"signin.title" = "Entrar";
+"signin.subtitle" = "Entre com e-mail para continuar seu aprendizado.";
+"signup.name" = "Nome completo";
+"signup.email" = "E-mail";
+"signup.password" = "Senha";
+"signup.confirm.password" = "Confirmar senha";
+"signup.create.button" = "Criar conta";
+"signin.button" = "Entrar";
+"signup.error.required.fields" = "Preencha todos os campos.";
+"signup.error.invalid.email" = "Digite um e-mail válido.";
+"signup.error.password.length" = "A senha deve ter pelo menos 6 caracteres.";
+"signup.error.password.mismatch" = "As senhas não coincidem.";
+"account.logout" = "Sair";
+"account.delete" = "Excluir conta";
+"account.cancel" = "Cancelar";
+"account.logout.confirm.title" = "Deseja sair?";
+"account.logout.confirm.message" = "Você precisará entrar novamente para continuar.";
+"account.delete.confirm.title" = "Excluir conta?";
+"account.delete.confirm.message" = "Essa ação é permanente e não pode ser desfeita.";
 
 "feed.loading.title" = "Carregando Novas Frases...";
 "feed.loading.description" = "Estamos preparando conteúdo personalizado para você.";
 "feed.error.title" = "Ocorreu um Erro";
 "feed.error.description" = "Não foi possível carregar novas frases. Por favor, tente novamente mais tarde.";
 "feed.error.retry" = "Tentar Novamente";
+
+"signin.loading" = "Entrando...";
+"signup.loading" = "Criando conta...";
