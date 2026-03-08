@@ -4,6 +4,7 @@ struct FeedView: View {
     @StateObject private var viewModel = FeedViewModel()
     @StateObject private var audioService = AudioService.shared
     @StateObject private var sessionService = SessionService.shared
+    @State private var currentPage = 0
     @State private var showLogoutConfirm = false
     @State private var showDeleteConfirm = false
     @State private var showEditProfile = false
@@ -90,8 +91,10 @@ struct FeedView: View {
                             }
                         )
                     },
-                    currentPage: .constant(0)
+                    currentPage: $currentPage
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea()
             } else {
                 // Empty state
                 VStack(spacing: 12) {
@@ -109,34 +112,51 @@ struct FeedView: View {
                 }
                 .frame(maxHeight: .infinity)
             }
-        }
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button(role: .none) {
-                        showEditProfile = true
-                    } label: {
-                        Label("Edit profile", systemImage: "slider.horizontal.3")
-                    }
 
-                    Button(role: .none) {
-                        showLogoutConfirm = true
-                    } label: {
-                        Label(LocalizedStrings.accountLogout, systemImage: "rectangle.portrait.and.arrow.right")
-                    }
+            VStack {
+                HStack {
+                    Spacer()
+                    Menu {
+                        Button(role: .none) {
+                            showEditProfile = true
+                        } label: {
+                            Label("Edit profile", systemImage: "slider.horizontal.3")
+                        }
 
-                    Button(role: .destructive) {
-                        showDeleteConfirm = true
+                        Button(role: .none) {
+                            showLogoutConfirm = true
+                        } label: {
+                            Label(LocalizedStrings.accountLogout, systemImage: "rectangle.portrait.and.arrow.right")
+                        }
+
+                        Button(role: .destructive) {
+                            showDeleteConfirm = true
+                        } label: {
+                            Label(LocalizedStrings.accountDelete, systemImage: "trash")
+                        }
                     } label: {
-                        Label(LocalizedStrings.accountDelete, systemImage: "trash")
+                        Circle()
+                            .fill(Color.white.opacity(0.08))
+                            .frame(width: 56, height: 56)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                            )
+                            .overlay(
+                                Image(systemName: "person.crop.circle")
+                                    .font(.system(size: 28))
+                                    .foregroundStyle(.white)
+                            )
                     }
-                } label: {
-                    Image(systemName: "person.crop.circle")
-                        .foregroundStyle(.white)
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 58)
+
+                Spacer()
             }
+            .ignoresSafeArea()
         }
+        .toolbar(.hidden, for: .navigationBar)
         .alert(LocalizedStrings.accountLogoutConfirmTitle, isPresented: $showLogoutConfirm) {
             Button(LocalizedStrings.accountCancel, role: .cancel) {}
             Button(LocalizedStrings.accountLogout, role: .destructive) {
@@ -176,6 +196,13 @@ struct FeedView: View {
         }
         .onDisappear {
             audioService.stop()
+        }
+        .onChange(of: viewModel.phrases.count) { _, count in
+            guard count > 0 else {
+                currentPage = 0
+                return
+            }
+            currentPage = min(currentPage, count - 1)
         }
     }
     }
@@ -219,17 +246,21 @@ struct VerticalPageView<Page: View>: UIViewControllerRepresentable {
         context.coordinator.updateControllers(with: pages)
         
         guard !context.coordinator.controllers.isEmpty else { return }
+        let safePage = min(max(currentPage, 0), context.coordinator.controllers.count - 1)
+        if safePage == context.coordinator.currentPage {
+            return
+        }
         
         let direction: UIPageViewController.NavigationDirection =
-            currentPage >= context.coordinator.currentPage ? .forward : .reverse
+            safePage >= context.coordinator.currentPage ? .forward : .reverse
         
         uiViewController.setViewControllers(
-            [context.coordinator.controllers[currentPage]],
+            [context.coordinator.controllers[safePage]],
             direction: direction,
             animated: true
         )
         
-        context.coordinator.currentPage = currentPage
+        context.coordinator.currentPage = safePage
     }
     
     final class Coordinator: NSObject, UIPageViewControllerDataSource, UIPageViewControllerDelegate {

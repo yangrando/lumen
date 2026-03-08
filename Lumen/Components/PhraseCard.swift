@@ -34,18 +34,24 @@ struct PhraseCard: View {
                     }
                     
                     Spacer()
-                    
-                    // Save button
+                }
+                .padding(16)
+
+                HStack {
+                    Spacer()
                     Button(action: {
                         localIsSaved.toggle()
                         onSave()
                     }) {
                         Image(systemName: localIsSaved ? "heart.fill" : "heart")
-                            .font(.system(size: 20))
+                            .font(.system(size: 22, weight: .semibold))
                             .foregroundStyle(localIsSaved ? .red : .white)
+                            .padding(10)
+                            .background(Color.black.opacity(0.16))
+                            .clipShape(Circle())
                     }
                 }
-                .padding(16)
+                .padding(.horizontal, 16)
                 
                 Spacer()
                 

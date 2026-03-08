@@ -9,6 +9,7 @@ final class SessionService: ObservableObject {
     @Published private(set) var currentUser: AuthUser?
 
     private let tokenKey = "lumen_access_token"
+    private let onboardingCompletedPrefix = "lumen_onboarding_completed_"
 
     private init() {
         accessToken = KeychainService.shared.get(tokenKey)
@@ -28,6 +29,14 @@ final class SessionService: ObservableObject {
         accessToken = nil
         currentUser = nil
         KeychainService.shared.delete(tokenKey)
+    }
+
+    func hasCompletedOnboarding(for userID: String) -> Bool {
+        UserDefaults.standard.bool(forKey: onboardingCompletedPrefix + userID)
+    }
+
+    func markOnboardingCompleted(for userID: String) {
+        UserDefaults.standard.set(true, forKey: onboardingCompletedPrefix + userID)
     }
 
     func logout() async {

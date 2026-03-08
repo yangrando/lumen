@@ -12,9 +12,11 @@ class FeedViewModel: ObservableObject {
     @Published var errorMessage: String? = nil
     
     private let aiService = AIService.shared
+    private let authService = AuthService.shared
     
     // User preferences (these would come from onboarding)
     private var userLevel: String = "Intermediate"
+    private var userNativeLanguage: String = "Portuguese (Brazil)"
     private var userInterests: [String] = ["Technology", "Business"]
     private var userObjectives: [String] = ["Improve Speaking", "Expand Vocabulary"]
     
@@ -30,12 +32,39 @@ class FeedViewModel: ObservableObject {
         errorMessage = nil
         
         do {
+            if let token = SessionService.shared.accessToken {
+                let preferences = try await authService.fetchCurrentUserPreferences(accessToken: token)
+                userLevel = preferences.level
+                userNativeLanguage = preferences.nativeLanguage
+                if !preferences.interests.isEmpty {
+                    userInterests = preferences.interests
+                }
+                if !preferences.objectives.isEmpty {
+                    userObjectives = preferences.objectives
+                }
+            }
+
             phrases = try await aiService.generatePhrases(
                 level: userLevel,
+                nativeLanguage: userNativeLanguage,
                 interests: userInterests,
                 objectives: userObjectives,
                 count: 10
             )
+
+            // Keep feed scroll usable even when model under-produces.
+            var refillAttempts = 0
+            while phrases.count < 3 && refillAttempts < 3 {
+                refillAttempts += 1
+                let extra = try await aiService.generatePhrases(
+                    level: userLevel,
+                    nativeLanguage: userNativeLanguage,
+                    interests: userInterests,
+                    objectives: userObjectives,
+                    count: 10
+                )
+                phrases.append(contentsOf: extra)
+            }
             isLoading = false
         } catch {
             errorMessage = error.localizedDescription
@@ -76,7 +105,10 @@ class FeedViewModel: ObservableObject {
     
     func translatePhrase(_ phrase: String) async -> String {
         do {
-            let translation = try await aiService.translatePhrase(phrase)
+            let translation = try await aiService.translatePhrase(
+                phrase,
+                targetLanguage: userNativeLanguage
+            )
             return translation
         } catch {
             return "Translation unavailable"
@@ -87,10 +119,12 @@ class FeedViewModel: ObservableObject {
     
     func updateUserPreferences(
         level: String,
+        nativeLanguage: String,
         interests: [String],
         objectives: [String]
     ) {
         self.userLevel = level
+        self.userNativeLanguage = nativeLanguage
         self.userInterests = interests
         self.userObjectives = objectives
         

@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct OnboardingCompletionView: View {
+    let onStart: () -> Void
+
     var body: some View {
         ZStack {
             // Background
@@ -31,7 +33,7 @@ struct OnboardingCompletionView: View {
                 Spacer()
                 
                 // Start learning button
-                NavigationLink(destination: ContentView()) {
+                Button(action: onStart) {
                     Text(LocalizedStrings.completionStartButton)
                         .font(.system(size: 16, weight: .semibold))
                         .frame(maxWidth: .infinity)
@@ -48,5 +50,5 @@ struct OnboardingCompletionView: View {
 }
 
 #Preview {
-    OnboardingCompletionView()
+    OnboardingCompletionView(onStart: {})
 }

@@ -31,8 +31,16 @@ struct AuthMeResponse: Codable {
 
 struct UserPreferences: Codable {
     let level: String
+    let nativeLanguage: String
     let interests: [String]
     let objectives: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case level
+        case nativeLanguage = "native_language"
+        case interests
+        case objectives
+    }
 }
 
 struct UserPreferencesResponse: Codable {
@@ -41,8 +49,16 @@ struct UserPreferencesResponse: Codable {
 
 struct UserPreferencesRequestPayload: Codable {
     let level: String
+    let nativeLanguage: String
     let interests: [String]
     let objectives: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case level
+        case nativeLanguage = "native_language"
+        case interests
+        case objectives
+    }
 }
 
 struct AuthUser: Codable {
@@ -227,6 +243,7 @@ final class AuthService {
         request.httpBody = try JSONEncoder().encode(
             UserPreferencesRequestPayload(
                 level: preferences.level,
+                nativeLanguage: preferences.nativeLanguage,
                 interests: preferences.interests,
                 objectives: preferences.objectives
             )

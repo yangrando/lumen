@@ -4,14 +4,17 @@ struct OnboardingView: View {
     enum OnboardingStep {
         case welcome
         case manualSignUp
+        case nativeLanguage
         case levelSelection
         case interests
         case objectives
         case completion
+        case feed
     }
     
     @State private var currentStep: OnboardingStep = .welcome
     @State private var selectedLevel: EnglishLevel? = nil
+    @State private var selectedNativeLanguage: String = "Portuguese (Brazil)"
     @State private var selectedInterests: [UserInterest] = []
     @State private var selectedObjectives: [LearningObjective] = []
     @State private var isAuthenticating = false
@@ -59,6 +62,14 @@ struct OnboardingView: View {
                     selectedLevel = level
                     currentStep = .interests
                 })
+            case .nativeLanguage:
+                NativeLanguageSelectionView(
+                    selectedLanguage: selectedNativeLanguage,
+                    onContinue: { language in
+                        selectedNativeLanguage = language
+                        currentStep = .levelSelection
+                    }
+                )
             case .interests:
                 InterestsView(onContinue: { interests in
                     selectedInterests = interests
@@ -73,7 +84,14 @@ struct OnboardingView: View {
                     }
                 })
             case .completion:
-                OnboardingCompletionView()
+                OnboardingCompletionView(onStart: {
+                    if let userID = sessionService.currentUser?.sub {
+                        sessionService.markOnboardingCompleted(for: userID)
+                    }
+                    currentStep = .feed
+                })
+            case .feed:
+                ContentView()
             }
         }
         .onAppear {
@@ -90,7 +108,11 @@ struct OnboardingView: View {
         do {
             let user = try await AuthService.shared.fetchCurrentUser(accessToken: token)
             sessionService.saveSession(accessToken: token, user: user)
-            currentStep = .levelSelection
+            if await shouldSkipOnboarding(for: user, accessToken: token) {
+                currentStep = .feed
+            } else {
+                currentStep = .nativeLanguage
+            }
         } catch {
             sessionService.clearSession()
         }
@@ -119,7 +141,11 @@ struct OnboardingView: View {
 
             let authResponse = try await AuthService.shared.login(provider: provider, idToken: idToken)
             sessionService.saveSession(accessToken: authResponse.access_token, user: authResponse.user)
-            currentStep = .levelSelection
+            if await shouldSkipOnboarding(for: authResponse.user, accessToken: authResponse.access_token) {
+                currentStep = .feed
+            } else {
+                currentStep = .nativeLanguage
+            }
         } catch {
             authErrorMessage = LocalizedStrings.authLoginFailed
         }
@@ -157,7 +183,11 @@ struct OnboardingView: View {
         }
 
         sessionService.saveSession(accessToken: authResponse.access_token, user: authResponse.user)
-        currentStep = .levelSelection
+        if await shouldSkipOnboarding(for: authResponse.user, accessToken: authResponse.access_token) {
+            currentStep = .feed
+        } else {
+            currentStep = .nativeLanguage
+        }
     }
 
     private func persistOnboardingPreferences() async {
@@ -166,14 +196,35 @@ struct OnboardingView: View {
 
         let preferences = UserPreferences(
             level: selectedLevel.rawValue,
+            nativeLanguage: selectedNativeLanguage,
             interests: selectedInterests.map(\.rawValue),
             objectives: selectedObjectives.map(\.rawValue)
         )
 
         do {
             _ = try await AuthService.shared.updateCurrentUserPreferences(accessToken: token, preferences: preferences)
+            if let userID = sessionService.currentUser?.sub {
+                sessionService.markOnboardingCompleted(for: userID)
+            }
         } catch {
             // Keep onboarding flow uninterrupted; user can edit preferences later.
+        }
+    }
+
+    private func shouldSkipOnboarding(for user: AuthUser, accessToken: String) async -> Bool {
+        if sessionService.hasCompletedOnboarding(for: user.sub) {
+            return true
+        }
+
+        do {
+            let preferences = try await AuthService.shared.fetchCurrentUserPreferences(accessToken: accessToken)
+            let hasPreferences = !preferences.interests.isEmpty || !preferences.objectives.isEmpty
+            if hasPreferences {
+                sessionService.markOnboardingCompleted(for: user.sub)
+            }
+            return hasPreferences
+        } catch {
+            return false
         }
     }
 }

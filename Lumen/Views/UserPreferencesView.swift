@@ -6,6 +6,7 @@ struct UserPreferencesView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedLevel: EnglishLevel = .intermediate
+    @State private var selectedNativeLanguage = "Portuguese (Brazil)"
     @State private var selectedInterests: Set<UserInterest> = []
     @State private var selectedObjectives: Set<LearningObjective> = []
     @State private var isLoading = true
@@ -31,6 +32,22 @@ struct UserPreferencesView: View {
                             Picker("Level", selection: $selectedLevel) {
                                 ForEach(EnglishLevel.allCases) { level in
                                     Text(level.rawValue).tag(level)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .tint(.white)
+                            .padding(.horizontal, 12)
+                            .frame(height: 42)
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                            Text("Native language")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(.white)
+
+                            Picker("Native language", selection: $selectedNativeLanguage) {
+                                ForEach(nativeLanguages, id: \.self) { language in
+                                    Text(language).tag(language)
                                 }
                             }
                             .pickerStyle(.menu)
@@ -115,6 +132,7 @@ struct UserPreferencesView: View {
         do {
             let preferences = try await AuthService.shared.fetchCurrentUserPreferences(accessToken: accessToken)
             selectedLevel = EnglishLevel(rawValue: preferences.level) ?? .intermediate
+            selectedNativeLanguage = preferences.nativeLanguage
             selectedInterests = Set(preferences.interests.compactMap(UserInterest.init(rawValue:)))
             selectedObjectives = Set(preferences.objectives.compactMap(LearningObjective.init(rawValue:)))
         } catch {
@@ -128,6 +146,7 @@ struct UserPreferencesView: View {
 
         let payload = UserPreferences(
             level: selectedLevel.rawValue,
+            nativeLanguage: selectedNativeLanguage,
             interests: selectedInterests.map(\.rawValue).sorted(),
             objectives: selectedObjectives.map(\.rawValue).sorted()
         )
@@ -139,6 +158,18 @@ struct UserPreferencesView: View {
             errorMessage = error.localizedDescription
         }
     }
+
+    private let nativeLanguages: [String] = [
+        "Portuguese (Brazil)",
+        "Spanish",
+        "French",
+        "German",
+        "Italian",
+        "Russian",
+        "Japanese",
+        "Korean",
+        "Chinese (Simplified)"
+    ]
 }
 
 private struct FlexibleChips: View {
