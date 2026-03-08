@@ -68,6 +68,9 @@ struct OnboardingView: View {
                 ObjectivesView(onContinue: { objectives in
                     selectedObjectives = objectives
                     currentStep = .completion
+                    Task {
+                        await persistOnboardingPreferences()
+                    }
                 })
             case .completion:
                 OnboardingCompletionView()
@@ -155,6 +158,23 @@ struct OnboardingView: View {
 
         sessionService.saveSession(accessToken: authResponse.access_token, user: authResponse.user)
         currentStep = .levelSelection
+    }
+
+    private func persistOnboardingPreferences() async {
+        guard let token = sessionService.accessToken else { return }
+        guard let selectedLevel else { return }
+
+        let preferences = UserPreferences(
+            level: selectedLevel.rawValue,
+            interests: selectedInterests.map(\.rawValue),
+            objectives: selectedObjectives.map(\.rawValue)
+        )
+
+        do {
+            _ = try await AuthService.shared.updateCurrentUserPreferences(accessToken: token, preferences: preferences)
+        } catch {
+            // Keep onboarding flow uninterrupted; user can edit preferences later.
+        }
     }
 }
 

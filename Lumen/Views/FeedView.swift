@@ -6,6 +6,7 @@ struct FeedView: View {
     @StateObject private var sessionService = SessionService.shared
     @State private var showLogoutConfirm = false
     @State private var showDeleteConfirm = false
+    @State private var showEditProfile = false
     @State private var accountActionError: String?
     
     var body: some View {
@@ -114,6 +115,12 @@ struct FeedView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button(role: .none) {
+                        showEditProfile = true
+                    } label: {
+                        Label("Edit profile", systemImage: "slider.horizontal.3")
+                    }
+
+                    Button(role: .none) {
                         showLogoutConfirm = true
                     } label: {
                         Label(LocalizedStrings.accountLogout, systemImage: "rectangle.portrait.and.arrow.right")
@@ -161,6 +168,11 @@ struct FeedView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(accountActionError ?? "")
+        }
+        .sheet(isPresented: $showEditProfile) {
+            if let token = sessionService.accessToken {
+                UserPreferencesView(accessToken: token)
+            }
         }
         .onDisappear {
             audioService.stop()

@@ -29,6 +29,22 @@ struct AuthMeResponse: Codable {
     let user: AuthUser
 }
 
+struct UserPreferences: Codable {
+    let level: String
+    let interests: [String]
+    let objectives: [String]
+}
+
+struct UserPreferencesResponse: Codable {
+    let preferences: UserPreferences
+}
+
+struct UserPreferencesRequestPayload: Codable {
+    let level: String
+    let interests: [String]
+    let objectives: [String]
+}
+
 struct AuthUser: Codable {
     let sub: String
     let email: String?
@@ -178,6 +194,50 @@ final class AuthService {
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Delete account failed")
         }
+    }
+
+    func fetchCurrentUserPreferences(accessToken: String) async throws -> UserPreferences {
+        guard let base = apiBaseURL else {
+            throw AIServiceError.networkError("Invalid auth base URL")
+        }
+
+        let endpoint = base.appendingPathComponent("users").appendingPathComponent("me").appendingPathComponent("preferences")
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Failed to load preferences")
+        }
+
+        return try JSONDecoder().decode(UserPreferencesResponse.self, from: data).preferences
+    }
+
+    func updateCurrentUserPreferences(accessToken: String, preferences: UserPreferences) async throws -> UserPreferences {
+        guard let base = apiBaseURL else {
+            throw AIServiceError.networkError("Invalid auth base URL")
+        }
+
+        let endpoint = base.appendingPathComponent("users").appendingPathComponent("me").appendingPathComponent("preferences")
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "PUT"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONEncoder().encode(
+            UserPreferencesRequestPayload(
+                level: preferences.level,
+                interests: preferences.interests,
+                objectives: preferences.objectives
+            )
+        )
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Failed to save preferences")
+        }
+
+        return try JSONDecoder().decode(UserPreferencesResponse.self, from: data).preferences
     }
 
     private static func extractBackendErrorDetail(from data: Data) -> String? {
