@@ -2,8 +2,18 @@ import SwiftUI
 
 struct FeedView: View {
     @StateObject private var viewModel = FeedViewModel()
+    @StateObject private var audioService = AudioService.shared
+    @StateObject private var sessionService = SessionService.shared
+    @State private var currentPage = 0
+    @State private var showLogoutConfirm = false
+    @State private var showDeleteConfirm = false
+    @State private var showEditProfile = false
+    @State private var accountActionError: String?
     
     var body: some View {
+        if !sessionService.isAuthenticated {
+            OnboardingView()
+        } else {
         ZStack {
             // Background
             LumenColors.navyDark
@@ -65,6 +75,10 @@ struct FeedView: View {
                         PhraseCard(
                             phrase: phrase,
                             isSaved: viewModel.savedPhraseIDs.contains(phrase.id),
+                            isAudioPlaying: audioService.currentlyPlayingPhraseID == phrase.id,
+                            onPlayAudio: {
+                                audioService.togglePlayback(for: phrase.id, text: phrase.text)
+                            },
                             onAskAI: {
                                 // TODO: Show AI feedback in a modal or sheet
                                 Task {
@@ -72,13 +86,15 @@ struct FeedView: View {
                                     print("AI Feedback: \(feedback)")
                                 }
                             },
-                            onSave: { isSaved in
+                            onSave: {
                                 viewModel.toggleSavePhrase(phrase.id)
                             }
                         )
                     },
-                    currentPage: .constant(0)
+                    currentPage: $currentPage
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea()
             } else {
                 // Empty state
                 VStack(spacing: 12) {
@@ -96,8 +112,99 @@ struct FeedView: View {
                 }
                 .frame(maxHeight: .infinity)
             }
+
+            VStack {
+                HStack {
+                    Spacer()
+                    Menu {
+                        Button(role: .none) {
+                            showEditProfile = true
+                        } label: {
+                            Label("Edit profile", systemImage: "slider.horizontal.3")
+                        }
+
+                        Button(role: .none) {
+                            showLogoutConfirm = true
+                        } label: {
+                            Label(LocalizedStrings.accountLogout, systemImage: "rectangle.portrait.and.arrow.right")
+                        }
+
+                        Button(role: .destructive) {
+                            showDeleteConfirm = true
+                        } label: {
+                            Label(LocalizedStrings.accountDelete, systemImage: "trash")
+                        }
+                    } label: {
+                        Circle()
+                            .fill(Color.white.opacity(0.08))
+                            .frame(width: 56, height: 56)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                            )
+                            .overlay(
+                                Image(systemName: "person.crop.circle")
+                                    .font(.system(size: 28))
+                                    .foregroundStyle(.white)
+                            )
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 58)
+
+                Spacer()
+            }
+            .ignoresSafeArea()
         }
-        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .alert(LocalizedStrings.accountLogoutConfirmTitle, isPresented: $showLogoutConfirm) {
+            Button(LocalizedStrings.accountCancel, role: .cancel) {}
+            Button(LocalizedStrings.accountLogout, role: .destructive) {
+                Task {
+                    await sessionService.logout()
+                }
+            }
+        } message: {
+            Text(LocalizedStrings.accountLogoutConfirmMessage)
+        }
+        .alert(LocalizedStrings.accountDeleteConfirmTitle, isPresented: $showDeleteConfirm) {
+            Button(LocalizedStrings.accountCancel, role: .cancel) {}
+            Button(LocalizedStrings.accountDelete, role: .destructive) {
+                Task {
+                    do {
+                        try await sessionService.deleteAccount()
+                    } catch {
+                        accountActionError = error.localizedDescription
+                    }
+                }
+            }
+        } message: {
+            Text(LocalizedStrings.accountDeleteConfirmMessage)
+        }
+        .alert(LocalizedStrings.feedErrorTitle, isPresented: Binding(
+            get: { accountActionError != nil },
+            set: { isPresented in if !isPresented { accountActionError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(accountActionError ?? "")
+        }
+        .sheet(isPresented: $showEditProfile) {
+            if let token = sessionService.accessToken {
+                UserPreferencesView(accessToken: token)
+            }
+        }
+        .onDisappear {
+            audioService.stop()
+        }
+        .onChange(of: viewModel.phrases.count) { _, count in
+            guard count > 0 else {
+                currentPage = 0
+                return
+            }
+            currentPage = min(currentPage, count - 1)
+        }
+    }
     }
 }
 
@@ -139,17 +246,21 @@ struct VerticalPageView<Page: View>: UIViewControllerRepresentable {
         context.coordinator.updateControllers(with: pages)
         
         guard !context.coordinator.controllers.isEmpty else { return }
+        let safePage = min(max(currentPage, 0), context.coordinator.controllers.count - 1)
+        if safePage == context.coordinator.currentPage {
+            return
+        }
         
         let direction: UIPageViewController.NavigationDirection =
-            currentPage >= context.coordinator.currentPage ? .forward : .reverse
+            safePage >= context.coordinator.currentPage ? .forward : .reverse
         
         uiViewController.setViewControllers(
-            [context.coordinator.controllers[currentPage]],
+            [context.coordinator.controllers[safePage]],
             direction: direction,
             animated: true
         )
         
-        context.coordinator.currentPage = currentPage
+        context.coordinator.currentPage = safePage
     }
     
     final class Coordinator: NSObject, UIPageViewControllerDataSource, UIPageViewControllerDelegate {

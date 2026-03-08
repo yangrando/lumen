@@ -4,6 +4,23 @@
 <dict>
 	<key>AI_BASE_URL</key>
 	<string>$(AI_BASE_URL)</string>
+	<key>GOOGLE_CALLBACK_SCHEME</key>
+	<string>$(GOOGLE_CALLBACK_SCHEME)</string>
+	<key>GOOGLE_CLIENT_ID</key>
+	<string>$(GOOGLE_CLIENT_ID)</string>
+	<key>GOOGLE_REDIRECT_URI</key>
+	<string>$(GOOGLE_REDIRECT_URI)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(GOOGLE_CALLBACK_SCHEME)</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIAppFonts</key>
 	<array>
 		<string>SplineSans-Regular.ttf</string>

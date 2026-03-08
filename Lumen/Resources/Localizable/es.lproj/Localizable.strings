@@ -12,9 +12,22 @@
 "welcome.button.apple" = "Continuar con Apple";
 "welcome.button.google" = "Continuar con Google";
 "welcome.button.email" = "Registrarse con correo electrónico";
+"welcome.button.apple.signin" = "Iniciar sesión con Apple";
+"welcome.button.apple.signup" = "Crear cuenta con Apple";
+"welcome.button.google.signin" = "Iniciar sesión con Google";
+"welcome.button.google.signup" = "Crear cuenta con Google";
+"welcome.button.email.signin" = "Iniciar sesión con correo";
+"welcome.button.email.signup" = "Crear cuenta con correo";
+"welcome.mode.signin" = "Iniciar sesión";
+"welcome.mode.signup" = "Crear cuenta";
+"welcome.auth.hint" = "Elige el modo de acceso y continúa con Apple o Google.";
 "welcome.terms" = "Al continuar, aceptas nuestros";
 "welcome.terms.link1" = "Términos de servicio";
 "welcome.terms.link2" = "Política de privacidad";
+"auth.login.failed" = "Error de autenticación. Verifica el backend e inténtalo de nuevo.";
+"auth.apple.token.unavailable" = "No se pudo obtener el token de Apple.";
+"auth.google.not.configured" = "El inicio de sesión con Google no está configurado en esta compilación.";
+"auth.google.failed" = "No se pudo autenticar con Google. Inténtalo nuevamente.";
 
 
 // MARK: - Level Selection Screen (Module 3) - Complete Spanish
@@ -56,14 +69,44 @@
 "feed.unsave.button" = "Eliminar";
 "feed.ai.feedback" = "Retroalimentación de IA";
 "feed.ask.ai" = "Preguntar a la IA";
+"feed.listen" = "Escuchar";
+"feed.stop.audio" = "Detener audio";
 "feed.translate" = "Traducir";
 "feed.difficulty" = "Dificultad";
 "feed.category" = "Categoría";
 "feed.saved.phrases" = "Frases Guardadas";
 "feed.all.phrases" = "Todas las Frases";
+"library.empty.title" = "No hay frases guardadas";
+"library.empty.description" = "Guarda frases del feed para revisarlas después.";
+"library.search.placeholder" = "Buscar frases guardadas";
+"signup.back" = "Volver";
+"signup.title" = "Crear cuenta";
+"signup.subtitle" = "Regístrate con correo para comenzar tu aprendizaje.";
+"signin.title" = "Iniciar sesión";
+"signin.subtitle" = "Inicia sesión con correo para continuar tu aprendizaje.";
+"signup.name" = "Nombre completo";
+"signup.email" = "Correo";
+"signup.password" = "Contraseña";
+"signup.confirm.password" = "Confirmar contraseña";
+"signup.create.button" = "Crear cuenta";
+"signin.button" = "Iniciar sesión";
+"signup.error.required.fields" = "Completa todos los campos.";
+"signup.error.invalid.email" = "Ingresa un correo válido.";
+"signup.error.password.length" = "La contraseña debe tener al menos 6 caracteres.";
+"signup.error.password.mismatch" = "Las contraseñas no coinciden.";
+"account.logout" = "Cerrar sesión";
+"account.delete" = "Eliminar cuenta";
+"account.cancel" = "Cancelar";
+"account.logout.confirm.title" = "¿Cerrar sesión?";
+"account.logout.confirm.message" = "Tendrás que iniciar sesión nuevamente para continuar.";
+"account.delete.confirm.title" = "¿Eliminar cuenta?";
+"account.delete.confirm.message" = "Esta acción es permanente y no se puede deshacer.";
 
 "feed.loading.title" = "Cargando Nuevas Frases...";
 "feed.loading.description" = "Estamos preparando contenido personalizado para ti.";
 "feed.error.title" = "Ocurrió un Error";
 "feed.error.description" = "No se pudieron cargar nuevas frases. Por favor, inténtalo de nuevo más tarde.";
 "feed.error.retry" = "Reintentar";
+
+"signin.loading" = "Iniciando sesión...";
+"signup.loading" = "Creando cuenta...";

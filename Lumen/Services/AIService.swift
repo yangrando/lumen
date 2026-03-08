@@ -29,6 +29,7 @@ class AIService {
     /// - Returns: Array of generated EnglishPhrase objects
     func generatePhrases(
         level: String,
+        nativeLanguage: String,
         interests: [String],
         objectives: [String],
         count: Int = 5
@@ -37,6 +38,7 @@ class AIService {
         
         let prompt = buildPrompt(
             level: level,
+            nativeLanguage: nativeLanguage,
             interests: interests,
             objectives: objectives,
             count: count
@@ -44,7 +46,15 @@ class AIService {
         
         logger.debug("Generated prompt for API call")
         
-        let response = try await callOpenAI(prompt: prompt, task: "generate_phrases")
+        let response = try await callOpenAI(
+            prompt: prompt,
+            task: "generate_phrases",
+            meta: [
+                "count": count,
+                "native_language": nativeLanguage,
+                "enforce_translation_language": true
+            ]
+        )
         logger.debug("Received response from OpenAI API")
         
         let phrases = try parsePhrases(from: response)
@@ -87,15 +97,21 @@ class AIService {
     
     // MARK: - Translate Phrase
     
-    /// Translate an English phrase to Portuguese
-    /// - Parameter phrase: The English phrase to translate
-    /// - Returns: Portuguese translation
-    func translatePhrase(_ phrase: String) async throws -> String {
+    /// Translate an English phrase to the requested language
+    /// - Parameters:
+    ///   - phrase: The English phrase to translate
+    ///   - targetLanguage: Desired translation language
+    /// - Returns: Translated phrase
+    func translatePhrase(_ phrase: String, targetLanguage: String = "Portuguese (Brazil)") async throws -> String {
         logger.info("Translating phrase: '\(phrase)'")
         
-        let prompt = "Translate this English phrase to Portuguese (Brazilian Portuguese). Only provide the translation, nothing else:\n\n\(phrase)"
+        let prompt = "Translate this English phrase to \(targetLanguage). Only provide the translation, nothing else:\n\n\(phrase)"
         
-        let response = try await callOpenAI(prompt: prompt, task: "translate_phrase")
+        let response = try await callOpenAI(
+            prompt: prompt,
+            task: "translate_phrase",
+            meta: ["target_language": targetLanguage]
+        )
         let translation = response.trimmingCharacters(in: .whitespaces)
         
         logger.success("Translation completed: '\(phrase)' -> '\(translation)'")
@@ -107,6 +123,7 @@ class AIService {
     
     private func buildPrompt(
         level: String,
+        nativeLanguage: String,
         interests: [String],
         objectives: [String],
         count: Int
@@ -122,13 +139,13 @@ class AIService {
         
         For each phrase, provide:
         1. The English phrase (natural and useful)
-        2. Portuguese translation
+        2. Translation in \(nativeLanguage)
         3. Category (e.g., "Greetings", "Business", "Daily Conversation")
         4. Difficulty level (Beginner, Elementary, Intermediate, Upper-Intermediate, Advanced)
         
         Format your response as a JSON array with objects containing EXACTLY these keys:
         - "text": the English phrase
-        - "translation": the Portuguese translation (PT-BR)
+        - "translation": the translation in \(nativeLanguage)
         - "category": the category
         - "difficulty": the difficulty level
         
@@ -146,8 +163,12 @@ class AIService {
         """
     }
     
-    private func callOpenAI(prompt: String, task: String?) async throws -> String {
+    private func callOpenAI(prompt: String, task: String?, meta: [String: Any]? = nil) async throws -> String {
         logger.debug("Preparing backend AI request")
+        let accessToken = await MainActor.run { SessionService.shared.accessToken }
+        guard let accessToken else {
+            throw AIServiceError.unauthenticated
+        }
         
         // Prepare the request
         guard let url = URL(string: baseURL) else {
@@ -158,6 +179,7 @@ class AIService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         
         logger.logAPIRequest(url: baseURL, method: "POST")
         
@@ -169,6 +191,9 @@ class AIService {
         ]
         if let task {
             body["task"] = task
+        }
+        if let meta {
+            body["meta"] = meta
         }
         
         logger.logJSON(body, title: "Request Body")
@@ -285,6 +310,7 @@ enum AIServiceError: LocalizedError {
     case networkError(String)
     case decodingError(String)
     case invalidAPIKey
+    case unauthenticated
     
     var errorDescription: String? {
         switch self {
@@ -294,6 +320,8 @@ enum AIServiceError: LocalizedError {
             return "Decoding Error: \(message)"
         case .invalidAPIKey:
             return "Invalid API Key"
+        case .unauthenticated:
+            return "Authentication required. Please sign in again."
         }
     }
 }
