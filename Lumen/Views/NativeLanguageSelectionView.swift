@@ -15,6 +15,7 @@ struct NativeLanguageSelectionView: View {
     private let languages: [String] = [
         "Portuguese (Brazil)",
         "Spanish",
+        "English",
         "French",
         "German",
         "Italian",
@@ -24,19 +25,34 @@ struct NativeLanguageSelectionView: View {
         "Chinese (Simplified)"
     ]
 
+    private var localizedLanguageLabels: [String: String] {
+        [
+            "Portuguese (Brazil)": LocalizedStrings.nativeLanguageOptionPortugueseBrazil,
+            "Spanish": LocalizedStrings.nativeLanguageOptionSpanish,
+            "English": LocalizedStrings.nativeLanguageOptionEnglish,
+            "French": LocalizedStrings.nativeLanguageOptionFrench,
+            "German": LocalizedStrings.nativeLanguageOptionGerman,
+            "Italian": LocalizedStrings.nativeLanguageOptionItalian,
+            "Russian": LocalizedStrings.nativeLanguageOptionRussian,
+            "Japanese": LocalizedStrings.nativeLanguageOptionJapanese,
+            "Korean": LocalizedStrings.nativeLanguageOptionKorean,
+            "Chinese (Simplified)": LocalizedStrings.nativeLanguageOptionChineseSimplified
+        ]
+    }
+
     var body: some View {
         ZStack {
             LumenColors.navyDark
                 .ignoresSafeArea()
 
             VStack(spacing: 18) {
-                Text("What's your native language?")
+                Text(LocalizedStrings.nativeLanguageTitle)
                     .font(.system(size: 30, weight: .bold))
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
                     .padding(.top, 40)
 
-                Text("We'll use this language for phrase translations.")
+                Text(LocalizedStrings.nativeLanguageDescription)
                     .font(.system(size: 15))
                     .foregroundStyle(LumenColors.textSecondary)
                     .multilineTextAlignment(.center)
@@ -50,7 +66,7 @@ struct NativeLanguageSelectionView: View {
                             currentLanguage = language
                         } label: {
                             HStack {
-                                Text(language)
+                                Text(localizedLanguageLabels[language] ?? language)
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundStyle(.white)
                                 Spacer()

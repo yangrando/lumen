@@ -97,7 +97,7 @@ class FeedViewModel: ObservableObject {
             )
             return feedback
         } catch {
-            return "Unable to get feedback at this moment. Please try again later."
+            return LocalizedStrings.feedbackUnavailable
         }
     }
     
@@ -111,7 +111,7 @@ class FeedViewModel: ObservableObject {
             )
             return translation
         } catch {
-            return "Translation unavailable"
+            return LocalizedStrings.translationUnavailable
         }
     }
     

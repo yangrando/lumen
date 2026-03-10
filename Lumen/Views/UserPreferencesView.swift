@@ -25,7 +25,7 @@ struct UserPreferencesView: View {
                 } else {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 18) {
-                            Text("English level")
+                            Text(LocalizedStrings.preferencesEnglishLevel)
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(.white)
 
@@ -41,13 +41,13 @@ struct UserPreferencesView: View {
                             .background(Color.white.opacity(0.1))
                             .clipShape(RoundedRectangle(cornerRadius: 10))
 
-                            Text("Native language")
+                            Text(LocalizedStrings.preferencesNativeLanguage)
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(.white)
 
                             Picker("Native language", selection: $selectedNativeLanguage) {
-                                ForEach(nativeLanguages, id: \.self) { language in
-                                    Text(language).tag(language)
+                                ForEach(nativeLanguages) { language in
+                                    Text(language.localizedLabel).tag(language.value)
                                 }
                             }
                             .pickerStyle(.menu)
@@ -57,7 +57,7 @@ struct UserPreferencesView: View {
                             .background(Color.white.opacity(0.1))
                             .clipShape(RoundedRectangle(cornerRadius: 10))
 
-                            Text("Interests")
+                            Text(LocalizedStrings.preferencesInterests)
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(.white)
 
@@ -74,7 +74,7 @@ struct UserPreferencesView: View {
                                 }
                             )
 
-                            Text("Objectives")
+                            Text(LocalizedStrings.preferencesObjectives)
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(.white)
 
@@ -98,7 +98,7 @@ struct UserPreferencesView: View {
                             }
 
                             GradientButton(
-                                title: isSaving ? "Saving..." : "Save changes",
+                                title: isSaving ? LocalizedStrings.preferencesSaving : LocalizedStrings.preferencesSaveChanges,
                                 icon: "square.and.arrow.down.fill",
                                 action: {
                                     Task { await save() }
@@ -111,11 +111,11 @@ struct UserPreferencesView: View {
                     }
                 }
             }
-            .navigationTitle("Edit profile")
+            .navigationTitle(LocalizedStrings.preferencesEditProfileTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
+                    Button(LocalizedStrings.commonClose) { dismiss() }
                         .foregroundStyle(.white)
                 }
             }
@@ -159,17 +159,24 @@ struct UserPreferencesView: View {
         }
     }
 
-    private let nativeLanguages: [String] = [
-        "Portuguese (Brazil)",
-        "Spanish",
-        "French",
-        "German",
-        "Italian",
-        "Russian",
-        "Japanese",
-        "Korean",
-        "Chinese (Simplified)"
+    private let nativeLanguages: [NativeLanguageOption] = [
+        .init(value: "Portuguese (Brazil)", localizedLabel: LocalizedStrings.nativeLanguageOptionPortugueseBrazil),
+        .init(value: "Spanish", localizedLabel: LocalizedStrings.nativeLanguageOptionSpanish),
+        .init(value: "English", localizedLabel: LocalizedStrings.nativeLanguageOptionEnglish),
+        .init(value: "French", localizedLabel: LocalizedStrings.nativeLanguageOptionFrench),
+        .init(value: "German", localizedLabel: LocalizedStrings.nativeLanguageOptionGerman),
+        .init(value: "Italian", localizedLabel: LocalizedStrings.nativeLanguageOptionItalian),
+        .init(value: "Russian", localizedLabel: LocalizedStrings.nativeLanguageOptionRussian),
+        .init(value: "Japanese", localizedLabel: LocalizedStrings.nativeLanguageOptionJapanese),
+        .init(value: "Korean", localizedLabel: LocalizedStrings.nativeLanguageOptionKorean),
+        .init(value: "Chinese (Simplified)", localizedLabel: LocalizedStrings.nativeLanguageOptionChineseSimplified)
     ]
+}
+
+private struct NativeLanguageOption: Identifiable {
+    let value: String
+    let localizedLabel: String
+    var id: String { value }
 }
 
 private struct FlexibleChips: View {

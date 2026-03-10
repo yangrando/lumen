@@ -31,11 +31,11 @@ struct ObjectivesView: View {
             VStack(spacing: 0) {
                 // Header
                 VStack(spacing: 12) {
-                    Text("What are your goals?")
+                    Text(LocalizedStrings.objectivesTitle)
                         .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(.white)
                     
-                    Text("Select what you want to achieve with English")
+                    Text(LocalizedStrings.objectivesDescription)
                         .font(.system(size: 16, weight: .regular))
                         .foregroundStyle(LumenColors.textSecondary)
                         .multilineTextAlignment(.center)
@@ -72,7 +72,7 @@ struct ObjectivesView: View {
                         let selectedArray = Array(selectedObjectives).sorted { $0.rawValue < $1.rawValue }
                         onContinue(selectedArray)
                     }) {
-                        Text("Complete Setup")
+                        Text(LocalizedStrings.objectivesCompleteButton)
                             .font(.system(size: 16, weight: .semibold))
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
@@ -96,4 +96,3 @@ struct ObjectivesView: View {
         }
     }
 }
-

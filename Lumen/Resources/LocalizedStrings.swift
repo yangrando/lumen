@@ -1,6 +1,7 @@
 import Foundation
 
 struct LocalizedStrings {
+    static var appName: String { NSLocalizedString("app.name", comment: "") }
     // MARK: - Welcome Screen
     static var welcomeTitlePart1: String { NSLocalizedString("welcome.title.part1", comment: "") }
     static var welcomeTitlePart2: String { NSLocalizedString("welcome.title.part2", comment: "") }
@@ -88,6 +89,30 @@ struct LocalizedStrings {
     static var accountLogoutConfirmMessage: String { NSLocalizedString("account.logout.confirm.message", comment: "") }
     static var accountDeleteConfirmTitle: String { NSLocalizedString("account.delete.confirm.title", comment: "") }
     static var accountDeleteConfirmMessage: String { NSLocalizedString("account.delete.confirm.message", comment: "") }
+    static var feedEditProfile: String { NSLocalizedString("feed.edit.profile", comment: "") }
+    static var commonOk: String { NSLocalizedString("common.ok", comment: "") }
+    static var commonClose: String { NSLocalizedString("common.close", comment: "") }
+    static var preferencesEnglishLevel: String { NSLocalizedString("preferences.english.level", comment: "") }
+    static var preferencesNativeLanguage: String { NSLocalizedString("preferences.native.language", comment: "") }
+    static var preferencesInterests: String { NSLocalizedString("preferences.interests", comment: "") }
+    static var preferencesObjectives: String { NSLocalizedString("preferences.objectives", comment: "") }
+    static var preferencesSaveChanges: String { NSLocalizedString("preferences.save.changes", comment: "") }
+    static var preferencesSaving: String { NSLocalizedString("preferences.saving", comment: "") }
+    static var preferencesEditProfileTitle: String { NSLocalizedString("preferences.edit.profile.title", comment: "") }
+    static var nativeLanguageTitle: String { NSLocalizedString("native.language.title", comment: "") }
+    static var nativeLanguageDescription: String { NSLocalizedString("native.language.description", comment: "") }
+    static var nativeLanguageOptionPortugueseBrazil: String { NSLocalizedString("native.language.option.portuguese.brazil", comment: "") }
+    static var nativeLanguageOptionSpanish: String { NSLocalizedString("native.language.option.spanish", comment: "") }
+    static var nativeLanguageOptionEnglish: String { NSLocalizedString("native.language.option.english", comment: "") }
+    static var nativeLanguageOptionFrench: String { NSLocalizedString("native.language.option.french", comment: "") }
+    static var nativeLanguageOptionGerman: String { NSLocalizedString("native.language.option.german", comment: "") }
+    static var nativeLanguageOptionItalian: String { NSLocalizedString("native.language.option.italian", comment: "") }
+    static var nativeLanguageOptionRussian: String { NSLocalizedString("native.language.option.russian", comment: "") }
+    static var nativeLanguageOptionJapanese: String { NSLocalizedString("native.language.option.japanese", comment: "") }
+    static var nativeLanguageOptionKorean: String { NSLocalizedString("native.language.option.korean", comment: "") }
+    static var nativeLanguageOptionChineseSimplified: String { NSLocalizedString("native.language.option.chinese.simplified", comment: "") }
+    static var feedbackUnavailable: String { NSLocalizedString("feedback.unavailable", comment: "") }
+    static var translationUnavailable: String { NSLocalizedString("translation.unavailable", comment: "") }
     
     static let feedLoadingTitle = NSLocalizedString("feed.loading.title", comment: "")
     static let feedLoadingDescription = NSLocalizedString("feed.loading.description", comment: "")
