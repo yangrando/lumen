@@ -6,6 +6,7 @@
   
 */
 // MARK: - Welcome Screen
+"app.name" = "Lumen";
 "welcome.title.part1" = "Aprende inglés leyendo sobre ";
 "welcome.title.part2" = "lo que amas.";
 "welcome.description" = "Feed personalizado con retroalimentación de IA en tiempo real.";
@@ -101,6 +102,31 @@
 "account.logout.confirm.message" = "Tendrás que iniciar sesión nuevamente para continuar.";
 "account.delete.confirm.title" = "¿Eliminar cuenta?";
 "account.delete.confirm.message" = "Esta acción es permanente y no se puede deshacer.";
+"feed.edit.profile" = "Editar perfil";
+"common.ok" = "OK";
+"common.close" = "Cerrar";
+"preferences.english.level" = "Nivel de inglés";
+"preferences.native.language" = "Idioma nativo";
+"preferences.interests" = "Intereses";
+"preferences.objectives" = "Objetivos";
+"preferences.save.changes" = "Guardar cambios";
+"preferences.saving" = "Guardando...";
+"preferences.edit.profile.title" = "Editar perfil";
+"native.language.title" = "¿Cuál es tu idioma nativo?";
+"native.language.description" = "Usaremos este idioma para las traducciones de frases.";
+"native.language.option.portuguese.brazil" = "Portugués (Brasil)";
+"native.language.option.spanish" = "Español";
+"native.language.option.english" = "Inglés";
+"native.language.option.french" = "Francés";
+"native.language.option.german" = "Alemán";
+"native.language.option.italian" = "Italiano";
+"native.language.option.russian" = "Ruso";
+"native.language.option.japanese" = "Japonés";
+"native.language.option.korean" = "Coreano";
+"native.language.option.chinese.simplified" = "Chino (Simplificado)";
+"feedback.unavailable" = "No fue posible obtener comentarios en este momento. Inténtalo de nuevo más tarde.";
+"translation.unavailable" = "Traducción no disponible";
+"level.selection.start.button" = "Continuar";
 
 "feed.loading.title" = "Cargando Nuevas Frases...";
 "feed.loading.description" = "Estamos preparando contenido personalizado para ti.";

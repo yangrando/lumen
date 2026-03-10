@@ -37,7 +37,7 @@ struct WelcomeView: View {
                         .scaledToFit()
                         .frame(width: 56, height: 56)
 
-                    Text("Lumen")
+                    Text(LocalizedStrings.appName)
                         .font(.system(size: 24, weight: .bold))
                         .foregroundStyle(.white)
                 }

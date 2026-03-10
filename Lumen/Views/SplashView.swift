@@ -25,7 +25,7 @@ struct SplashView: View {
                     .opacity(logoOpacity)
                     .shadow(color: LumenColors.gradientEnd.opacity(0.38), radius: 18, y: 8)
 
-                Text("Lumen")
+                Text(LocalizedStrings.appName)
                     .font(.system(size: 38, weight: .bold))
                     .foregroundStyle(.white.opacity(logoOpacity))
             }

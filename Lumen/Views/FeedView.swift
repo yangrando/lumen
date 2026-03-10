@@ -120,7 +120,7 @@ struct FeedView: View {
                         Button(role: .none) {
                             showEditProfile = true
                         } label: {
-                            Label("Edit profile", systemImage: "slider.horizontal.3")
+                            Label(LocalizedStrings.feedEditProfile, systemImage: "slider.horizontal.3")
                         }
 
                         Button(role: .none) {
@@ -185,7 +185,7 @@ struct FeedView: View {
             get: { accountActionError != nil },
             set: { isPresented in if !isPresented { accountActionError = nil } }
         )) {
-            Button("OK", role: .cancel) {}
+            Button(LocalizedStrings.commonOk, role: .cancel) {}
         } message: {
             Text(accountActionError ?? "")
         }
