@@ -1,13 +1,18 @@
 import SwiftUI
+import SwiftData
 
 struct FeedView: View {
     @StateObject private var viewModel = FeedViewModel()
     @StateObject private var audioService = AudioService.shared
     @StateObject private var sessionService = SessionService.shared
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \FavoritePhrase.dateSaved, order: .reverse) private var favorites: [FavoritePhrase]
     @State private var currentPage = 0
     @State private var showLogoutConfirm = false
     @State private var showDeleteConfirm = false
     @State private var showEditProfile = false
+    @State private var showSavedPhrases = false
+    @State private var askAIPhrase: EnglishPhrase?
     @State private var accountActionError: String?
     
     var body: some View {
@@ -71,26 +76,7 @@ struct FeedView: View {
             } else if !viewModel.phrases.isEmpty {
                 // Feed with phrases
                 VerticalPageView(
-                    pages: viewModel.phrases.map { phrase in
-                        PhraseCard(
-                            phrase: phrase,
-                            isSaved: viewModel.savedPhraseIDs.contains(phrase.id),
-                            isAudioPlaying: audioService.currentlyPlayingPhraseID == phrase.id,
-                            onPlayAudio: {
-                                audioService.togglePlayback(for: phrase.id, text: phrase.text)
-                            },
-                            onAskAI: {
-                                // TODO: Show AI feedback in a modal or sheet
-                                Task {
-                                    let feedback = await viewModel.getPhraseFeedback(phrase.text)
-                                    print("AI Feedback: \(feedback)")
-                                }
-                            },
-                            onSave: {
-                                viewModel.toggleSavePhrase(phrase.id)
-                            }
-                        )
-                    },
+                    pages: feedPages,
                     currentPage: $currentPage
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -117,6 +103,12 @@ struct FeedView: View {
                 HStack {
                     Spacer()
                     Menu {
+                        Button(role: .none) {
+                            showSavedPhrases = true
+                        } label: {
+                            Label(LocalizedStrings.feedSavedPhrases, systemImage: "heart.text.square")
+                        }
+
                         Button(role: .none) {
                             showEditProfile = true
                         } label: {
@@ -155,6 +147,7 @@ struct FeedView: View {
                 Spacer()
             }
             .ignoresSafeArea()
+
         }
         .toolbar(.hidden, for: .navigationBar)
         .alert(LocalizedStrings.accountLogoutConfirmTitle, isPresented: $showLogoutConfirm) {
@@ -194,17 +187,175 @@ struct FeedView: View {
                 UserPreferencesView(accessToken: token)
             }
         }
+        .sheet(isPresented: $showSavedPhrases) {
+            NavigationStack {
+                SavedPhrasesView()
+            }
+        }
+        .sheet(item: $askAIPhrase) { phrase in
+            AskAIView(
+                phrase: phrase,
+                onAsk: { question in
+                    await viewModel.askAI(phrase: phrase.text, question: question)
+                }
+            )
+        }
         .onDisappear {
             audioService.stop()
         }
+        .onAppear {
+            viewModel.updateFavoriteSignals(from: favorites)
+        }
+        .onChange(of: favorites.count) { _, _ in
+            viewModel.updateFavoriteSignals(from: favorites)
+        }
         .onChange(of: viewModel.phrases.count) { _, count in
-            guard count > 0 else {
-                currentPage = 0
-                return
-            }
-            currentPage = min(currentPage, count - 1)
+            // +1 tail page always exists at index == count.
+            currentPage = min(currentPage, count)
+            viewModel.prefetchBackgrounds(around: currentPage)
+        }
+        .onChange(of: currentPage) { _, newPage in
+            viewModel.ensureMorePhrasesIfNeeded(currentIndex: newPage)
+            viewModel.prefetchBackgrounds(around: newPage)
         }
     }
+    }
+
+    private var feedPages: [AnyView] {
+        let phrasePages = viewModel.phrases.map { phrase in
+            AnyView(
+                PhraseCard(
+                    phrase: phrase,
+                    backgroundImageURL: viewModel.backgroundURLs[phrase.id],
+                    isSaved: isPhraseSaved(phrase),
+                    isAudioPlaying: audioService.currentlyPlayingPhraseID == phrase.id,
+                    onPlayAudio: {
+                        audioService.togglePlayback(for: phrase.id, text: phrase.text)
+                    },
+                    onAskAI: {
+                        askAIPhrase = phrase
+                    },
+                    onSave: {
+                        toggleFavorite(phrase)
+                    }
+                )
+            )
+        }
+
+        return phrasePages + [AnyView(tailPage)]
+    }
+
+    @ViewBuilder
+    private var tailPage: some View {
+        ZStack {
+            LumenColors.navyDark
+                .ignoresSafeArea()
+
+            VStack(spacing: 14) {
+                switch viewModel.tailState {
+                case .loading:
+                    ProgressView()
+                        .tint(.white)
+                    Text(LocalizedStrings.feedLoadingTitle)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text(LocalizedStrings.feedLoadingDescription)
+                        .font(.system(size: 14))
+                        .foregroundStyle(LumenColors.textSecondary)
+                        .multilineTextAlignment(.center)
+
+                case .idle:
+                    Image(systemName: "arrow.up.circle")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.white.opacity(0.85))
+                    Text(LocalizedStrings.feedTailIdleTitle)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text(LocalizedStrings.feedTailIdleDescription)
+                        .font(.system(size: 14))
+                        .foregroundStyle(LumenColors.textSecondary)
+                        .multilineTextAlignment(.center)
+                    Button {
+                        viewModel.retryLoadMore()
+                    } label: {
+                        Text(LocalizedStrings.feedTailIdleAction)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .foregroundStyle(.white)
+                            .background(LinearGradient.primaryGradient)
+                            .clipShape(Capsule())
+                    }
+                    .padding(.top, 6)
+
+                case .reconnecting(let remainingSeconds):
+                    ProgressView()
+                        .tint(.white)
+                    Text(LocalizedStrings.feedLoadingTitle)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text("\(LocalizedStrings.feedLoadingDescription) (\(remainingSeconds)s)")
+                        .font(.system(size: 14))
+                        .foregroundStyle(LumenColors.textSecondary)
+                        .multilineTextAlignment(.center)
+
+                case .failed(let message):
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.yellow)
+                    Text(LocalizedStrings.feedErrorTitle)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text(message)
+                        .font(.system(size: 14))
+                        .foregroundStyle(LumenColors.textSecondary)
+                        .multilineTextAlignment(.center)
+                    Button {
+                        viewModel.retryLoadMore()
+                    } label: {
+                        Text(LocalizedStrings.feedErrorRetry)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .foregroundStyle(.white)
+                            .background(LinearGradient.primaryGradient)
+                            .clipShape(Capsule())
+                    }
+                    .padding(.top, 6)
+                }
+            }
+            .padding(.horizontal, 22)
+            .onAppear {
+                if case .idle = viewModel.tailState {
+                    viewModel.ensureMorePhrasesIfNeeded(currentIndex: viewModel.phrases.count)
+                }
+            }
+        }
+    }
+
+    private func isPhraseSaved(_ phrase: EnglishPhrase) -> Bool {
+        favorites.contains {
+            $0.text.caseInsensitiveCompare(phrase.text) == .orderedSame
+        }
+    }
+
+    private func toggleFavorite(_ phrase: EnglishPhrase) {
+        if let existing = favorites.first(where: { $0.text.caseInsensitiveCompare(phrase.text) == .orderedSame }) {
+            modelContext.delete(existing)
+        } else {
+            modelContext.insert(
+                FavoritePhrase(
+                    text: phrase.text,
+                    translation: phrase.translation,
+                    category: phrase.category,
+                    difficulty: phrase.difficulty.rawValue
+                )
+            )
+        }
+
+        do {
+            try modelContext.save()
+        } catch {
+            accountActionError = error.localizedDescription
+        }
     }
 }
 

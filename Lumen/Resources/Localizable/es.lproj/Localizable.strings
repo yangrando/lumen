@@ -73,6 +73,9 @@
 "feed.listen" = "Escuchar";
 "feed.stop.audio" = "Detener audio";
 "feed.translate" = "Traducir";
+"feed.reading.play" = "Reproducir";
+"feed.reading.pause" = "Pausar";
+"feed.reading.speed" = "Velocidad";
 "feed.difficulty" = "Dificultad";
 "feed.category" = "Categoría";
 "feed.saved.phrases" = "Frases Guardadas";
@@ -133,6 +136,19 @@
 "feed.error.title" = "Ocurrió un Error";
 "feed.error.description" = "No se pudieron cargar nuevas frases. Por favor, inténtalo de nuevo más tarde.";
 "feed.error.retry" = "Reintentar";
+"feed.tail.idle.title" = "¿Listo para más?";
+"feed.tail.idle.description" = "Desliza de nuevo o toca abajo para cargar nuevas frases.";
+"feed.tail.idle.action" = "Cargar Nuevas Frases";
 
 "signin.loading" = "Iniciando sesión...";
 "signup.loading" = "Creando cuenta...";
+"ask.ai.title" = "Preguntar a la IA";
+"ask.ai.subtitle" = "Haz una pregunta sobre esta frase.";
+"ask.ai.placeholder" = "Escribe tu pregunta...";
+"ask.ai.send" = "Enviar";
+"ask.ai.thinking" = "Pensando...";
+"ask.ai.record" = "Grabar audio";
+"ask.ai.stop.record" = "Detener grabación";
+"ask.ai.audio.permission.denied" = "Permiso de micrófono o reconocimiento de voz denegado.";
+"ask.ai.speech.unavailable" = "El reconocimiento de voz no está disponible en este dispositivo.";
+"ask.ai.question.required" = "Escribe una pregunta.";

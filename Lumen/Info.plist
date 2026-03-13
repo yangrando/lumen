@@ -29,5 +29,9 @@
 		<string>SplineSans-Medium.ttf</string>
 		<string>SplineSans-Light.ttf</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Lumen uses the microphone so you can ask AI questions with your voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Lumen uses speech recognition to convert your voice questions into text.</string>
 </dict>
 </plist>
