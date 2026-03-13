@@ -58,6 +58,9 @@ struct LocalizedStrings {
     static var feedListen: String { NSLocalizedString("feed.listen", comment: "") }
     static var feedStopAudio: String { NSLocalizedString("feed.stop.audio", comment: "") }
     static var feedTranslate: String { NSLocalizedString("feed.translate", comment: "") }
+    static var feedReadingPlay: String { NSLocalizedString("feed.reading.play", comment: "") }
+    static var feedReadingPause: String { NSLocalizedString("feed.reading.pause", comment: "") }
+    static var feedReadingSpeed: String { NSLocalizedString("feed.reading.speed", comment: "") }
     static var feedDifficulty: String { NSLocalizedString("feed.difficulty", comment: "") }
     static var feedCategory: String { NSLocalizedString("feed.category", comment: "") }
     static var feedSavedPhrases: String { NSLocalizedString("feed.saved.phrases", comment: "") }
@@ -113,10 +116,23 @@ struct LocalizedStrings {
     static var nativeLanguageOptionChineseSimplified: String { NSLocalizedString("native.language.option.chinese.simplified", comment: "") }
     static var feedbackUnavailable: String { NSLocalizedString("feedback.unavailable", comment: "") }
     static var translationUnavailable: String { NSLocalizedString("translation.unavailable", comment: "") }
+    static var askAITitle: String { NSLocalizedString("ask.ai.title", comment: "") }
+    static var askAISubtitle: String { NSLocalizedString("ask.ai.subtitle", comment: "") }
+    static var askAIPlaceholder: String { NSLocalizedString("ask.ai.placeholder", comment: "") }
+    static var askAISend: String { NSLocalizedString("ask.ai.send", comment: "") }
+    static var askAIThinking: String { NSLocalizedString("ask.ai.thinking", comment: "") }
+    static var askAIRecord: String { NSLocalizedString("ask.ai.record", comment: "") }
+    static var askAIStopRecord: String { NSLocalizedString("ask.ai.stop.record", comment: "") }
+    static var askAIAudioPermissionDenied: String { NSLocalizedString("ask.ai.audio.permission.denied", comment: "") }
+    static var askAISpeechUnavailable: String { NSLocalizedString("ask.ai.speech.unavailable", comment: "") }
+    static var askAIQuestionRequired: String { NSLocalizedString("ask.ai.question.required", comment: "") }
     
     static let feedLoadingTitle = NSLocalizedString("feed.loading.title", comment: "")
     static let feedLoadingDescription = NSLocalizedString("feed.loading.description", comment: "")
     static let feedErrorTitle = NSLocalizedString("feed.error.title", comment: "")
     static let feedErrorDescription = NSLocalizedString("feed.error.description", comment: "")
     static let feedErrorRetry = NSLocalizedString("feed.error.retry", comment: "")
+    static let feedTailIdleTitle = NSLocalizedString("feed.tail.idle.title", comment: "")
+    static let feedTailIdleDescription = NSLocalizedString("feed.tail.idle.description", comment: "")
+    static let feedTailIdleAction = NSLocalizedString("feed.tail.idle.action", comment: "")
 }

@@ -32,7 +32,13 @@ class AIService {
         nativeLanguage: String,
         interests: [String],
         objectives: [String],
-        count: Int = 5
+        count: Int = 5,
+        excludedTexts: [String] = [],
+        minWordsPerCard: Int = 24,
+        maxWordsPerCard: Int = 90,
+        minCharactersPerCard: Int = 120,
+        maxCharactersPerCard: Int = 560,
+        preferredSentenceRange: String = "2 to 4 sentences"
     ) async throws -> [EnglishPhrase] {
         logger.info("Starting phrase generation - Level: \(level), Interests: \(interests.joined(separator: ", ")), Count: \(count)")
         
@@ -41,7 +47,13 @@ class AIService {
             nativeLanguage: nativeLanguage,
             interests: interests,
             objectives: objectives,
-            count: count
+            count: count,
+            excludedTexts: excludedTexts,
+            minWordsPerCard: minWordsPerCard,
+            maxWordsPerCard: maxWordsPerCard,
+            minCharactersPerCard: minCharactersPerCard,
+            maxCharactersPerCard: maxCharactersPerCard,
+            preferredSentenceRange: preferredSentenceRange
         )
         
         logger.debug("Generated prompt for API call")
@@ -52,7 +64,11 @@ class AIService {
             meta: [
                 "count": count,
                 "native_language": nativeLanguage,
-                "enforce_translation_language": true
+                "enforce_translation_language": true,
+                "min_words_per_card": minWordsPerCard,
+                "max_words_per_card": maxWordsPerCard,
+                "min_chars_per_card": minCharactersPerCard,
+                "max_chars_per_card": maxCharactersPerCard
             ]
         )
         logger.debug("Received response from OpenAI API")
@@ -61,6 +77,32 @@ class AIService {
         logger.success("Successfully parsed \(phrases.count) phrases")
         
         return phrases
+    }
+
+    func askAboutPhrase(
+        phrase: String,
+        question: String,
+        userLevel: String,
+        nativeLanguage: String
+    ) async throws -> String {
+        let prompt = """
+        You are assisting an English learner at \(userLevel) level.
+
+        Phrase:
+        "\(phrase)"
+
+        User question:
+        "\(question)"
+
+        Respond in \(nativeLanguage) with:
+        1) A direct answer to the user's question.
+        2) A short explanation with context.
+        3) One extra example sentence in English with translation in \(nativeLanguage).
+
+        Keep it practical and easy to understand.
+        """
+
+        return try await callOpenAI(prompt: prompt, task: "answer_doubt")
     }
     
     // MARK: - Get AI Feedback
@@ -126,21 +168,49 @@ class AIService {
         nativeLanguage: String,
         interests: [String],
         objectives: [String],
-        count: Int
+        count: Int,
+        excludedTexts: [String],
+        minWordsPerCard: Int,
+        maxWordsPerCard: Int,
+        minCharactersPerCard: Int,
+        maxCharactersPerCard: Int,
+        preferredSentenceRange: String
     ) -> String {
         let interestsStr = interests.joined(separator: ", ")
         let objectivesStr = objectives.joined(separator: ", ")
+        let excludedList = excludedTexts.prefix(30).map { "- \($0)" }.joined(separator: "\n")
+        let exclusionBlock = excludedList.isEmpty ? "" : """
+        
+        Do not repeat these existing cards (or near-duplicates):
+        \(excludedList)
+        """
         
         return """
-        Generate \(count) English learning phrases for someone at \(level) level.
-        
+        Generate \(count) English learning cards for someone at \(level) level.
+
         User Interests: \(interestsStr)
         Learning Objectives: \(objectivesStr)
-        
-        For each phrase, provide:
-        1. The English phrase (natural and useful)
+
+        Content mix requirements:
+        - Prioritize relevant content, not generic motivational lines.
+        - Every card MUST include at least one concrete anchor:
+          a) a historical fact with year/date,
+          b) a real event, person, or place,
+          c) a cultural curiosity with context,
+          d) a music reference identifying song and artist.
+        - Length target per card:
+          a) \(minWordsPerCard)-\(maxWordsPerCard) words,
+          b) \(minCharactersPerCard)-\(maxCharactersPerCard) characters.
+        - Preferred structure: \(preferredSentenceRange).
+        - Keep each card coherent, factual, and useful for real English learning.
+        - Ensure cards are diverse in topic and wording; avoid repetition.
+        - For music-related cards: do not provide long copyrighted lyrics; if needed, use an excerpt with at most 8 words and focus on explanation/context.
+        \(exclusionBlock)
+
+        For each card, provide:
+        1. The English text (natural and useful; follow the target length/structure above)
         2. Translation in \(nativeLanguage)
-        3. Category (e.g., "Greetings", "Business", "Daily Conversation")
+        3. Category (e.g., "Business", "Technology", "History", "Science", "Travel", "Culture")
         4. Difficulty level (Beginner, Elementary, Intermediate, Upper-Intermediate, Advanced)
         
         Format your response as a JSON array with objects containing EXACTLY these keys:
@@ -180,6 +250,7 @@ class AIService {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 45
         
         logger.logAPIRequest(url: baseURL, method: "POST")
         
@@ -187,7 +258,7 @@ class AIService {
         var body: [String: Any] = [
             "prompt": prompt,
             "temperature": 0.7,
-            "max_tokens": 800
+            "max_tokens": 1200
         ]
         if let task {
             body["task"] = task

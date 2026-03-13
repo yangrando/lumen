@@ -79,6 +79,9 @@
 "feed.listen" = "Listen";
 "feed.stop.audio" = "Stop Audio";
 "feed.translate" = "Translate";
+"feed.reading.play" = "Play";
+"feed.reading.pause" = "Pause";
+"feed.reading.speed" = "Speed";
 "feed.difficulty" = "Difficulty";
 "feed.category" = "Category";
 "feed.saved.phrases" = "Saved Phrases";
@@ -140,6 +143,19 @@
 "feed.error.title" = "An Error Occurred";
 "feed.error.description" = "Could not load new phrases. Please try again later.";
 "feed.error.retry" = "Retry";
+"feed.tail.idle.title" = "Ready for more?";
+"feed.tail.idle.description" = "Swipe again or tap below to load new phrases.";
+"feed.tail.idle.action" = "Load New Phrases";
 
 "signin.loading" = "Signing in...";
 "signup.loading" = "Creating account...";
+"ask.ai.title" = "Ask AI";
+"ask.ai.subtitle" = "Ask a question about this phrase.";
+"ask.ai.placeholder" = "Type your question...";
+"ask.ai.send" = "Send";
+"ask.ai.thinking" = "Thinking...";
+"ask.ai.record" = "Record audio";
+"ask.ai.stop.record" = "Stop recording";
+"ask.ai.audio.permission.denied" = "Microphone or speech permission denied.";
+"ask.ai.speech.unavailable" = "Speech recognition is unavailable on this device.";
+"ask.ai.question.required" = "Please enter a question.";
