@@ -22,6 +22,7 @@ struct LocalizedStrings {
     static var welcomeTermsLink1: String { NSLocalizedString("welcome.terms.link1", comment: "") }
     static var welcomeTermsLink2: String { NSLocalizedString("welcome.terms.link2", comment: "") }
     static var authLoginFailed: String { NSLocalizedString("auth.login.failed", comment: "") }
+    static var authCancelled: String { NSLocalizedString("auth.cancelled", comment: "") }
     static var authAppleTokenUnavailable: String { NSLocalizedString("auth.apple.token.unavailable", comment: "") }
     static var authGoogleNotConfigured: String { NSLocalizedString("auth.google.not.configured", comment: "") }
     static var authGoogleFailed: String { NSLocalizedString("auth.google.failed", comment: "") }

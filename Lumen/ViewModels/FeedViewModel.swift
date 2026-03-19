@@ -32,8 +32,14 @@ class FeedViewModel: ObservableObject {
         case failed(message: String)
     }
 
+    enum BackgroundState: Equatable {
+        case loading
+        case ready(URL?)
+    }
+
     @Published var phrases: [EnglishPhrase] = []
     @Published var backgroundURLs: [UUID: URL] = [:]
+    @Published var backgroundStates: [UUID: BackgroundState] = [:]
     @Published var isLoading = false
     @Published var errorMessage: String? = nil
     @Published var tailState: TailState = .idle
@@ -83,7 +89,7 @@ class FeedViewModel: ObservableObject {
             if phrases.count < 3 {
                 try await fetchMorePhrases(force: true)
             }
-            prefetchBackgrounds(around: 0)
+            await primeInitialBackgrounds()
             tailState = .idle
             isLoading = false
         } catch {
@@ -105,9 +111,20 @@ class FeedViewModel: ObservableObject {
         }
     }
 
+    func isBackgroundReady(for phraseID: UUID) -> Bool {
+        if let state = backgroundStates[phraseID] {
+            if case .ready = state { return true }
+            return false
+        }
+        return false
+    }
+
     private func ensureBackground(for phrase: EnglishPhrase) {
-        guard backgroundURLs[phrase.id] == nil else { return }
+        if let state = backgroundStates[phrase.id], case .ready = state {
+            return
+        }
         guard !backgroundTasks.contains(phrase.id) else { return }
+        backgroundStates[phrase.id] = .loading
         backgroundTasks.insert(phrase.id)
 
         Task {
@@ -120,9 +137,43 @@ class FeedViewModel: ObservableObject {
                     seed: phrase.id.uuidString
                 )
                 backgroundURLs[phrase.id] = url
+                backgroundStates[phrase.id] = .ready(url)
             } catch {
                 // Keep local dynamic background as fallback when remote generation fails.
+                backgroundStates[phrase.id] = .ready(nil)
             }
+        }
+    }
+
+    private func primeInitialBackgrounds() async {
+        guard !phrases.isEmpty else { return }
+        let primeItems = Array(phrases.prefix(3))
+        await withTaskGroup(of: Void.self) { group in
+            for phrase in primeItems {
+                group.addTask { [weak self] in
+                    await self?.ensureBackgroundImmediately(for: phrase)
+                }
+            }
+        }
+        prefetchBackgrounds(around: 0)
+    }
+
+    private func ensureBackgroundImmediately(for phrase: EnglishPhrase) async {
+        if let state = backgroundStates[phrase.id], case .ready = state {
+            return
+        }
+        backgroundStates[phrase.id] = .loading
+        do {
+            let url = try await backgroundService.urlForPhrase(
+                text: phrase.text,
+                category: phrase.category,
+                difficulty: phrase.difficulty.rawValue,
+                seed: phrase.id.uuidString
+            )
+            backgroundURLs[phrase.id] = url
+            backgroundStates[phrase.id] = .ready(url)
+        } catch {
+            backgroundStates[phrase.id] = .ready(nil)
         }
     }
 
