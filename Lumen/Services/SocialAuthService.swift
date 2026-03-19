@@ -1,5 +1,6 @@
 import Foundation
 import AuthenticationServices
+import GoogleSignIn
 import UIKit
 
 enum SocialAuthError: LocalizedError {
@@ -33,7 +34,6 @@ final class SocialAuthService: NSObject {
     static let shared = SocialAuthService()
 
     private var appleContinuation: CheckedContinuation<String, Error>?
-    private var webAuthSession: ASWebAuthenticationSession?
 
     private override init() {
         super.init()
@@ -64,100 +64,48 @@ final class SocialAuthService: NSObject {
     func fetchGoogleIDToken() async throws -> String {
         guard
             let clientID = Bundle.main.object(forInfoDictionaryKey: "GOOGLE_CLIENT_ID") as? String,
-            !clientID.isEmpty,
-            let redirectURI = Bundle.main.object(forInfoDictionaryKey: "GOOGLE_REDIRECT_URI") as? String,
-            !redirectURI.isEmpty
+            !clientID.isEmpty
         else {
             throw SocialAuthError.googleNotConfigured
         }
 
-        let callbackScheme =
-            (Bundle.main.object(forInfoDictionaryKey: "GOOGLE_CALLBACK_SCHEME") as? String)?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-        let resolvedCallbackScheme = (callbackScheme?.isEmpty == false ? callbackScheme : URL(string: redirectURI)?.scheme)
-        guard let resolvedCallbackScheme, !resolvedCallbackScheme.isEmpty else {
-            throw SocialAuthError.googleNotConfigured
-        }
+        let trimmedServerClientID =
+            (Bundle.main.object(forInfoDictionaryKey: "GOOGLE_SERVER_CLIENT_ID") as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let serverClientID = trimmedServerClientID?.isEmpty == false ? trimmedServerClientID : nil
 
-        let state = UUID().uuidString
-        var components = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")
-        components?.queryItems = [
-            URLQueryItem(name: "client_id", value: clientID),
-            URLQueryItem(name: "redirect_uri", value: redirectURI),
-            URLQueryItem(name: "response_type", value: "id_token"),
-            URLQueryItem(name: "scope", value: "openid email profile"),
-            URLQueryItem(name: "state", value: state),
-            URLQueryItem(name: "nonce", value: UUID().uuidString),
-            URLQueryItem(name: "prompt", value: "select_account"),
-        ]
-
-        guard let authURL = components?.url else {
+        guard let presentingViewController = Self.presentationViewController() else {
             throw SocialAuthError.googleSessionFailed
         }
 
-        return try await withCheckedThrowingContinuation { continuation in
-            let session = ASWebAuthenticationSession(
-                url: authURL,
-                callbackURLScheme: resolvedCallbackScheme
-            ) { callbackURL, error in
-                self.webAuthSession = nil
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(
+            clientID: clientID,
+            serverClientID: serverClientID
+        )
+        GIDSignIn.sharedInstance.signOut()
 
-                if let asError = error as? ASWebAuthenticationSessionError,
-                   asError.code == .canceledLogin {
-                    continuation.resume(throwing: SocialAuthError.userCancelled)
-                    return
-                }
-
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-
-                guard let callbackURL else {
-                    continuation.resume(throwing: SocialAuthError.invalidGoogleCallback)
-                    return
-                }
-
-                do {
-                    let idToken = try Self.extractGoogleIDToken(from: callbackURL, expectedState: state)
-                    continuation.resume(returning: idToken)
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-
-            session.presentationContextProvider = self
-            session.prefersEphemeralWebBrowserSession = true
-            self.webAuthSession = session
-            session.start()
+        let result: GIDSignInResult
+        do {
+            result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController)
+        } catch {
+            throw SocialAuthError.googleSessionFailed
         }
+
+        if let idToken = result.user.idToken?.tokenString, !idToken.isEmpty {
+            return idToken
+        }
+
+        throw SocialAuthError.googleMissingIDToken
     }
 
-    private static func extractGoogleIDToken(from callbackURL: URL, expectedState: String) throws -> String {
-        guard let fragment = callbackURL.fragment else {
-            throw SocialAuthError.googleMissingIDToken
+    func handleGoogleOpenURL(_ url: URL) -> Bool {
+        GIDSignIn.sharedInstance.handle(url)
+    }
+
+    func signOutGoogleIfNeeded() {
+        if GIDSignIn.sharedInstance.currentUser != nil {
+            GIDSignIn.sharedInstance.signOut()
         }
-
-        let items = fragment
-            .split(separator: "&")
-            .map { pair -> (String, String) in
-                let parts = pair.split(separator: "=", maxSplits: 1).map(String.init)
-                let key = parts.first ?? ""
-                let value = parts.count > 1 ? parts[1].removingPercentEncoding ?? parts[1] : ""
-                return (key, value)
-            }
-
-        let payload = Dictionary(uniqueKeysWithValues: items)
-
-        guard payload["state"] == expectedState else {
-            throw SocialAuthError.invalidGoogleCallback
-        }
-
-        guard let idToken = payload["id_token"], !idToken.isEmpty else {
-            throw SocialAuthError.googleMissingIDToken
-        }
-
-        return idToken
     }
 }
 
@@ -196,14 +144,8 @@ extension SocialAuthService: ASAuthorizationControllerDelegate {
     }
 }
 
-extension SocialAuthService: ASAuthorizationControllerPresentationContextProviding, ASWebAuthenticationPresentationContextProviding {
+extension SocialAuthService: ASAuthorizationControllerPresentationContextProviding {
     nonisolated func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        MainActor.assumeIsolated {
-            Self.presentationAnchor()
-        }
-    }
-
-    nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         MainActor.assumeIsolated {
             Self.presentationAnchor()
         }
@@ -211,15 +153,34 @@ extension SocialAuthService: ASAuthorizationControllerPresentationContextProvidi
 
     @MainActor
     private static func presentationAnchor() -> ASPresentationAnchor {
+        presentationViewController()?.view.window ?? UIWindow(frame: .zero)
+    }
+
+    @MainActor
+    private static func presentationViewController() -> UIViewController? {
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
         for scene in scenes {
-            if let window = scene.windows.first(where: \.isKeyWindow) {
-                return window
+            if let root = scene.windows.first(where: \.isKeyWindow)?.rootViewController {
+                return topViewController(from: root)
             }
         }
-        if let scene = scenes.first {
-            return UIWindow(windowScene: scene)
+        if let root = scenes.first?.windows.first?.rootViewController {
+            return topViewController(from: root)
         }
-        return UIWindow(frame: .zero)
+        return nil
+    }
+
+    @MainActor
+    private static func topViewController(from root: UIViewController) -> UIViewController {
+        if let presented = root.presentedViewController {
+            return topViewController(from: presented)
+        }
+        if let navigation = root as? UINavigationController, let visible = navigation.visibleViewController {
+            return topViewController(from: visible)
+        }
+        if let tab = root as? UITabBarController, let selected = tab.selectedViewController {
+            return topViewController(from: selected)
+        }
+        return root
     }
 }

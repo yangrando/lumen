@@ -43,6 +43,9 @@ final class SessionService: ObservableObject {
         if let token = accessToken {
             try? await AuthService.shared.logout(accessToken: token)
         }
+        if currentUser?.provider == AuthProvider.google.rawValue {
+            SocialAuthService.shared.signOutGoogleIfNeeded()
+        }
         clearSession()
     }
 
@@ -52,6 +55,9 @@ final class SessionService: ObservableObject {
             return
         }
         try await AuthService.shared.deleteAccount(accessToken: token)
+        if currentUser?.provider == AuthProvider.google.rawValue {
+            SocialAuthService.shared.signOutGoogleIfNeeded()
+        }
         clearSession()
     }
 }

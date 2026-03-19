@@ -26,6 +26,7 @@
 "welcome.terms.link1" = "Termos de Serviço";
 "welcome.terms.link2" = "Política de Privacidade";
 "auth.login.failed" = "Falha na autenticação. Verifique o backend e tente novamente.";
+"auth.cancelled" = "A autenticação não foi concluída.";
 "auth.apple.token.unavailable" = "Não foi possível obter o token da Apple.";
 "auth.google.not.configured" = "Login com Google não está configurado neste build.";
 "auth.google.failed" = "Não foi possível autenticar com Google. Tente novamente.";

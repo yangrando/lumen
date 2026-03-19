@@ -19,6 +19,7 @@ struct OnboardingView: View {
     @State private var selectedObjectives: [LearningObjective] = []
     @State private var isAuthenticating = false
     @State private var authErrorMessage: String? = nil
+    @State private var authAlertMessage: String? = nil
     @State private var manualAuthMode: WelcomeView.AuthMode = .signUp
 
     @StateObject private var sessionService = SessionService.shared
@@ -99,6 +100,20 @@ struct OnboardingView: View {
                 await restoreSessionIfPossible()
             }
         }
+        .alert(LocalizedStrings.commonOk, isPresented: Binding(
+            get: { authAlertMessage != nil },
+            set: { isPresented in
+                if !isPresented {
+                    authAlertMessage = nil
+                }
+            }
+        )) {
+            Button(LocalizedStrings.commonOk, role: .cancel) {
+                authAlertMessage = nil
+            }
+        } message: {
+            Text(authAlertMessage ?? "")
+        }
     }
 
     private func restoreSessionIfPossible() async {
@@ -121,24 +136,10 @@ struct OnboardingView: View {
     private func authenticate(with provider: AuthProvider) async {
         isAuthenticating = true
         authErrorMessage = nil
+        authAlertMessage = nil
 
-        let idToken: String
         do {
-            do {
-                idToken = try await SocialAuthService.shared.fetchIDToken(for: provider)
-            } catch SocialAuthError.userCancelled {
-                isAuthenticating = false
-                return
-            } catch {
-                // Local development fallback while backend accepts dev-* tokens.
-                guard let devToken = AuthService.shared.makeDevelopmentIDToken(for: provider) else {
-                    authErrorMessage = localizedAuthErrorMessage(for: error)
-                    isAuthenticating = false
-                    return
-                }
-                idToken = devToken
-            }
-
+            let idToken = try await SocialAuthService.shared.fetchIDToken(for: provider)
             let authResponse = try await AuthService.shared.login(provider: provider, idToken: idToken)
             sessionService.saveSession(accessToken: authResponse.access_token, user: authResponse.user)
             if await shouldSkipOnboarding(for: authResponse.user, accessToken: authResponse.access_token) {
@@ -146,8 +147,16 @@ struct OnboardingView: View {
             } else {
                 currentStep = .nativeLanguage
             }
+        } catch SocialAuthError.userCancelled {
+            sessionService.clearSession()
+            currentStep = .welcome
+            authAlertMessage = LocalizedStrings.authCancelled
         } catch {
-            authErrorMessage = LocalizedStrings.authLoginFailed
+            sessionService.clearSession()
+            currentStep = .welcome
+            let message = localizedAuthErrorMessage(for: error)
+            authErrorMessage = message
+            authAlertMessage = message
         }
 
         isAuthenticating = false
@@ -163,7 +172,7 @@ struct OnboardingView: View {
             case .googleSessionFailed, .googleMissingIDToken, .invalidGoogleCallback:
                 return LocalizedStrings.authGoogleFailed
             case .userCancelled:
-                return ""
+                return LocalizedStrings.authCancelled
             }
         }
 

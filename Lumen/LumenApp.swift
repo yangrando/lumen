@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import GoogleSignIn
 
 @main
 struct LumenApp: App {
@@ -28,6 +29,9 @@ struct LumenApp: App {
                 withAnimation(.easeInOut(duration: 0.35)) {
                     showSplash = false
                 }
+            }
+            .onOpenURL { url in
+                _ = SocialAuthService.shared.handleGoogleOpenURL(url)
             }
         }
         .modelContainer(for: [FavoritePhrase.self])

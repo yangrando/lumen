@@ -99,54 +99,78 @@ struct FeedView: View {
                 .frame(maxHeight: .infinity)
             }
 
-            VStack {
-                HStack {
-                    Spacer()
-                    Menu {
-                        Button(role: .none) {
-                            showSavedPhrases = true
-                        } label: {
-                            Label(LocalizedStrings.feedSavedPhrases, systemImage: "heart.text.square")
-                        }
+            if !viewModel.isLoading && viewModel.errorMessage == nil && !viewModel.phrases.isEmpty {
+                VStack {
+                    HStack {
+                        Spacer()
+                        HStack(spacing: 10) {
+                            Menu {
+                                Button(role: .none) {
+                                    showSavedPhrases = true
+                                } label: {
+                                    Label(LocalizedStrings.feedSavedPhrases, systemImage: "heart.text.square")
+                                }
 
-                        Button(role: .none) {
-                            showEditProfile = true
-                        } label: {
-                            Label(LocalizedStrings.feedEditProfile, systemImage: "slider.horizontal.3")
-                        }
+                                Button(role: .none) {
+                                    showEditProfile = true
+                                } label: {
+                                    Label(LocalizedStrings.feedEditProfile, systemImage: "slider.horizontal.3")
+                                }
 
-                        Button(role: .none) {
-                            showLogoutConfirm = true
-                        } label: {
-                            Label(LocalizedStrings.accountLogout, systemImage: "rectangle.portrait.and.arrow.right")
-                        }
+                                Button(role: .none) {
+                                    showLogoutConfirm = true
+                                } label: {
+                                    Label(LocalizedStrings.accountLogout, systemImage: "rectangle.portrait.and.arrow.right")
+                                }
 
-                        Button(role: .destructive) {
-                            showDeleteConfirm = true
-                        } label: {
-                            Label(LocalizedStrings.accountDelete, systemImage: "trash")
-                        }
-                    } label: {
-                        Circle()
-                            .fill(Color.white.opacity(0.08))
-                            .frame(width: 56, height: 56)
-                            .overlay(
+                                Button(role: .destructive) {
+                                    showDeleteConfirm = true
+                                } label: {
+                                    Label(LocalizedStrings.accountDelete, systemImage: "trash")
+                                }
+                            } label: {
                                 Circle()
-                                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                            )
-                            .overlay(
-                                Image(systemName: "person.crop.circle")
-                                    .font(.system(size: 28))
-                                    .foregroundStyle(.white)
-                            )
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 58)
+                                    .fill(Color.white.opacity(0.10))
+                                    .frame(width: 45, height: 45)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white.opacity(0.22), lineWidth: 1)
+                                    )
+                                    .overlay(
+                                        Image(systemName: "person.crop.circle")
+                                            .font(.system(size: 22))
+                                            .foregroundStyle(.white)
+                                    )
+                            }
 
-                Spacer()
+                            Button {
+                                if currentPage < viewModel.phrases.count {
+                                    let phrase = viewModel.phrases[currentPage]
+                                    toggleFavorite(phrase)
+                                }
+                            } label: {
+                                Circle()
+                                    .fill(Color.white.opacity(0.10))
+                                    .frame(width: 45, height: 45)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white.opacity(0.22), lineWidth: 1)
+                                    )
+                                    .overlay(
+                                        Image(systemName: currentPage < viewModel.phrases.count && isPhraseSaved(viewModel.phrases[currentPage]) ? "heart.fill" : "heart")
+                                            .font(.system(size: 18, weight: .semibold))
+                                            .foregroundStyle(currentPage < viewModel.phrases.count && isPhraseSaved(viewModel.phrases[currentPage]) ? .red : .white)
+                                    )
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 58)
+
+                    Spacer()
+                }
+                .ignoresSafeArea()
             }
-            .ignoresSafeArea()
 
         }
         .toolbar(.hidden, for: .navigationBar)
@@ -224,25 +248,53 @@ struct FeedView: View {
     private var feedPages: [AnyView] {
         let phrasePages = viewModel.phrases.map { phrase in
             AnyView(
-                PhraseCard(
-                    phrase: phrase,
-                    backgroundImageURL: viewModel.backgroundURLs[phrase.id],
-                    isSaved: isPhraseSaved(phrase),
-                    isAudioPlaying: audioService.currentlyPlayingPhraseID == phrase.id,
-                    onPlayAudio: {
-                        audioService.togglePlayback(for: phrase.id, text: phrase.text)
-                    },
-                    onAskAI: {
-                        askAIPhrase = phrase
-                    },
-                    onSave: {
-                        toggleFavorite(phrase)
+                Group {
+                    if viewModel.isBackgroundReady(for: phrase.id) {
+                        PhraseCard(
+                            phrase: phrase,
+                            backgroundImageURL: viewModel.backgroundURLs[phrase.id],
+                            isSaved: isPhraseSaved(phrase),
+                            isAudioPlaying: audioService.currentlyPlayingPhraseID == phrase.id,
+                            onPlayAudio: {
+                                audioService.togglePlayback(for: phrase.id, text: phrase.text)
+                            },
+                            onAskAI: {
+                                askAIPhrase = phrase
+                            },
+                            onSave: {
+                                toggleFavorite(phrase)
+                            }
+                        )
+                    } else {
+                        reelLoadingPage
                     }
-                )
+                }
             )
         }
 
         return phrasePages + [AnyView(tailPage)]
+    }
+
+    private var reelLoadingPage: some View {
+        ZStack {
+            LumenColors.navyDark
+                .ignoresSafeArea()
+
+            VStack(spacing: 14) {
+                ProgressView()
+                    .tint(.white)
+
+                Text(LocalizedStrings.feedLoadingTitle)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+
+                Text(LocalizedStrings.feedLoadingDescription)
+                    .font(.system(size: 14))
+                    .foregroundStyle(LumenColors.textSecondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 24)
+        }
     }
 
     @ViewBuilder

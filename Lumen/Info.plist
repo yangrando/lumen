@@ -4,12 +4,6 @@
 <dict>
 	<key>AI_BASE_URL</key>
 	<string>$(AI_BASE_URL)</string>
-	<key>GOOGLE_CALLBACK_SCHEME</key>
-	<string>$(GOOGLE_CALLBACK_SCHEME)</string>
-	<key>GOOGLE_CLIENT_ID</key>
-	<string>$(GOOGLE_CLIENT_ID)</string>
-	<key>GOOGLE_REDIRECT_URI</key>
-	<string>$(GOOGLE_REDIRECT_URI)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -21,6 +15,12 @@
 			</array>
 		</dict>
 	</array>
+	<key>GOOGLE_CALLBACK_SCHEME</key>
+	<string>$(GOOGLE_CALLBACK_SCHEME)</string>
+	<key>GOOGLE_CLIENT_ID</key>
+	<string>$(GOOGLE_CLIENT_ID)</string>
+	<key>GOOGLE_REDIRECT_URI</key>
+	<string>$(GOOGLE_REDIRECT_URI)</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>SplineSans-Regular.ttf</string>
@@ -29,9 +29,5 @@
 		<string>SplineSans-Medium.ttf</string>
 		<string>SplineSans-Light.ttf</string>
 	</array>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Lumen uses the microphone so you can ask AI questions with your voice.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Lumen uses speech recognition to convert your voice questions into text.</string>
 </dict>
 </plist>
