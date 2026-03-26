@@ -10,6 +10,7 @@ struct LevelSelectionView: View {
     
     @State private var selectedLevel: EnglishLevel? = nil
     
+    let onBack: () -> Void
     let onContinue: (EnglishLevel) -> Void
     
     var body: some View {
@@ -18,7 +19,14 @@ struct LevelSelectionView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                VStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 18) {
+                    Button(action: onBack) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 36, height: 36)
+                    }
+
                     Text(LocalizedStrings.levelSelectionTitle)
                         .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(.white)
@@ -26,10 +34,10 @@ struct LevelSelectionView: View {
                     Text(LocalizedStrings.levelSelectionDescription)
                         .font(.system(size: 16, weight: .regular))
                         .foregroundStyle(LumenColors.textSecondary)
-                        .multilineTextAlignment(.center)
+                        .multilineTextAlignment(.leading)
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 40)
+                .padding(.top, 24)
                 .padding(.bottom, 30)
                 
                 ScrollView {
