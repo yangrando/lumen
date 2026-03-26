@@ -8,9 +8,7 @@ struct FeedView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \FavoritePhrase.dateSaved, order: .reverse) private var favorites: [FavoritePhrase]
     @State private var currentPage = 0
-    @State private var showLogoutConfirm = false
-    @State private var showDeleteConfirm = false
-    @State private var showEditProfile = false
+    @State private var showProfile = false
     @State private var showSavedPhrases = false
     @State private var askAIPhrase: EnglishPhrase?
     @State private var accountActionError: String?
@@ -101,114 +99,25 @@ struct FeedView: View {
 
             if !viewModel.isLoading && viewModel.errorMessage == nil && !viewModel.phrases.isEmpty {
                 VStack {
-                    HStack {
-                        Spacer()
-                        HStack(spacing: 10) {
-                            Menu {
-                                Button(role: .none) {
-                                    showSavedPhrases = true
-                                } label: {
-                                    Label(LocalizedStrings.feedSavedPhrases, systemImage: "heart.text.square")
-                                }
-
-                                Button(role: .none) {
-                                    showEditProfile = true
-                                } label: {
-                                    Label(LocalizedStrings.feedEditProfile, systemImage: "slider.horizontal.3")
-                                }
-
-                                Button(role: .none) {
-                                    showLogoutConfirm = true
-                                } label: {
-                                    Label(LocalizedStrings.accountLogout, systemImage: "rectangle.portrait.and.arrow.right")
-                                }
-
-                                Button(role: .destructive) {
-                                    showDeleteConfirm = true
-                                } label: {
-                                    Label(LocalizedStrings.accountDelete, systemImage: "trash")
-                                }
-                            } label: {
-                                Circle()
-                                    .fill(Color.white.opacity(0.10))
-                                    .frame(width: 45, height: 45)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.white.opacity(0.22), lineWidth: 1)
-                                    )
-                                    .overlay(
-                                        Image(systemName: "person.crop.circle")
-                                            .font(.system(size: 22))
-                                            .foregroundStyle(.white)
-                                    )
-                            }
-
-                            Button {
-                                if currentPage < viewModel.phrases.count {
-                                    let phrase = viewModel.phrases[currentPage]
-                                    toggleFavorite(phrase)
-                                }
-                            } label: {
-                                Circle()
-                                    .fill(Color.white.opacity(0.10))
-                                    .frame(width: 45, height: 45)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.white.opacity(0.22), lineWidth: 1)
-                                    )
-                                    .overlay(
-                                        Image(systemName: currentPage < viewModel.phrases.count && isPhraseSaved(viewModel.phrases[currentPage]) ? "heart.fill" : "heart")
-                                            .font(.system(size: 18, weight: .semibold))
-                                            .foregroundStyle(currentPage < viewModel.phrases.count && isPhraseSaved(viewModel.phrases[currentPage]) ? .red : .white)
-                                    )
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 58)
-
                     Spacer()
+
+                    bottomNavigationBar
+                        .padding(.horizontal, 84)
+                        .padding(.bottom, 26)
                 }
                 .ignoresSafeArea()
             }
 
         }
         .toolbar(.hidden, for: .navigationBar)
-        .alert(LocalizedStrings.accountLogoutConfirmTitle, isPresented: $showLogoutConfirm) {
-            Button(LocalizedStrings.accountCancel, role: .cancel) {}
-            Button(LocalizedStrings.accountLogout, role: .destructive) {
-                Task {
-                    await sessionService.logout()
-                }
-            }
-        } message: {
-            Text(LocalizedStrings.accountLogoutConfirmMessage)
-        }
-        .alert(LocalizedStrings.accountDeleteConfirmTitle, isPresented: $showDeleteConfirm) {
-            Button(LocalizedStrings.accountCancel, role: .cancel) {}
-            Button(LocalizedStrings.accountDelete, role: .destructive) {
-                Task {
-                    do {
-                        try await sessionService.deleteAccount()
-                    } catch {
-                        accountActionError = error.localizedDescription
-                    }
-                }
-            }
-        } message: {
-            Text(LocalizedStrings.accountDeleteConfirmMessage)
-        }
-        .alert(LocalizedStrings.feedErrorTitle, isPresented: Binding(
-            get: { accountActionError != nil },
-            set: { isPresented in if !isPresented { accountActionError = nil } }
-        )) {
-            Button(LocalizedStrings.commonOk, role: .cancel) {}
-        } message: {
-            Text(accountActionError ?? "")
-        }
-        .sheet(isPresented: $showEditProfile) {
+        .fullScreenCover(isPresented: $showProfile) {
             if let token = sessionService.accessToken {
-                UserPreferencesView(accessToken: token)
+                ProfileView(
+                    accessToken: token,
+                    onClose: {
+                        showProfile = false
+                    }
+                )
             }
         }
         .sheet(isPresented: $showSavedPhrases) {
@@ -223,6 +132,14 @@ struct FeedView: View {
                     await viewModel.askAI(phrase: phrase.text, question: question)
                 }
             )
+        }
+        .alert(LocalizedStrings.feedErrorTitle, isPresented: Binding(
+            get: { accountActionError != nil },
+            set: { isPresented in if !isPresented { accountActionError = nil } }
+        )) {
+            Button(LocalizedStrings.commonOk, role: .cancel) {}
+        } message: {
+            Text(accountActionError ?? "")
         }
         .onDisappear {
             audioService.stop()
@@ -243,6 +160,80 @@ struct FeedView: View {
             viewModel.prefetchBackgrounds(around: newPage)
         }
     }
+    }
+
+    private var bottomNavigationBar: some View {
+        HStack(spacing: 0) {
+            navItem(
+                title: "FEED",
+                systemImage: "newspaper.fill",
+                isActive: true,
+                action: {}
+            )
+
+            navItem(
+                title: "SAVED",
+                systemImage: "bookmark.fill",
+                isActive: false,
+                action: {
+                    showSavedPhrases = true
+                }
+            )
+
+            Button {
+                showProfile = true
+            } label: {
+                navItemLabel(
+                    title: "PROFILE",
+                    systemImage: "person.fill",
+                    isActive: false
+                )
+            }
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
+        .background(
+            Capsule()
+                .fill(Color(red: 0.05, green: 0.12, blue: 0.23).opacity(0.86))
+        )
+        .overlay {
+            Capsule()
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        }
+        .shadow(color: Color.black.opacity(0.20), radius: 18, x: 0, y: 12)
+    }
+
+    private func navItem(
+        title: String,
+        systemImage: String,
+        isActive: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            navItemLabel(title: title, systemImage: systemImage, isActive: isActive)
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+    }
+
+    private func navItemLabel(
+        title: String,
+        systemImage: String,
+        isActive: Bool
+    ) -> some View {
+        VStack(spacing: 0) {
+            Image(systemName: systemImage)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(
+                    isActive
+                    ? Color(red: 0.19, green: 0.84, blue: 0.98)
+                    : Color(red: 0.46, green: 0.52, blue: 0.65)
+                )
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 30)
     }
 
     private var feedPages: [AnyView] {
@@ -432,8 +423,19 @@ struct VerticalPageView<Page: View>: UIViewControllerRepresentable {
             transitionStyle: .scroll,
             navigationOrientation: .vertical
         )
+        controller.view.backgroundColor = .clear
+        controller.view.isOpaque = false
+        controller.view.insetsLayoutMarginsFromSafeArea = false
+        controller.additionalSafeAreaInsets = .zero
         controller.dataSource = context.coordinator
         controller.delegate = context.coordinator
+        for subview in controller.view.subviews {
+            if let scrollView = subview as? UIScrollView {
+                scrollView.backgroundColor = .clear
+                scrollView.isOpaque = false
+                scrollView.contentInsetAdjustmentBehavior = .never
+            }
+        }
         if !context.coordinator.controllers.isEmpty {
             controller.setViewControllers(
                 [context.coordinator.controllers[currentPage]],
@@ -473,21 +475,33 @@ struct VerticalPageView<Page: View>: UIViewControllerRepresentable {
         
         init(_ parent: VerticalPageView) {
             self.parent = parent
-            self.controllers = parent.pages.map { UIHostingController(rootView: $0) }
+            self.controllers = parent.pages.map { Self.makeHostingController(rootView: $0) }
             self.currentPage = parent.currentPage
         }
         
         func updateControllers(with pages: [Page]) {
             if controllers.count != pages.count {
-                controllers = pages.map { UIHostingController(rootView: $0) }
+                controllers = pages.map { Self.makeHostingController(rootView: $0) }
                 return
             }
             
             for index in pages.indices {
                 if let hosting = controllers[index] as? UIHostingController<Page> {
                     hosting.rootView = pages[index]
+                    hosting.view.backgroundColor = .clear
                 }
             }
+        }
+
+        private static func makeHostingController(rootView: Page) -> UIViewController {
+            let hosting = UIHostingController(rootView: rootView)
+            hosting.view.backgroundColor = .clear
+            hosting.view.isOpaque = false
+            hosting.additionalSafeAreaInsets = .zero
+            if #available(iOS 16.4, *) {
+                hosting.safeAreaRegions = []
+            }
+            return hosting
         }
         
         func pageViewController(

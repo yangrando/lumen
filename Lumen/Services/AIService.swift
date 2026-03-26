@@ -250,7 +250,7 @@ class AIService {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        request.timeoutInterval = 45
+        request.timeoutInterval = 90
         
         logger.logAPIRequest(url: baseURL, method: "POST")
         

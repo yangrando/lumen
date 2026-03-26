@@ -57,7 +57,11 @@ final class SpeechToTextService: NSObject, ObservableObject {
 
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.record, mode: .measurement, options: [.duckOthers])
+            try session.setCategory(
+                .playAndRecord,
+                mode: .measurement,
+                options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers]
+            )
             try session.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             errorMessage = error.localizedDescription

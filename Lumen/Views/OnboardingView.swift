@@ -1,6 +1,11 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    private enum PendingSignup {
+        case email(name: String?, email: String, password: String)
+        case social(provider: AuthProvider, idToken: String)
+    }
+
     enum OnboardingStep {
         case welcome
         case manualSignUp
@@ -21,6 +26,7 @@ struct OnboardingView: View {
     @State private var authErrorMessage: String? = nil
     @State private var authAlertMessage: String? = nil
     @State private var manualAuthMode: WelcomeView.AuthMode = .signUp
+    @State private var pendingSignup: PendingSignup?
 
     @StateObject private var sessionService = SessionService.shared
 
@@ -32,14 +38,14 @@ struct OnboardingView: View {
                 WelcomeView(
                     isLoading: isAuthenticating,
                     errorMessage: authErrorMessage,
-                    onContinueWithApple: {
+                    onContinueWithApple: { mode in
                         Task {
-                            await authenticate(with: .apple)
+                            await authenticate(with: .apple, mode: mode)
                         }
                     },
-                    onContinueWithGoogle: {
+                    onContinueWithGoogle: { mode in
                         Task {
-                            await authenticate(with: .google)
+                            await authenticate(with: .google, mode: mode)
                         }
                     },
                     onContinueWithEmail: { mode in
@@ -59,10 +65,15 @@ struct OnboardingView: View {
                     }
                 )
             case .levelSelection:
-                LevelSelectionView(onContinue: { level in
-                    selectedLevel = level
-                    currentStep = .interests
-                })
+                LevelSelectionView(
+                    onBack: {
+                        currentStep = .nativeLanguage
+                    },
+                    onContinue: { level in
+                        selectedLevel = level
+                        currentStep = .interests
+                    }
+                )
             case .nativeLanguage:
                 NativeLanguageSelectionView(
                     selectedLanguage: selectedNativeLanguage,
@@ -72,24 +83,33 @@ struct OnboardingView: View {
                     }
                 )
             case .interests:
-                InterestsView(onContinue: { interests in
-                    selectedInterests = interests
-                    currentStep = .objectives
-                })
-            case .objectives:
-                ObjectivesView(onContinue: { objectives in
-                    selectedObjectives = objectives
-                    currentStep = .completion
-                    Task {
-                        await persistOnboardingPreferences()
+                InterestsView(
+                    onBack: {
+                        currentStep = .levelSelection
+                    },
+                    onContinue: { interests in
+                        selectedInterests = interests
+                        currentStep = .objectives
                     }
-                })
+                )
+            case .objectives:
+                ObjectivesView(
+                    onBack: {
+                        currentStep = .interests
+                    },
+                    onContinue: { objectives in
+                        selectedObjectives = objectives
+                        currentStep = .completion
+                        Task {
+                            await persistOnboardingPreferences()
+                        }
+                    }
+                )
             case .completion:
                 OnboardingCompletionView(onStart: {
-                    if let userID = sessionService.currentUser?.sub {
-                        sessionService.markOnboardingCompleted(for: userID)
+                    Task {
+                        await finalizeOnboardingFlow()
                     }
-                    currentStep = .feed
                 })
             case .feed:
                 ContentView()
@@ -133,19 +153,24 @@ struct OnboardingView: View {
         }
     }
 
-    private func authenticate(with provider: AuthProvider) async {
+    private func authenticate(with provider: AuthProvider, mode: WelcomeView.AuthMode) async {
         isAuthenticating = true
         authErrorMessage = nil
         authAlertMessage = nil
 
         do {
             let idToken = try await SocialAuthService.shared.fetchIDToken(for: provider)
-            let authResponse = try await AuthService.shared.login(provider: provider, idToken: idToken)
-            sessionService.saveSession(accessToken: authResponse.access_token, user: authResponse.user)
-            if await shouldSkipOnboarding(for: authResponse.user, accessToken: authResponse.access_token) {
-                currentStep = .feed
-            } else {
+            if mode == .signUp {
+                pendingSignup = .social(provider: provider, idToken: idToken)
                 currentStep = .nativeLanguage
+            } else {
+                let authResponse = try await AuthService.shared.login(provider: provider, idToken: idToken)
+                sessionService.saveSession(accessToken: authResponse.access_token, user: authResponse.user)
+                if await shouldSkipOnboarding(for: authResponse.user, accessToken: authResponse.access_token) {
+                    currentStep = .feed
+                } else {
+                    currentStep = .nativeLanguage
+                }
             }
         } catch SocialAuthError.userCancelled {
             sessionService.clearSession()
@@ -183,19 +208,50 @@ struct OnboardingView: View {
         isAuthenticating = true
         defer { isAuthenticating = false }
 
-        let authResponse: AuthResponse
         switch mode {
         case .signIn:
-            authResponse = try await AuthService.shared.loginWithEmail(email: email, password: password)
+            let authResponse = try await AuthService.shared.loginWithEmail(email: email, password: password)
+            sessionService.saveSession(accessToken: authResponse.access_token, user: authResponse.user)
+            if await shouldSkipOnboarding(for: authResponse.user, accessToken: authResponse.access_token) {
+                currentStep = .feed
+            } else {
+                currentStep = .nativeLanguage
+            }
         case .signUp:
-            authResponse = try await AuthService.shared.signUpWithEmail(name: name, email: email, password: password)
-        }
-
-        sessionService.saveSession(accessToken: authResponse.access_token, user: authResponse.user)
-        if await shouldSkipOnboarding(for: authResponse.user, accessToken: authResponse.access_token) {
-            currentStep = .feed
-        } else {
+            pendingSignup = .email(name: name, email: email, password: password)
             currentStep = .nativeLanguage
+        }
+    }
+
+    private func finalizeOnboardingFlow() async {
+        isAuthenticating = true
+        authErrorMessage = nil
+        authAlertMessage = nil
+        defer { isAuthenticating = false }
+
+        do {
+            if let pendingSignup {
+                let authResponse: AuthResponse
+                switch pendingSignup {
+                case let .email(name, email, password):
+                    authResponse = try await AuthService.shared.signUpWithEmail(name: name, email: email, password: password)
+                case let .social(provider, idToken):
+                    authResponse = try await AuthService.shared.login(provider: provider, idToken: idToken)
+                }
+
+                sessionService.saveSession(accessToken: authResponse.access_token, user: authResponse.user)
+                self.pendingSignup = nil
+            }
+
+            await persistOnboardingPreferences()
+
+            if let userID = sessionService.currentUser?.sub {
+                sessionService.markOnboardingCompleted(for: userID)
+            }
+            currentStep = .feed
+        } catch {
+            sessionService.clearSession()
+            authAlertMessage = localizedAuthErrorMessage(for: error)
         }
     }
 

@@ -58,6 +58,18 @@
 "objectives.title" = "What are your goals?";
 "objectives.description" = "Select what you want to achieve with English";
 "objectives.complete.button" = "Complete Setup";
+"objectives.primary.title" = "What is your main goal?";
+"objectives.primary.description" = "This will help our AI choose the best phrases for you.";
+"objective.business.communication" = "Improve for work and career";
+"objective.travel.confidence" = "Prepare for international travel";
+"objective.understand.movies" = "Consume media (movies, series)";
+"objective.expand.vocabulary" = "Expand vocabulary";
+"objective.pass.exams" = "Prepare for proficiency exams";
+"objective.improve.speaking" = "Improve speaking";
+"objective.daily.conversation" = "Daily conversation";
+"objective.improve.accent" = "Improve accent";
+"objective.reading.comprehension" = "Improve reading comprehension";
+"objective.writing.skills" = "Develop writing skills";
 
 // MARK: - Completion Screen (Module 5)
 "completion.title" = "You're all set!";

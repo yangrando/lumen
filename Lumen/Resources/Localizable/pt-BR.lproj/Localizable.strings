@@ -55,6 +55,18 @@
 "objectives.title" = "Quais são seus objetivos?";
 "objectives.description" = "Selecione o que você quer alcançar com o inglês";
 "objectives.complete.button" = "Completar Configuração";
+"objectives.primary.title" = "Qual e o seu principal objetivo?";
+"objectives.primary.description" = "Isso vai ajudar nossa IA a selecionar as melhores frases para voce.";
+"objective.business.communication" = "Melhorar para o trabalho e carreira";
+"objective.travel.confidence" = "Me preparar para viagem internacional";
+"objective.understand.movies" = "Consumir midia (filmes, series)";
+"objective.expand.vocabulary" = "Expandir vocabulario";
+"objective.pass.exams" = "Preparar para exames de proficiencia";
+"objective.improve.speaking" = "Aprimorar a fala";
+"objective.daily.conversation" = "Conversacao do dia a dia";
+"objective.improve.accent" = "Melhorar o sotaque";
+"objective.reading.comprehension" = "Melhorar a compreensao de leitura";
+"objective.writing.skills" = "Desenvolver escrita";
 
 // MARK: - Completion Screen (Module 5)
 "completion.title" = "Tudo pronto!";

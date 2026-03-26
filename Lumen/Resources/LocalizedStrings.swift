@@ -43,6 +43,18 @@ struct LocalizedStrings {
     static var objectivesTitle: String { NSLocalizedString("objectives.title", comment: "") }
     static var objectivesDescription: String { NSLocalizedString("objectives.description", comment: "") }
     static var objectivesCompleteButton: String { NSLocalizedString("objectives.complete.button", comment: "") }
+    static var objectivesPrimaryTitle: String { NSLocalizedString("objectives.primary.title", comment: "") }
+    static var objectivesPrimaryDescription: String { NSLocalizedString("objectives.primary.description", comment: "") }
+    static var objectiveBusinessCommunication: String { NSLocalizedString("objective.business.communication", comment: "") }
+    static var objectiveTravelConfidence: String { NSLocalizedString("objective.travel.confidence", comment: "") }
+    static var objectiveUnderstandMovies: String { NSLocalizedString("objective.understand.movies", comment: "") }
+    static var objectiveExpandVocabulary: String { NSLocalizedString("objective.expand.vocabulary", comment: "") }
+    static var objectivePassExams: String { NSLocalizedString("objective.pass.exams", comment: "") }
+    static var objectiveImproveSpeaking: String { NSLocalizedString("objective.improve.speaking", comment: "") }
+    static var objectiveDailyConversation: String { NSLocalizedString("objective.daily.conversation", comment: "") }
+    static var objectiveImproveAccent: String { NSLocalizedString("objective.improve.accent", comment: "") }
+    static var objectiveReadingComprehension: String { NSLocalizedString("objective.reading.comprehension", comment: "") }
+    static var objectiveWritingSkills: String { NSLocalizedString("objective.writing.skills", comment: "") }
     
     static var completionTitle: String { NSLocalizedString("completion.title", comment: "") }
     static var completionDescription: String { NSLocalizedString("completion.description", comment: "") }

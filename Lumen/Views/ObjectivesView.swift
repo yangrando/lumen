@@ -1,53 +1,22 @@
-//
-//  ObjectivesView.swift
-//  Lumen
-//
-//  Created by Yan Felipe Grando on 29/12/25.
-//
-
 import SwiftUI
 
 struct ObjectivesView: View {
-    
-    // State to track selected objectives
     @State private var selectedObjectives: Set<LearningObjective> = []
-    
-    // Action to complete onboarding
+
+    let onBack: () -> Void
     let onContinue: ([LearningObjective]) -> Void
-    
-    // Grid layout configuration
-    let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
-    
+
     var body: some View {
-        ZStack {
-            // Background
+        ZStack(alignment: .bottom) {
             LumenColors.navyDark
                 .ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                // Header
-                VStack(spacing: 12) {
-                    Text(LocalizedStrings.objectivesTitle)
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(.white)
-                    
-                    Text(LocalizedStrings.objectivesDescription)
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundStyle(LumenColors.textSecondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 40)
-                .padding(.bottom, 30)
-                
-                // Grid of objectives
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: 12) {
-                        ForEach(LearningObjective.allCases) { objective in
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 22) {
+                    header
+
+                    VStack(spacing: 14) {
+                        ForEach(orderedObjectives) { objective in
                             ObjectiveCard(
                                 objective: objective,
                                 isSelected: selectedObjectives.contains(objective),
@@ -61,38 +30,96 @@ struct ObjectivesView: View {
                             )
                         }
                     }
-                    .padding(.horizontal, 24)
+
+                    Color.clear
+                        .frame(height: 120)
                 }
-                
-                Spacer()
-                
-                // Continue button
-                VStack(spacing: 12) {
-                    Button(action: {
-                        let selectedArray = Array(selectedObjectives).sorted { $0.rawValue < $1.rawValue }
-                        onContinue(selectedArray)
-                    }) {
-                        Text(LocalizedStrings.objectivesCompleteButton)
-                            .font(.system(size: 16, weight: .semibold))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .foregroundStyle(.white)
-                            .background(
-                                !selectedObjectives.isEmpty ?
-                                LinearGradient.primaryGradient :
-                                    LinearGradient(gradient: Gradient(colors: [
-                                        LumenColors.navyLight,
-                                        LumenColors.navyLight
-                                    ]), startPoint: .leading, endPoint: .trailing)
-                            )
-                            .clipShape(Capsule())
-                    }
-                    .disabled(selectedObjectives.isEmpty)
-                    .opacity(selectedObjectives.isEmpty ? 0.5 : 1.0)
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 40)
+                .padding(.horizontal, 16)
+                .padding(.top, 28)
+                .padding(.bottom, 20)
             }
+
+            bottomAction
+        }
+        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Button(action: onBack) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+            }
+
+            Text(LocalizedStrings.objectivesPrimaryTitle)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.leading)
+
+            Text(LocalizedStrings.objectivesPrimaryDescription)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(LumenColors.textSecondary)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
+
+    private var bottomAction: some View {
+        VStack(spacing: 0) {
+            Rectangle()
+                .fill(Color.white.opacity(0.06))
+                .frame(height: 1)
+
+            VStack(spacing: 14) {
+                Button(action: {
+                    let selectedArray = Array(selectedObjectives).sorted { $0.rawValue < $1.rawValue }
+                    onContinue(selectedArray)
+                }) {
+                    Text(LocalizedStrings.interestsContinueButton)
+                        .font(.system(size: 17, weight: .bold))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .foregroundStyle(.white)
+                        .background(
+                            selectedObjectives.isEmpty
+                            ? LinearGradient(
+                                colors: [LumenColors.navyLight, LumenColors.navyLight],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                            : LinearGradient.primaryGradient
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(selectedObjectives.isEmpty)
+                .opacity(selectedObjectives.isEmpty ? 0.55 : 1)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 22)
+            .background(LumenColors.navyDark)
+        }
+    }
+
+    private var orderedObjectives: [LearningObjective] {
+        [
+            .businessCommunication,
+            .travelConfidence,
+            .understandMovies,
+            .expandVocabulary,
+            .passExams,
+            .improveSpeaking,
+            .dailyConversation,
+            .improveAccent,
+            .readingComprehension,
+            .writingSkills
+        ]
+    }
+}
+
+#Preview {
+    ObjectivesView(onBack: {}, onContinue: { _ in })
 }

@@ -8,8 +8,8 @@ struct WelcomeView: View {
 
     let isLoading: Bool
     let errorMessage: String?
-    let onContinueWithApple: () -> Void
-    let onContinueWithGoogle: () -> Void
+    let onContinueWithApple: (AuthMode) -> Void
+    let onContinueWithGoogle: (AuthMode) -> Void
     let onContinueWithEmail: (AuthMode) -> Void
     @State private var authMode: AuthMode = .signUp
 
@@ -71,14 +71,18 @@ struct WelcomeView: View {
                     GlassButton(
                         title: appleButtonTitle,
                         icon: "apple.logo",
-                        action: onContinueWithApple
+                        action: {
+                            onContinueWithApple(authMode)
+                        }
                     )
                     .disabled(isLoading)
 
                     GlassButton(
                         title: googleButtonTitle,
                         icon: "globe",
-                        action: onContinueWithGoogle
+                        action: {
+                            onContinueWithGoogle(authMode)
+                        }
                     )
                     .disabled(isLoading)
 
