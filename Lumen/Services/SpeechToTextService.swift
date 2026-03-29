@@ -5,6 +5,12 @@ import Combine
 
 @MainActor
 final class SpeechToTextService: NSObject, ObservableObject {
+    enum ToggleResult {
+        case started
+        case stopped
+        case failed
+    }
+
     @Published var transcript: String = ""
     @Published var isRecording = false
     @Published var errorMessage: String?
@@ -17,11 +23,12 @@ final class SpeechToTextService: NSObject, ObservableObject {
         SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     }
 
-    func toggleRecording() async {
+    func toggleRecording() async -> ToggleResult {
         if isRecording {
             stopRecording()
+            return .stopped
         } else {
-            await startRecording()
+            return await startRecording()
         }
     }
 
@@ -35,17 +42,17 @@ final class SpeechToTextService: NSObject, ObservableObject {
         isRecording = false
     }
 
-    private func startRecording() async {
+    private func startRecording() async -> ToggleResult {
         errorMessage = nil
 
         guard await requestPermissions() else {
             errorMessage = LocalizedStrings.askAIAudioPermissionDenied
-            return
+            return .failed
         }
 
         guard let recognizer = speechRecognizer, recognizer.isAvailable else {
             errorMessage = LocalizedStrings.askAISpeechUnavailable
-            return
+            return .failed
         }
 
         stopRecording()
@@ -65,7 +72,7 @@ final class SpeechToTextService: NSObject, ObservableObject {
             try session.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             errorMessage = error.localizedDescription
-            return
+            return .failed
         }
 
         let inputNode = audioEngine.inputNode
@@ -81,7 +88,7 @@ final class SpeechToTextService: NSObject, ObservableObject {
             try audioEngine.start()
         } catch {
             errorMessage = error.localizedDescription
-            return
+            return .failed
         }
 
         isRecording = true
@@ -100,6 +107,7 @@ final class SpeechToTextService: NSObject, ObservableObject {
                 }
             }
         }
+        return .started
     }
 
     private func requestPermissions() async -> Bool {

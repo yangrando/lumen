@@ -19,13 +19,13 @@ struct OnboardingView: View {
     
     @State private var currentStep: OnboardingStep = .welcome
     @State private var selectedLevel: EnglishLevel? = nil
-    @State private var selectedNativeLanguage: String = "Portuguese (Brazil)"
+    @State private var selectedNativeLanguage: String = ""
     @State private var selectedInterests: [UserInterest] = []
     @State private var selectedObjectives: [LearningObjective] = []
     @State private var isAuthenticating = false
     @State private var authErrorMessage: String? = nil
     @State private var authAlertMessage: String? = nil
-    @State private var manualAuthMode: WelcomeView.AuthMode = .signUp
+    @State private var manualAuthMode: WelcomeViewMode = .signUp
     @State private var pendingSignup: PendingSignup?
 
     @StateObject private var sessionService = SessionService.shared
@@ -38,6 +38,27 @@ struct OnboardingView: View {
                 WelcomeView(
                     isLoading: isAuthenticating,
                     errorMessage: authErrorMessage,
+                    onCreateAccount: {
+                        manualAuthMode = .signUp
+                        authErrorMessage = nil
+                        currentStep = .manualSignUp
+                    },
+                    onSignIn: {
+                        manualAuthMode = .signIn
+                        authErrorMessage = nil
+                        currentStep = .manualSignUp
+                    }
+                )
+            case .manualSignUp:
+                ManualSignUpView(
+                    mode: manualAuthMode,
+                    isLoading: isAuthenticating,
+                    onBack: {
+                        currentStep = .welcome
+                    },
+                    onToggleMode: { mode in
+                        manualAuthMode = mode
+                    },
                     onContinueWithApple: { mode in
                         Task {
                             await authenticate(with: .apple, mode: mode)
@@ -47,18 +68,6 @@ struct OnboardingView: View {
                         Task {
                             await authenticate(with: .google, mode: mode)
                         }
-                    },
-                    onContinueWithEmail: { mode in
-                        manualAuthMode = mode
-                        authErrorMessage = nil
-                        currentStep = .manualSignUp
-                    }
-                )
-            case .manualSignUp:
-                ManualSignUpView(
-                    mode: manualAuthMode,
-                    onBack: {
-                        currentStep = .welcome
                     },
                     onAuthenticate: { name, email, password, mode in
                         try await authenticateWithEmail(name: name, email: email, password: password, mode: mode)
@@ -77,6 +86,9 @@ struct OnboardingView: View {
             case .nativeLanguage:
                 NativeLanguageSelectionView(
                     selectedLanguage: selectedNativeLanguage,
+                    onBack: {
+                        currentStep = .manualSignUp
+                    },
                     onContinue: { language in
                         selectedNativeLanguage = language
                         currentStep = .levelSelection
@@ -100,9 +112,6 @@ struct OnboardingView: View {
                     onContinue: { objectives in
                         selectedObjectives = objectives
                         currentStep = .completion
-                        Task {
-                            await persistOnboardingPreferences()
-                        }
                     }
                 )
             case .completion:
@@ -153,7 +162,7 @@ struct OnboardingView: View {
         }
     }
 
-    private func authenticate(with provider: AuthProvider, mode: WelcomeView.AuthMode) async {
+    private func authenticate(with provider: AuthProvider, mode: WelcomeViewMode) async {
         isAuthenticating = true
         authErrorMessage = nil
         authAlertMessage = nil
@@ -204,7 +213,7 @@ struct OnboardingView: View {
         return LocalizedStrings.authLoginFailed
     }
 
-    private func authenticateWithEmail(name: String?, email: String, password: String, mode: WelcomeView.AuthMode) async throws {
+    private func authenticateWithEmail(name: String?, email: String, password: String, mode: WelcomeViewMode) async throws {
         isAuthenticating = true
         defer { isAuthenticating = false }
 
@@ -248,6 +257,7 @@ struct OnboardingView: View {
             if let userID = sessionService.currentUser?.sub {
                 sessionService.markOnboardingCompleted(for: userID)
             }
+            sessionService.markJustCompletedOnboarding()
             currentStep = .feed
         } catch {
             sessionService.clearSession()

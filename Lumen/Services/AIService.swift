@@ -63,6 +63,7 @@ class AIService {
             task: "generate_phrases",
             meta: [
                 "count": count,
+                "cefr_level": level,
                 "native_language": nativeLanguage,
                 "enforce_translation_language": true,
                 "min_words_per_card": minWordsPerCard,
@@ -186,7 +187,7 @@ class AIService {
         """
         
         return """
-        Generate \(count) English learning cards for someone at \(level) level.
+        Generate \(count) English learning cards for someone at CEFR \(level) level.
 
         User Interests: \(interestsStr)
         Learning Objectives: \(objectivesStr)
@@ -211,7 +212,7 @@ class AIService {
         1. The English text (natural and useful; follow the target length/structure above)
         2. Translation in \(nativeLanguage)
         3. Category (e.g., "Business", "Technology", "History", "Science", "Travel", "Culture")
-        4. Difficulty level (Beginner, Elementary, Intermediate, Upper-Intermediate, Advanced)
+        4. Difficulty level (must exactly match the CEFR input level: \(level))
         
         Format your response as a JSON array with objects containing EXACTLY these keys:
         - "text": the English phrase
@@ -227,7 +228,7 @@ class AIService {
                 "text": "How are you doing today?",
                 "translation": "Como você está hoje?",
                 "category": "Greetings",
-                "difficulty": "Beginner"
+                "difficulty": "\(level)"
             }
         ]
         """
@@ -343,7 +344,7 @@ class AIService {
         
         let phrases = phraseResponses.map { phraseResponse in
             // Convert String difficulty to DifficultyLevel enum
-            let difficultyLevel = DifficultyLevel(rawValue: phraseResponse.difficulty) ?? .beginner
+            let difficultyLevel = DifficultyLevel(label: phraseResponse.difficulty)
             
             return EnglishPhrase(
                 text: phraseResponse.text,

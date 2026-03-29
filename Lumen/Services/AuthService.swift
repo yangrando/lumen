@@ -72,6 +72,7 @@ final class AuthService {
     static let shared = AuthService()
 
     private let logger = Logger.shared
+    private let cachedPreferencesPrefix = "lumen_cached_preferences_"
 
     private var apiBaseURL: URL? {
         guard let raw = Bundle.main.object(forInfoDictionaryKey: "AI_BASE_URL") as? String,
@@ -227,7 +228,10 @@ final class AuthService {
             throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Failed to load preferences")
         }
 
-        return try JSONDecoder().decode(UserPreferencesResponse.self, from: data).preferences
+        let preferences = try JSONDecoder().decode(UserPreferencesResponse.self, from: data).preferences
+        cachePreferences(preferences)
+        NativeLanguageLocalization.savePreferredNativeLanguage(preferences.nativeLanguage)
+        return preferences
     }
 
     func updateCurrentUserPreferences(accessToken: String, preferences: UserPreferences) async throws -> UserPreferences {
@@ -254,7 +258,24 @@ final class AuthService {
             throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Failed to save preferences")
         }
 
-        return try JSONDecoder().decode(UserPreferencesResponse.self, from: data).preferences
+        let saved = try JSONDecoder().decode(UserPreferencesResponse.self, from: data).preferences
+        cachePreferences(saved)
+        NativeLanguageLocalization.savePreferredNativeLanguage(saved.nativeLanguage)
+        return saved
+    }
+
+    func cachedPreferences(for userID: String?) -> UserPreferences? {
+        guard let userID, !userID.isEmpty else { return nil }
+        guard let data = UserDefaults.standard.data(forKey: cachedPreferencesPrefix + userID) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(UserPreferences.self, from: data)
+    }
+
+    private func cachePreferences(_ preferences: UserPreferences) {
+        guard let userID = SessionService.shared.currentUser?.sub, !userID.isEmpty else { return }
+        guard let data = try? JSONEncoder().encode(preferences) else { return }
+        UserDefaults.standard.set(data, forKey: cachedPreferencesPrefix + userID)
     }
 
     private static func extractBackendErrorDetail(from data: Data) -> String? {

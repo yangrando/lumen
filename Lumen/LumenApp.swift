@@ -12,6 +12,7 @@ import GoogleSignIn
 @main
 struct LumenApp: App {
     @State private var showSplash = true
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -33,7 +34,15 @@ struct LumenApp: App {
             .onOpenURL { url in
                 _ = SocialAuthService.shared.handleGoogleOpenURL(url)
             }
+            .task {
+                await TrackingService.shared.flushIfNeeded(force: true)
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                Task {
+                    await TrackingService.shared.handleScenePhaseChange(newPhase)
+                }
+            }
         }
-        .modelContainer(for: [FavoritePhrase.self])
+        .modelContainer(for: [FavoritePhrase.self, SavedWord.self])
     }
 }

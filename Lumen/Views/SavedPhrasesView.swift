@@ -4,9 +4,9 @@ import SwiftData
 struct SavedPhrasesView: View {
     enum DifficultyFilter: String, CaseIterable, Identifiable {
         case all = "All"
-        case beginner = "Beginner"
-        case intermediate = "Intermediate"
-        case advanced = "Advanced"
+        case basic = "A1-A2"
+        case independent = "B1-B2"
+        case proficient = "C1-C2"
 
         var id: String { rawValue }
     }
@@ -14,30 +14,43 @@ struct SavedPhrasesView: View {
     @Query(sort: \FavoritePhrase.dateSaved, order: .reverse) private var favorites: [FavoritePhrase]
     @Environment(\.modelContext) private var modelContext
     @ObservedObject private var audioService = AudioService.shared
+    @StateObject private var sessionService = SessionService.shared
     @State private var selectedCategory = "All"
     @State private var selectedDifficulty: DifficultyFilter = .all
     @State private var searchText = ""
+    @State private var feedbackMessage: AppFeedbackMessage?
 
     init() {}
 
+    private var currentUserID: String? {
+        sessionService.currentUser?.sub
+    }
+
+    private var scopedFavorites: [FavoritePhrase] {
+        guard let currentUserID else {
+            return favorites.filter { $0.userID == nil }
+        }
+        return favorites.filter { $0.userID == currentUserID }
+    }
+
     private var categories: [String] {
-        let dynamic = Set(favorites.map(\.category).filter { !$0.isEmpty })
+        let dynamic = Set(scopedFavorites.map(\.category).filter { !$0.isEmpty })
         return ["All"] + dynamic.sorted()
     }
 
     private var filteredPhrases: [FavoritePhrase] {
-        favorites.filter { phrase in
+        scopedFavorites.filter { phrase in
             let categoryMatch = selectedCategory == "All" || phrase.category == selectedCategory
             let difficultyMatch: Bool
             switch selectedDifficulty {
             case .all:
                 difficultyMatch = true
-            case .beginner:
-                difficultyMatch = ["beginner", "elementary"].contains(phrase.difficulty.lowercased())
-            case .intermediate:
-                difficultyMatch = ["intermediate", "upper-intermediate", "upperintermediate"].contains(phrase.difficulty.lowercased())
-            case .advanced:
-                difficultyMatch = phrase.difficulty.lowercased() == "advanced"
+            case .basic:
+                difficultyMatch = ["a1", "a2", "beginner", "elementary"].contains(phrase.difficulty.lowercased())
+            case .independent:
+                difficultyMatch = ["b1", "b2", "intermediate", "upper-intermediate", "upperintermediate"].contains(phrase.difficulty.lowercased())
+            case .proficient:
+                difficultyMatch = ["c1", "c2", "advanced", "proficient"].contains(phrase.difficulty.lowercased())
             }
 
             let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -131,9 +144,20 @@ struct SavedPhrasesView: View {
         .navigationTitle(LocalizedStrings.feedSavedPhrases)
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: LocalizedStrings.librarySearchPlaceholder)
+        .onAppear {
+            Task {
+                await sessionService.ensureCurrentUserLoaded()
+                await syncSavedReels()
+                await TrackingService.shared.startSession(.review, metadata: ["source": .string("saved_phrases")])
+            }
+        }
         .onDisappear {
             audioService.stop()
+            Task {
+                await TrackingService.shared.endSession(.review, metadata: ["reason": .string("saved_phrases_closed")])
+            }
         }
+        .appFeedbackBanner($feedbackMessage)
     }
 
     private func iconName(for category: String) -> String {
@@ -154,25 +178,96 @@ struct SavedPhrasesView: View {
     }
 
     private func deletePhrases(at offsets: IndexSet) {
-        for index in offsets {
-            let phrase = filteredPhrases[index]
-            modelContext.delete(phrase)
-        }
+        Task {
+            await sessionService.ensureCurrentUserLoaded()
+            guard let userID = sessionService.currentUser?.sub else { return }
 
-        do {
-            try modelContext.save()
-        } catch {
-            print("Failed to delete phrase(s): \(error.localizedDescription)")
+            let phrasesToDelete = offsets.map { filteredPhrases[$0] }
+            for phrase in phrasesToDelete {
+                modelContext.delete(phrase)
+                await SavedReelsService.shared.enqueueUnsave(userID: userID, reelID: phrase.reelID)
+            }
+
+            do {
+                try modelContext.save()
+                await syncSavedReels()
+                await AppFeedbackPresenter.show(
+                    UserFacingMessageMapper.successFeedback(message: LocalizedStrings.savedReelsRemoved),
+                    in: $feedbackMessage
+                )
+            } catch {
+                feedbackMessage = UserFacingMessageMapper.errorFeedback(error)
+            }
         }
     }
 
     private func toggleAudio(for phrase: FavoritePhrase) {
         let phraseID = audioPhraseID(for: phrase)
+        if audioService.currentlyPlayingPhraseID != phraseID {
+            Task {
+                await TrackingService.shared.track(
+                    event: .audioPlayed,
+                    reelID: phrase.trackingReelID,
+                    sessionType: .review,
+                    metadata: ["surface": .string("saved_phrases")]
+                )
+            }
+        }
         audioService.togglePlayback(for: phraseID, text: phrase.text)
     }
 
     private func audioPhraseID(for phrase: FavoritePhrase) -> UUID {
         UUID(uuidString: UUIDv5.make(namespace: UUIDv5.namespaceDNS, name: "\(phrase.text)|\(phrase.translation)")) ?? UUID()
+    }
+
+    @MainActor
+    private func syncSavedReels() async {
+        guard let accessToken = sessionService.accessToken else { return }
+        await sessionService.ensureCurrentUserLoaded()
+        guard let userID = sessionService.currentUser?.sub else { return }
+
+        do {
+            if !SavedReelsLocalCache.hasCompletedLegacyMigration(for: userID) {
+                let legacyItems = favorites.filter { $0.userID == nil }
+                if !legacyItems.isEmpty {
+                    let migrated = try await SavedReelsService.shared.migrateLegacyFavorites(
+                        accessToken: accessToken,
+                        items: legacyItems.map {
+                            SavedReelMigrationItem(
+                                reelID: $0.reelID.isEmpty ? $0.trackingReelID : $0.reelID,
+                                text: $0.text,
+                                translation: $0.translation,
+                                category: $0.category,
+                                difficulty: $0.difficulty
+                            )
+                        }
+                    )
+                    for item in legacyItems {
+                        modelContext.delete(item)
+                    }
+                    try modelContext.save()
+                    try SavedReelsLocalCache.reconcile(modelContext: modelContext, currentUserID: userID, remoteItems: migrated)
+                }
+                SavedReelsLocalCache.markLegacyMigrationCompleted(for: userID)
+            }
+
+            await SavedReelsService.shared.flushPending(accessToken: accessToken, userID: userID)
+            let pendingSaveReelIDs = await SavedReelsService.shared.pendingSaveReelIDs(for: userID)
+            let remoteItems = try await SavedReelsService.shared.fetchSavedReels(accessToken: accessToken)
+            try SavedReelsLocalCache.reconcile(
+                modelContext: modelContext,
+                currentUserID: userID,
+                remoteItems: remoteItems,
+                preservingPendingSaveReelIDs: pendingSaveReelIDs
+            )
+        } catch {
+            Logger.shared.warning("Saved phrases sync failed: \(error.localizedDescription)")
+            feedbackMessage = AppFeedbackMessage(
+                title: LocalizedStrings.feedbackErrorTitle,
+                message: LocalizedStrings.savedReelsSyncError,
+                tone: .error
+            )
+        }
     }
 }
 

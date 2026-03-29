@@ -1,142 +1,141 @@
 import SwiftUI
 
-struct WelcomeView: View {
-    enum AuthMode {
-        case signIn
-        case signUp
-    }
+enum WelcomeViewMode {
+    case signIn
+    case signUp
+}
 
+struct WelcomeView: View {
     let isLoading: Bool
     let errorMessage: String?
-    let onContinueWithApple: (AuthMode) -> Void
-    let onContinueWithGoogle: (AuthMode) -> Void
-    let onContinueWithEmail: (AuthMode) -> Void
-    @State private var authMode: AuthMode = .signUp
+    let onCreateAccount: () -> Void
+    let onSignIn: () -> Void
 
-    private var appleButtonTitle: String {
-        authMode == .signIn ? LocalizedStrings.welcomeButtonAppleSignIn : LocalizedStrings.welcomeButtonAppleSignUp
-    }
-
-    private var googleButtonTitle: String {
-        authMode == .signIn ? LocalizedStrings.welcomeButtonGoogleSignIn : LocalizedStrings.welcomeButtonGoogleSignUp
-    }
-
-    private var emailButtonTitle: String {
-        authMode == .signIn ? LocalizedStrings.welcomeButtonEmailSignIn : LocalizedStrings.welcomeButtonEmailSignUp
-    }
-    
     var body: some View {
         ZStack {
-            LumenColors.navyDark
-                .ignoresSafeArea()
+            background
 
-            VStack(spacing: 22) {
-                VStack(spacing: 12) {
+            VStack(spacing: 0) {
+                Spacer(minLength: 36)
+
+                VStack(spacing: 18) {
                     Image("LumenLogo")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 56, height: 56)
+                        .frame(width: 88, height: 88)
+                        .shadow(color: LumenColors.gradientEnd.opacity(0.22), radius: 28, x: 0, y: 14)
 
                     Text(LocalizedStrings.appName)
-                        .font(.system(size: 24, weight: .bold))
+                        .font(.system(size: 34, weight: .bold))
                         .foregroundStyle(.white)
                 }
-                .padding(.top, 40)
 
-                VStack(spacing: 12) {
+                Spacer(minLength: 52)
+
+                VStack(spacing: 18) {
                     (
                         Text(LocalizedStrings.welcomeTitlePart1).foregroundStyle(.white)
-                        +
-                        Text(LocalizedStrings.welcomeTitlePart2).foregroundStyle(LinearGradient.primaryGradient)
+                        + Text(LocalizedStrings.welcomeTitlePart2).foregroundStyle(LinearGradient.primaryGradient)
                     )
                     .font(.system(size: 28, weight: .bold))
                     .multilineTextAlignment(.center)
 
                     Text(LocalizedStrings.welcomeDescription)
-                        .font(.system(size: 16))
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundStyle(LumenColors.textSecondary)
                         .multilineTextAlignment(.center)
-                }
-                .padding(.horizontal, 24)
-
-                HStack(spacing: 10) {
-                    modeButton(title: LocalizedStrings.welcomeModeSignIn, mode: .signIn)
-                    modeButton(title: LocalizedStrings.welcomeModeSignUp, mode: .signUp)
+                        .padding(.horizontal, 18)
                 }
                 .padding(.horizontal, 24)
 
                 Spacer()
 
-                VStack(spacing: 12) {
-                    GlassButton(
-                        title: appleButtonTitle,
-                        icon: "apple.logo",
-                        action: {
-                            onContinueWithApple(authMode)
-                        }
-                    )
+                VStack(spacing: 18) {
+                    Button(action: onCreateAccount) {
+                        Text(LocalizedStrings.welcomeModeSignUp)
+                            .font(.system(size: 18, weight: .bold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 58)
+                            .foregroundStyle(.white)
+                            .background(LinearGradient.primaryGradient)
+                            .clipShape(Capsule())
+                            .shadow(color: LumenColors.gradientEnd.opacity(0.26), radius: 22, x: 0, y: 12)
+                    }
+                    .buttonStyle(.plain)
                     .disabled(isLoading)
 
-                    GlassButton(
-                        title: googleButtonTitle,
-                        icon: "globe",
-                        action: {
-                            onContinueWithGoogle(authMode)
+                    HStack(spacing: 5) {
+                        Text("Já tem conta?")
+                            .foregroundStyle(LumenColors.textSecondary)
+                        Button("clique aqui") {
+                            onSignIn()
                         }
-                    )
-                    .disabled(isLoading)
-
-                    GradientButton(
-                        title: emailButtonTitle,
-                        icon: "envelope.fill",
-                        action: {
-                            onContinueWithEmail(authMode)
-                        }
-                    )
-                    .disabled(isLoading)
-
-                    Text(LocalizedStrings.welcomeAuthHint)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(LumenColors.textSecondary)
-                        .padding(.top, 4)
+                        .foregroundStyle(LinearGradient.primaryGradient)
+                        .fontWeight(.bold)
+                    }
+                    .font(.system(size: 16, weight: .semibold))
 
                     if isLoading {
                         ProgressView()
                             .tint(.white)
-                            .padding(.top, 4)
                     }
 
                     if let errorMessage, !errorMessage.isEmpty {
                         Text(errorMessage)
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.95))
+                            .foregroundStyle(.white.opacity(0.92))
                             .multilineTextAlignment(.center)
                             .padding(.top, 2)
                     }
+
+                    termsText
+                        .padding(.top, 18)
                 }
                 .padding(.horizontal, 24)
-                .padding(.bottom, 40)
+                .padding(.bottom, 36)
             }
         }
     }
 
-    private func modeButton(title: String, mode: AuthMode) -> some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                authMode = mode
-            }
-        } label: {
-            Text(title)
-                .font(.system(size: 14, weight: .semibold))
-                .frame(maxWidth: .infinity)
-                .frame(height: 38)
-                .foregroundStyle(authMode == mode ? .white : LumenColors.textSecondary)
-                .background(
-                    authMode == mode
-                    ? AnyShapeStyle(LinearGradient.primaryGradient)
-                    : AnyShapeStyle(Color.white.opacity(0.06))
-                )
-                .clipShape(Capsule())
+    private var background: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.03, green: 0.07, blue: 0.14),
+                    Color(red: 0.05, green: 0.09, blue: 0.16),
+                    Color(red: 0.04, green: 0.08, blue: 0.15)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            RadialGradient(
+                colors: [
+                    LumenColors.gradientEnd.opacity(0.16),
+                    .clear
+                ],
+                center: .top,
+                startRadius: 30,
+                endRadius: 360
+            )
+            .ignoresSafeArea()
         }
+    }
+
+    private var termsText: some View {
+        VStack(spacing: 6) {
+            Text(LocalizedStrings.welcomeTerms)
+                .foregroundStyle(LumenColors.textTertiary)
+
+            HStack(spacing: 4) {
+                Text(LocalizedStrings.welcomeTermsLink1)
+                Text("e")
+                Text(LocalizedStrings.welcomeTermsLink2)
+            }
+            .foregroundStyle(LumenColors.gradientStart)
+        }
+        .font(.system(size: 12, weight: .medium))
+        .multilineTextAlignment(.center)
     }
 }

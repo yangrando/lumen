@@ -1,6 +1,10 @@
 import Foundation
 
 struct LocalizedStrings {
+    private static func localized(_ key: String, fallback: String = "") -> String {
+        NativeLanguageLocalization.localizedString(forKey: key, fallback: fallback)
+    }
+
     static var appName: String { NSLocalizedString("app.name", comment: "") }
     // MARK: - Welcome Screen
     static var welcomeTitlePart1: String { NSLocalizedString("welcome.title.part1", comment: "") }
@@ -105,9 +109,41 @@ struct LocalizedStrings {
     static var accountLogoutConfirmMessage: String { NSLocalizedString("account.logout.confirm.message", comment: "") }
     static var accountDeleteConfirmTitle: String { NSLocalizedString("account.delete.confirm.title", comment: "") }
     static var accountDeleteConfirmMessage: String { NSLocalizedString("account.delete.confirm.message", comment: "") }
+    static var accountDeleteToastSuccessTitle: String { localized("account.delete.toast.success.title") }
+    static var accountDeleteToastSuccessMessage: String { localized("account.delete.toast.success.message") }
+    static var accountDeleteToastErrorTitle: String { localized("account.delete.toast.error.title") }
+    static var accountDeleteToastErrorMessage: String { localized("account.delete.toast.error.message") }
     static var feedEditProfile: String { NSLocalizedString("feed.edit.profile", comment: "") }
-    static var commonOk: String { NSLocalizedString("common.ok", comment: "") }
-    static var commonClose: String { NSLocalizedString("common.close", comment: "") }
+    static var commonOk: String { localized("common.ok") }
+    static var commonClose: String { localized("common.close") }
+    static var commonRetry: String { localized("common.retry", fallback: "Try again") }
+    static var commonErrorGeneric: String { localized("common.error.generic", fallback: "Something went wrong. Please try again.") }
+    static var commonErrorTimeout: String { localized("common.error.timeout", fallback: "The request took too long. Please try again.") }
+    static var commonErrorConnection: String { localized("common.error.connection", fallback: "Please check your connection and try again.") }
+    static var commonErrorUnauthenticated: String { localized("common.error.unauthenticated", fallback: "Please sign in again to continue.") }
+    static var feedbackSuccessTitle: String { localized("feedback.success.title", fallback: "Success") }
+    static var feedbackErrorTitle: String { localized("feedback.error.title", fallback: "Error") }
+    static var savedReelsSyncError: String { localized("saved.reels.sync.error", fallback: "We couldn't sync your saved reels right now.") }
+    static var savedReelsRemoved: String { localized("saved.reels.removed", fallback: "Reel removed from saved items.") }
+    static var savedReelsSaved: String { localized("saved.reels.saved", fallback: "Reel saved successfully.") }
+    static var reviewTodayTitle: String { localized("review.today.title", fallback: "Review Today") }
+    static var reviewTodayLoadingTitle: String { localized("review.today.loading.title", fallback: "Preparing your review queue") }
+    static var reviewTodayLoadingDescription: String { localized("review.today.loading.description", fallback: "We are selecting the most relevant items for today.") }
+    static var reviewTodayErrorTitle: String { localized("review.today.error.title", fallback: "Could not load Review Today") }
+    static var reviewTodayEmptyTitle: String { localized("review.today.empty.title", fallback: "Nothing due today") }
+    static var reviewTodayEmptyDescription: String { localized("review.today.empty.description", fallback: "Keep exploring the feed and saving useful reels. New review items will appear as your learning signals build up.") }
+    static var progressTitle: String { localized("progress.title", fallback: "Progress") }
+    static var progressLoadingTitle: String { localized("progress.loading.title", fallback: "Loading your progress") }
+    static var progressLoadingDescription: String { localized("progress.loading.description", fallback: "We are summarizing your recent study activity.") }
+    static var progressErrorTitle: String { localized("progress.error.title", fallback: "Could not load progress") }
+    static var progressEmptyTitle: String { localized("progress.empty.title", fallback: "Your progress will appear here") }
+    static var progressEmptyDescription: String { localized("progress.empty.description", fallback: "Complete a few meaningful reels, a review session, or a speaking session to start building your stats.") }
+    static var speakingMicrophoneRequired: String { localized("speaking.error.microphone.required", fallback: "Microphone access is required to practice speaking.") }
+    static var speakingRecordingStartFailed: String { localized("speaking.error.recording.start.failed", fallback: "Could not start recording.") }
+    static var speakingRecordingFinishedFailed: String { localized("speaking.error.recording.finish.failed", fallback: "Recording did not finish correctly.") }
+    static var speakingRecordBeforeSubmit: String { localized("speaking.error.record.before.submit", fallback: "Record your voice before submitting.") }
+    static var speakingRecordingTooShort: String { localized("speaking.error.recording.too.short", fallback: "That recording was too short. Try again and say the full sentence.") }
+    static var speakingRequestTimedOut: String { localized("speaking.error.timeout", fallback: "The request took too long. Try again with a shorter recording or check the connection.") }
     static var preferencesEnglishLevel: String { NSLocalizedString("preferences.english.level", comment: "") }
     static var preferencesNativeLanguage: String { NSLocalizedString("preferences.native.language", comment: "") }
     static var preferencesInterests: String { NSLocalizedString("preferences.interests", comment: "") }

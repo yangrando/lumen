@@ -3,6 +3,10 @@ import SwiftUI
 struct AskAIView: View {
     let phrase: EnglishPhrase
     let onAsk: (String) async -> String
+    let onOpen: (() -> Void)?
+    let onSubmitQuestion: ((String) -> Void)?
+    let onSpeakingStarted: (() -> Void)?
+    let onSpeakingCompleted: ((String) -> Void)?
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var speechService = SpeechToTextService()
@@ -10,6 +14,7 @@ struct AskAIView: View {
     @State private var answer = ""
     @State private var isLoading = false
     @State private var validationError: String?
+    @State private var hasReportedSpeakingCompletion = false
 
     var body: some View {
         NavigationStack {
@@ -59,7 +64,19 @@ struct AskAIView: View {
                         HStack(spacing: 10) {
                             Button {
                                 Task {
-                                    await speechService.toggleRecording()
+                                    let result = await speechService.toggleRecording()
+                                    switch result {
+                                    case .started:
+                                        hasReportedSpeakingCompletion = false
+                                        onSpeakingStarted?()
+                                    case .stopped:
+                                        if !hasReportedSpeakingCompletion {
+                                            hasReportedSpeakingCompletion = true
+                                            onSpeakingCompleted?(speechService.transcript)
+                                        }
+                                    case .failed:
+                                        break
+                                    }
                                 }
                             } label: {
                                 HStack {
@@ -123,9 +140,23 @@ struct AskAIView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                onOpen?()
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(LocalizedStrings.commonClose) {
+                        if speechService.isRecording {
+                            speechService.stopRecording()
+                            if !hasReportedSpeakingCompletion {
+                                hasReportedSpeakingCompletion = true
+                                onSpeakingCompleted?(speechService.transcript)
+                            }
+                        } else if !hasReportedSpeakingCompletion,
+                                  !speechService.transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            hasReportedSpeakingCompletion = true
+                            onSpeakingCompleted?(speechService.transcript)
+                        }
                         speechService.stopRecording()
                         dismiss()
                     }
@@ -148,11 +179,19 @@ struct AskAIView: View {
 
         validationError = nil
         isLoading = true
+        onSubmitQuestion?(trimmed)
         answer = await onAsk(trimmed)
         isLoading = false
     }
 }
 
 #Preview {
-    AskAIView(phrase: EnglishPhrase.mockPhrases[0], onAsk: { _ in "Example answer." })
+    AskAIView(
+        phrase: EnglishPhrase.mockPhrases[0],
+        onAsk: { _ in "Example answer." },
+        onOpen: nil,
+        onSubmitQuestion: nil,
+        onSpeakingStarted: nil,
+        onSpeakingCompleted: nil
+    )
 }

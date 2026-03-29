@@ -51,17 +51,12 @@ struct InterestCard: View {
 
                 Spacer()
 
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text(interest.displayTitle)
                         .font(.system(size: 17, weight: .bold))
                         .foregroundStyle(.white.opacity(isSelected ? 1 : 0.92))
                         .lineLimit(2)
                         .minimumScaleFactor(0.9)
-
-                    Text(interest.displaySubtitle)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(isSelected ? Color.white.opacity(0.72) : LumenColors.textSecondary)
-                        .lineLimit(2)
                 }
             }
             .padding(18)
@@ -137,35 +132,6 @@ private extension UserInterest {
             return "Moda"
         case .gaming:
             return "Games"
-        }
-    }
-
-    var displaySubtitle: String {
-        switch self {
-        case .entertainment:
-            return "Cultura pop"
-        case .music:
-            return "Ritmo e artistas"
-        case .travel:
-            return "Destinos e culturas"
-        case .food:
-            return "Gastronomia"
-        case .technology:
-            return "Inovacao"
-        case .science:
-            return "Descobertas"
-        case .sports:
-            return "Competicao"
-        case .business:
-            return "Carreira e mercado"
-        case .health:
-            return "Bem-estar"
-        case .art:
-            return "Criatividade"
-        case .fashion:
-            return "Estilo"
-        case .gaming:
-            return "Entretenimento digital"
         }
     }
 }

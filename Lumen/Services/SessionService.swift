@@ -7,6 +7,7 @@ final class SessionService: ObservableObject {
 
     @Published private(set) var accessToken: String?
     @Published private(set) var currentUser: AuthUser?
+    @Published var justCompletedOnboarding = false
 
     private let tokenKey = "lumen_access_token"
     private let onboardingCompletedPrefix = "lumen_onboarding_completed_"
@@ -25,10 +26,19 @@ final class SessionService: ObservableObject {
         _ = KeychainService.shared.save(accessToken, for: tokenKey)
     }
 
+    func ensureCurrentUserLoaded() async {
+        guard currentUser == nil, let token = accessToken else { return }
+        currentUser = try? await AuthService.shared.fetchCurrentUser(accessToken: token)
+    }
+
     func clearSession() {
         accessToken = nil
         currentUser = nil
+        justCompletedOnboarding = false
         KeychainService.shared.delete(tokenKey)
+        Task {
+            await TrackingService.shared.handleLogout()
+        }
     }
 
     func hasCompletedOnboarding(for userID: String) -> Bool {
@@ -37,6 +47,10 @@ final class SessionService: ObservableObject {
 
     func markOnboardingCompleted(for userID: String) {
         UserDefaults.standard.set(true, forKey: onboardingCompletedPrefix + userID)
+    }
+
+    func markJustCompletedOnboarding() {
+        justCompletedOnboarding = true
     }
 
     func logout() async {

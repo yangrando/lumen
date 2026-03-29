@@ -158,19 +158,19 @@ struct DynamicReelBackground: View {
             )
         }
         switch difficulty {
-        case .beginner, .elementary:
+        case .a1, .a2:
             return (
                 [Color(red: 0.04, green: 0.12, blue: 0.24), Color(red: 0.08, green: 0.33, blue: 0.48), Color(red: 0.20, green: 0.50, blue: 0.69)],
                 Color(red: 0.16, green: 0.84, blue: 0.95),
                 Color(red: 0.55, green: 0.50, blue: 0.99)
             )
-        case .intermediate, .upperIntermediate:
+        case .b1, .b2:
             return (
                 [Color(red: 0.04, green: 0.10, blue: 0.22), Color(red: 0.12, green: 0.22, blue: 0.42), Color(red: 0.28, green: 0.30, blue: 0.62)],
                 Color(red: 0.24, green: 0.80, blue: 0.97),
                 Color(red: 0.66, green: 0.45, blue: 0.98)
             )
-        case .advanced:
+        case .c1, .c2:
             return (
                 [Color(red: 0.03, green: 0.08, blue: 0.18), Color(red: 0.10, green: 0.18, blue: 0.34), Color(red: 0.22, green: 0.23, blue: 0.48)],
                 Color(red: 0.21, green: 0.66, blue: 0.95),

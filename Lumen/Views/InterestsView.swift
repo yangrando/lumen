@@ -13,8 +13,7 @@ struct InterestsView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            LumenColors.navyDark
-                .ignoresSafeArea()
+            onboardingBackground
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
@@ -52,13 +51,41 @@ struct InterestsView: View {
         .toolbar(.hidden, for: .navigationBar)
     }
 
+    private var onboardingBackground: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.03, green: 0.08, blue: 0.16),
+                    Color(red: 0.05, green: 0.10, blue: 0.20),
+                    Color(red: 0.04, green: 0.08, blue: 0.15)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            RadialGradient(
+                colors: [
+                    LumenColors.gradientEnd.opacity(0.18),
+                    .clear
+                ],
+                center: .top,
+                startRadius: 40,
+                endRadius: 340
+            )
+            .ignoresSafeArea()
+        }
+    }
+
     private var header: some View {
         VStack(alignment: .leading, spacing: 18) {
             Button(action: onBack) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 42, height: 42)
+                    .background(Color.white.opacity(0.06))
+                    .clipShape(Circle())
             }
 
             Text(LocalizedStrings.interestsTitle)
@@ -104,31 +131,42 @@ struct InterestsView: View {
                 .fill(Color.white.opacity(0.06))
                 .frame(height: 1)
 
-            VStack(spacing: 16) {
+            VStack(spacing: 0) {
                 Button(action: {
                     let selectedArray = Array(selectedInterests).sorted { $0.rawValue < $1.rawValue }
                     onContinue(selectedArray)
                 }) {
-                    HStack(spacing: 10) {
-                        Text(LocalizedStrings.interestsContinueButton)
-                            .font(.system(size: 17, weight: .bold))
-
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 17, weight: .bold))
-                    }
+                    Text(LocalizedStrings.interestsContinueButton)
+                        .font(.system(size: 17, weight: .bold))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 60)
+                    .frame(height: 58)
                     .foregroundStyle(.white)
-                    .background(LinearGradient.primaryGradient)
-                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    .shadow(color: LumenColors.gradientEnd.opacity(0.28), radius: 20, x: 0, y: 10)
+                    .background(
+                        selectedInterests.isEmpty
+                        ? AnyShapeStyle(Color.white.opacity(0.10))
+                        : AnyShapeStyle(LinearGradient.primaryGradient)
+                    )
+                    .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
+                .disabled(selectedInterests.isEmpty)
+                .opacity(selectedInterests.isEmpty ? 0.55 : 1.0)
             }
             .padding(.horizontal, 24)
-            .padding(.top, 18)
-            .padding(.bottom, 26)
-            .background(LumenColors.navyDark)
+            .padding(.top, 30)
+            .padding(.bottom, 15)
+            .background(
+                LinearGradient(
+                    colors: [
+                        LumenColors.navyDark.opacity(0.0),
+                        LumenColors.navyDark.opacity(0.96),
+                        LumenColors.navyDark
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea(edges: .bottom)
+            )
         }
     }
 

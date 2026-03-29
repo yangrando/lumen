@@ -6,7 +6,7 @@ struct UserPreferencesView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var currentUser: AuthUser?
-    @State private var selectedLevel: EnglishLevel = .intermediate
+    @State private var selectedLevel: EnglishLevel = .b1
     @State private var selectedNativeLanguage = "Portuguese (Brazil)"
     @State private var selectedInterests: Set<UserInterest> = []
     @State private var selectedObjectives: Set<LearningObjective> = []
@@ -45,7 +45,7 @@ struct UserPreferencesView: View {
 
     private var profileHero: some View {
         VStack(spacing: 14) {
-            ZStack(alignment: .bottomTrailing) {
+            ZStack {
                 Circle()
                     .fill(
                         RadialGradient(
@@ -61,30 +61,36 @@ struct UserPreferencesView: View {
                     )
                     .frame(width: 176, height: 176)
 
-                Circle()
-                    .fill(LumenColors.navyLight)
-                    .frame(width: 128, height: 128)
-                    .overlay {
-                        Circle()
-                            .stroke(Color.black.opacity(0.32), lineWidth: 8)
-                    }
-                    .overlay {
-                        Image(systemName: "person.crop.circle.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 94, height: 94)
-                            .foregroundStyle(.white.opacity(0.94), LumenColors.textSecondary.opacity(0.65))
-                    }
+                ZStack(alignment: .bottomTrailing) {
+                    Circle()
+                        .fill(LumenColors.navyLight)
+                        .frame(width: 128, height: 128)
+                        .overlay {
+                            Circle()
+                                .stroke(Color.black.opacity(0.32), lineWidth: 8)
+                        }
+                        .overlay {
+                            Image(systemName: "person.crop.circle.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 92, height: 92)
+                                .foregroundStyle(.white.opacity(0.94), LumenColors.textSecondary.opacity(0.65))
+                        }
 
-                Circle()
-                    .fill(Color(red: 0.10, green: 0.18, blue: 0.30))
-                    .frame(width: 40, height: 40)
-                    .overlay {
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(LumenColors.gradientStart)
-                    }
-                    .offset(x: -18, y: -10)
+                    Circle()
+                        .fill(Color(red: 0.10, green: 0.18, blue: 0.30))
+                        .frame(width: 40, height: 40)
+                        .overlay {
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(LumenColors.gradientStart)
+                        }
+                        .overlay {
+                            Circle()
+                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        }
+                        .offset(x: 6, y: 4)
+                }
             }
 
             VStack(spacing: 5) {
@@ -299,7 +305,7 @@ struct UserPreferencesView: View {
 
             let (user, preferences) = try await (userTask, preferencesTask)
             currentUser = user
-            selectedLevel = EnglishLevel(rawValue: preferences.level) ?? .intermediate
+            selectedLevel = EnglishLevel(label: preferences.level)
             selectedNativeLanguage = preferences.nativeLanguage
             selectedInterests = Set(preferences.interests.compactMap(UserInterest.init(rawValue:)))
             selectedObjectives = Set(preferences.objectives.compactMap(LearningObjective.init(rawValue:)))
@@ -339,16 +345,18 @@ struct UserPreferencesView: View {
 
     private var levelHelperText: String {
         switch selectedLevel {
-        case .beginner:
-            return "You are building confidence with essential everyday words and phrases."
-        case .elementary:
-            return "You can handle simple conversations and understand familiar topics."
-        case .intermediate:
-            return "You can understand the main points of clear input on familiar matters."
-        case .upperIntermediate:
-            return "You can communicate with more independence and discuss varied topics."
-        case .advanced:
-            return "You can express ideas fluently and understand nuanced communication."
+        case .a1:
+            return "Short, highly familiar sentences with daily vocabulary and strong contextual support."
+        case .a2:
+            return "Simple connected phrases for common situations, routines, and basic opinions."
+        case .b1:
+            return "Independent reading on familiar themes with more detail and clearer narratives."
+        case .b2:
+            return "More natural connected texts with richer ideas, contrast, and less frequent vocabulary."
+        case .c1:
+            return "Advanced texts with nuanced ideas, denser vocabulary, and more flexible grammar."
+        case .c2:
+            return "Near-native complexity with subtle tone, idioms, and culturally rich references."
         }
     }
 

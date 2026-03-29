@@ -2,14 +2,16 @@ import SwiftUI
 
 struct NativeLanguageSelectionView: View {
     let selectedLanguage: String
+    let onBack: () -> Void
     let onContinue: (String) -> Void
 
-    @State private var currentLanguage: String
+    @State private var currentLanguage: String?
 
-    init(selectedLanguage: String, onContinue: @escaping (String) -> Void) {
+    init(selectedLanguage: String, onBack: @escaping () -> Void, onContinue: @escaping (String) -> Void) {
         self.selectedLanguage = selectedLanguage
+        self.onBack = onBack
         self.onContinue = onContinue
-        _currentLanguage = State(initialValue: selectedLanguage)
+        _currentLanguage = State(initialValue: selectedLanguage.isEmpty ? nil : selectedLanguage)
     }
 
     private let languages: [String] = [
@@ -42,23 +44,33 @@ struct NativeLanguageSelectionView: View {
 
     var body: some View {
         ZStack {
-            LumenColors.navyDark
-                .ignoresSafeArea()
+            onboardingBackground
 
             VStack(spacing: 18) {
-                Text(LocalizedStrings.nativeLanguageTitle)
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundStyle(.white)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 40)
+                VStack(alignment: .leading, spacing: 18) {
+                    Button(action: onBack) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 42, height: 42)
+                            .background(Color.white.opacity(0.06))
+                            .clipShape(Circle())
+                    }
 
-                Text(LocalizedStrings.nativeLanguageDescription)
-                    .font(.system(size: 15))
-                    .foregroundStyle(LumenColors.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
+                    Text(LocalizedStrings.nativeLanguageTitle)
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.leading)
 
-                Spacer()
+                    Text(LocalizedStrings.nativeLanguageDescription)
+                        .font(.system(size: 15))
+                        .foregroundStyle(LumenColors.textSecondary)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
 
                 VStack(spacing: 10) {
                     ForEach(languages, id: \.self) { language in
@@ -82,22 +94,86 @@ struct NativeLanguageSelectionView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
 
                 Spacer()
-
-                GradientButton(
-                    title: LocalizedStrings.levelContinueButton,
-                    icon: "arrow.right",
-                    action: { onContinue(currentLanguage) }
-                )
-                .padding(.horizontal, 20)
-                .padding(.bottom, 34)
             }
+
+            VStack {
+                Spacer()
+                footer
+            }
+        }
+        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private var footer: some View {
+        VStack(spacing: 0) {
+            Button {
+                if let currentLanguage {
+                    onContinue(currentLanguage)
+                }
+            } label: {
+                Text(LocalizedStrings.levelContinueButton)
+                    .font(.system(size: 17, weight: .bold))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 58)
+                    .foregroundStyle(.white)
+                    .background(
+                        currentLanguage == nil
+                        ? AnyShapeStyle(Color.white.opacity(0.10))
+                        : AnyShapeStyle(LinearGradient.primaryGradient)
+                    )
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(currentLanguage == nil)
+            .opacity(currentLanguage == nil ? 0.55 : 1.0)
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 30)
+        .padding(.bottom, 15)
+        .background(
+            LinearGradient(
+                colors: [
+                    LumenColors.navyDark.opacity(0.0),
+                    LumenColors.navyDark.opacity(0.96),
+                    LumenColors.navyDark
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea(edges: .bottom)
+        )
+    }
+
+    private var onboardingBackground: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.03, green: 0.08, blue: 0.16),
+                    Color(red: 0.05, green: 0.10, blue: 0.20),
+                    Color(red: 0.04, green: 0.08, blue: 0.15)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            RadialGradient(
+                colors: [
+                    LumenColors.gradientEnd.opacity(0.18),
+                    .clear
+                ],
+                center: .top,
+                startRadius: 40,
+                endRadius: 340
+            )
+            .ignoresSafeArea()
         }
     }
 }
 
 #Preview {
-    NativeLanguageSelectionView(selectedLanguage: "Portuguese (Brazil)", onContinue: { _ in })
+    NativeLanguageSelectionView(selectedLanguage: "Portuguese (Brazil)", onBack: {}, onContinue: { _ in })
 }

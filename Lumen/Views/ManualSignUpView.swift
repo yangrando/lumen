@@ -1,9 +1,13 @@
 import SwiftUI
 
 struct ManualSignUpView: View {
-    let mode: WelcomeView.AuthMode
+    let mode: WelcomeViewMode
+    let isLoading: Bool
     let onBack: () -> Void
-    let onAuthenticate: (_ name: String?, _ email: String, _ password: String, _ mode: WelcomeView.AuthMode) async throws -> Void
+    let onToggleMode: (WelcomeViewMode) -> Void
+    let onContinueWithApple: (WelcomeViewMode) -> Void
+    let onContinueWithGoogle: (WelcomeViewMode) -> Void
+    let onAuthenticate: (_ name: String?, _ email: String, _ password: String, _ mode: WelcomeViewMode) async throws -> Void
 
     @State private var fullName = ""
     @State private var email = ""
@@ -16,121 +20,188 @@ struct ManualSignUpView: View {
 
     var body: some View {
         ZStack {
-            LumenColors.navyDark
-                .ignoresSafeArea()
+            LinearGradient(
+                colors: [
+                    Color(red: 0.03, green: 0.07, blue: 0.14),
+                    LumenColors.navyDark
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 24) {
                     Button(action: onBack) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "chevron.left")
-                            Text(LocalizedStrings.signupBack)
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 42, height: 42)
+                            .background(Color.white.opacity(0.06))
+                            .clipShape(Circle())
+                    }
+                    .padding(.top, 10)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(mode == .signIn ? LocalizedStrings.signinTitle : LocalizedStrings.signupTitle)
+                            .font(.system(size: 32, weight: .bold))
+                            .foregroundStyle(.white)
+
+                        Text(mode == .signIn ? LocalizedStrings.signinSubtitle : LocalizedStrings.signupSubtitle)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(LumenColors.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    VStack(spacing: 14) {
+                        if mode == .signUp {
+                            inputField(title: LocalizedStrings.signupName, text: $fullName)
                         }
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.92))
-                    }
-                    .padding(.top, 12)
 
-                    Text(mode == .signIn ? LocalizedStrings.signinTitle : LocalizedStrings.signupTitle)
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundStyle(.white)
+                        inputField(title: LocalizedStrings.signupEmail, text: $email, keyboard: .emailAddress)
+                        secureField(title: LocalizedStrings.signupPassword, text: $password, isVisible: $showPassword)
 
-                    Text(mode == .signIn ? LocalizedStrings.signinSubtitle : LocalizedStrings.signupSubtitle)
-                        .font(.system(size: 15))
-                        .foregroundStyle(LumenColors.textSecondary)
-
-                    if mode == .signUp {
-                        inputField(title: LocalizedStrings.signupName, text: $fullName)
-                    }
-                    inputField(title: LocalizedStrings.signupEmail, text: $email, keyboard: .emailAddress)
-                    secureField(
-                        title: LocalizedStrings.signupPassword,
-                        text: $password,
-                        isVisible: $showPassword
-                    )
-                    if mode == .signUp {
-                        secureField(
-                            title: LocalizedStrings.signupConfirmPassword,
-                            text: $confirmPassword,
-                            isVisible: $showConfirmPassword
-                        )
+                        if mode == .signUp {
+                            secureField(title: LocalizedStrings.signupConfirmPassword, text: $confirmPassword, isVisible: $showConfirmPassword)
+                        }
                     }
 
-                    if let errorMessage, !errorMessage.isEmpty {
+                    if let errorMessage {
                         Text(errorMessage)
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.red.opacity(0.95))
+                            .foregroundStyle(Color(red: 1.0, green: 0.62, blue: 0.62))
                     }
 
-                    GradientButton(
-                        title: mode == .signIn ? LocalizedStrings.signinButton : LocalizedStrings.signupCreateButton,
-                        icon: mode == .signIn ? "person.fill.checkmark" : "person.crop.circle.badge.plus",
-                        action: {
-                            Task {
-                                await submit()
+                    Button {
+                        Task { await submit() }
+                    } label: {
+                        HStack {
+                            if isSubmitting {
+                                ProgressView()
+                                    .tint(.white)
+                            } else {
+                                Text(mode == .signIn ? LocalizedStrings.signinButton : LocalizedStrings.signupCreateButton)
+                                    .font(.system(size: 17, weight: .bold))
                             }
                         }
-                    )
-                    .disabled(isSubmitting)
-                    .padding(.top, 4)
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 24)
-            }
-
-            if isSubmitting {
-                Color.black.opacity(0.35)
-                    .ignoresSafeArea()
-
-                VStack(spacing: 14) {
-                    ProgressView()
-                        .tint(.white)
-                        .scaleEffect(1.35)
-
-                    Text(mode == .signIn ? LocalizedStrings.signinLoading : LocalizedStrings.signupLoading)
-                        .font(.system(size: 14, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 58)
                         .foregroundStyle(.white)
+                        .background(LinearGradient.primaryGradient)
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isSubmitting || isLoading)
+
+                    VStack(spacing: 18) {
+                        socialDivider
+
+                        HStack(spacing: 14) {
+                            compactSocialButton(
+                                title: "Google",
+                                icon: "globe",
+                                action: { onContinueWithGoogle(mode) }
+                            )
+
+                            compactSocialButton(
+                                title: "Apple",
+                                icon: "apple.logo",
+                                action: { onContinueWithApple(mode) }
+                            )
+                        }
+                    }
+
+                    HStack(spacing: 5) {
+                        Text(mode == .signIn ? "Ainda não tem conta?" : "Já tem conta?")
+                            .foregroundStyle(LumenColors.textSecondary)
+                        Button(mode == .signIn ? "Criar conta" : "Entrar") {
+                            onToggleMode(mode == .signIn ? .signUp : .signIn)
+                        }
+                        .foregroundStyle(LinearGradient.primaryGradient)
+                        .fontWeight(.bold)
+                    }
+                    .font(.system(size: 15, weight: .semibold))
+                    .frame(maxWidth: .infinity, alignment: .center)
                 }
-                .frame(maxWidth: 220)
-                .padding(.vertical, 24)
-                .padding(.horizontal, 20)
-                .background(Color.white.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 18))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
             }
         }
-        .allowsHitTesting(!isSubmitting)
+        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private var socialDivider: some View {
+        HStack(spacing: 12) {
+            Rectangle()
+                .fill(Color.white.opacity(0.08))
+                .frame(height: 1)
+
+            Text("OR CONTINUE WITH")
+                .font(.system(size: 10, weight: .bold))
+                .tracking(2.1)
+                .foregroundStyle(Color.white.opacity(0.28))
+                .fixedSize()
+
+            Rectangle()
+                .fill(Color.white.opacity(0.08))
+                .frame(height: 1)
+        }
+    }
+
+    private func compactSocialButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+
+                Text(title)
+                    .font(.system(size: 14, weight: .bold))
+                    .tracking(0.6)
+                    .foregroundStyle(.white)
+
+                Spacer()
+            }
+            .padding(.horizontal, 18)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(Color.white.opacity(0.04))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(isLoading || isSubmitting)
+        .opacity((isLoading || isSubmitting) ? 0.6 : 1.0)
     }
 
     private func inputField(title: String, text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(.white.opacity(0.88))
 
             TextField("", text: text)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
                 .keyboardType(keyboard)
-                .padding(.horizontal, 14)
-                .frame(height: 48)
+                .textInputAutocapitalization(keyboard == .emailAddress ? .never : .words)
+                .autocorrectionDisabled(keyboard == .emailAddress)
                 .foregroundStyle(.white)
-                .background(Color.white.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 16)
+                .frame(height: 54)
+                .background(Color.white.opacity(0.07))
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
     }
 
     private func secureField(title: String, text: Binding<String>, isVisible: Binding<Bool>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(.white.opacity(0.88))
 
-            HStack {
+            HStack(spacing: 12) {
                 Group {
                     if isVisible.wrappedValue {
                         TextField("", text: text)
@@ -140,6 +211,7 @@ struct ManualSignUpView: View {
                 }
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
+                .foregroundStyle(.white)
 
                 Button {
                     isVisible.wrappedValue.toggle()
@@ -148,11 +220,10 @@ struct ManualSignUpView: View {
                         .foregroundStyle(LumenColors.textSecondary)
                 }
             }
-            .padding(.horizontal, 14)
-            .frame(height: 48)
-            .foregroundStyle(.white)
-            .background(Color.white.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 16)
+            .frame(height: 54)
+            .background(Color.white.opacity(0.07))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
     }
 
@@ -198,8 +269,4 @@ struct ManualSignUpView: View {
 
         isSubmitting = false
     }
-}
-
-#Preview {
-    ManualSignUpView(mode: .signUp, onBack: { }, onAuthenticate: { _, _, _, _ in })
 }

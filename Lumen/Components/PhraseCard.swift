@@ -7,11 +7,15 @@ struct PhraseCard: View {
     let backgroundImageURL: URL?
     let isSaved: Bool
     let isAudioPlaying: Bool
+    let learningState: ReelLearningState
+    let highlightedTokens: [HighlightedWord]
+    let currentUserID: String?
     @State private var isTranslationVisible = false
     @State private var localIsSaved = false
-    @State private var isTextAutoScrolling = false
-    @State private var textScrollSpeed: CGFloat = 28
+    @State private var selectedWordDetail: WordDetail?
     let onPlayAudio: () -> Void
+    let onSpeak: () -> Void
+    let onTranslationOpened: () -> Void
     let onAskAI: () -> Void
     let onSave: () -> Void
 
@@ -72,25 +76,24 @@ struct PhraseCard: View {
                 .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    VStack(spacing: 24) {
+                    VStack(spacing: 20) {
+                        ReelProgressIndicator(state: learningState)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.bottom, 2)
+
+                        subjectBadge
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
                         phraseTextBlock(in: geometry.size)
 
                         if isTranslationVisible {
                             translationText
                         }
 
-                        if shouldShowReadingControls {
-                            readingControls
-                        }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     .padding(.horizontal, 28)
                 }
-            }
-            .overlay(alignment: .topLeading) {
-                topicBadge
-                    .padding(.leading, horizontalMargin)
-                    .padding(.top, topMargin)
             }
             .overlay(alignment: .topTrailing) {
                 HStack(alignment: .top, spacing: 10) {
@@ -103,10 +106,19 @@ struct PhraseCard: View {
                         icon: "translate",
                         title: LocalizedStrings.feedTranslate,
                         action: {
+                            let wasVisible = isTranslationVisible
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 isTranslationVisible.toggle()
                             }
+                            if !wasVisible {
+                                onTranslationOpened()
+                            }
                         }
+                    )
+                    topActionButton(
+                        icon: "mic.fill",
+                        title: "Speak",
+                        action: onSpeak
                     )
                     topActionButton(
                         icon: "sparkles",
@@ -131,15 +143,15 @@ struct PhraseCard: View {
         .background(Color.clear)
         .onAppear {
             localIsSaved = isSaved
-            isTextAutoScrolling = false
         }
         .onChange(of: isSaved) { _, newValue in
             localIsSaved = newValue
         }
-    }
-
-    private var shouldShowReadingControls: Bool {
-        phrase.text.split { $0.isWhitespace || $0.isNewline }.count > 22
+        .sheet(item: $selectedWordDetail) { detail in
+            WordDetailSheet(detail: detail, userID: currentUserID)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
     }
 
     private var editorialStyle: EditorialStyle {
@@ -150,35 +162,13 @@ struct PhraseCard: View {
         return .glass
     }
 
-    private var speedLabel: String {
-        switch textScrollSpeed {
-        case ..<26:
-            return "0.8x"
-        case 26..<34:
-            return "1.0x"
-        default:
-            return "1.3x"
-        }
-    }
-
-    private func cycleSpeed() {
-        if textScrollSpeed < 26 {
-            textScrollSpeed = 28
-        } else if textScrollSpeed < 34 {
-            textScrollSpeed = 36
-        } else {
-            textScrollSpeed = 22
-        }
-    }
-
     private var topicBadge: some View {
-        Text("TOPIC:\n\(phrase.category.uppercased())")
-            .font(.custom("AvenirNext-Bold", size: 9))
-            .tracking(2.2)
+        Text("\(phrase.category) • \(phrase.difficulty.rawValue)")
+            .font(.custom("AvenirNext-Bold", size: 12))
             .foregroundStyle(Color(red: 0.19, green: 0.84, blue: 0.98))
             .multilineTextAlignment(.leading)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
             .background(
                 Capsule()
                     .fill(Color(red: 0.09, green: 0.16, blue: 0.27).opacity(editorialStyle == .glass ? 0.78 : 0.88))
@@ -188,6 +178,11 @@ struct PhraseCard: View {
                     .stroke(Color.white.opacity(0.12), lineWidth: 1)
             }
             .shadow(color: Color.black.opacity(0.10), radius: 8, x: 0, y: 4)
+    }
+
+    private var subjectBadge: some View {
+        topicBadge
+            .padding(.bottom, 4)
     }
 
     private func topActionButton(
@@ -243,35 +238,28 @@ struct PhraseCard: View {
         let minHeight = size.height * (isTranslationVisible ? 0.19 : 0.23)
         let maxHeight = size.height * (isTranslationVisible ? 0.30 : 0.39)
 
-        if isTextAutoScrolling {
-            AutoScrollTextView(
-                text: phrase.text.uppercased(),
-                font: UIFont(name: "AvenirNext-Bold", size: 20) ?? UIFont.systemFont(ofSize: 20, weight: .bold),
-                textColor: .white,
-                alignment: .center,
-                isAutoScrolling: $isTextAutoScrolling,
-                speedPointsPerSecond: textScrollSpeed
-            )
-            .frame(width: textWidth)
-            .frame(minHeight: minHeight, maxHeight: maxHeight)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .shadow(color: Color.black.opacity(0.55), radius: 16, x: 0, y: 8)
-        } else {
-            ScrollView(.vertical, showsIndicators: false) {
-                Text(phrase.text.uppercased())
-                    .font(.custom("AvenirNext-Heavy", size: 20))
-                    .tracking(-0.4)
-                    .lineSpacing(2)
-                    .foregroundStyle(.white)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .frame(minHeight: minHeight, alignment: .center)
-                    .shadow(color: Color.black.opacity(0.60), radius: 16, x: 0, y: 8)
+        ScrollView(.vertical, showsIndicators: false) {
+            HighlightedPhraseTextView(tokens: highlightedTokens) { token in
+                Task {
+                    let detail = await WordHighlightService.shared.detail(
+                        for: token.normalizedWord,
+                        phrase: phrase,
+                        nativeLanguage: NativeLanguageLocalization.preferredNativeLanguage()
+                    )
+                    await MainActor.run {
+                        selectedWordDetail = detail
+                    }
+                }
             }
-            .frame(width: textWidth)
-            .frame(minHeight: minHeight, maxHeight: maxHeight)
-            .frame(maxWidth: size.width, alignment: .center)
+            .id("manual-\(phrase.id.uuidString)")
+            .frame(maxWidth: .infinity, alignment: .center)
+            .frame(minHeight: minHeight, alignment: .center)
+            .shadow(color: Color.black.opacity(0.60), radius: 16, x: 0, y: 8)
         }
+        .id("manual-scroll-\(phrase.id.uuidString)")
+        .frame(width: textWidth)
+        .frame(minHeight: minHeight, maxHeight: maxHeight)
+        .frame(maxWidth: size.width, alignment: .center)
     }
 
     private var translationText: some View {
@@ -285,46 +273,6 @@ struct PhraseCard: View {
         }
         .frame(maxWidth: 560, maxHeight: 132)
         .transition(.opacity.combined(with: .move(edge: .bottom)))
-    }
-
-    private var readingControls: some View {
-        HStack(spacing: 8) {
-            Button {
-                isTextAutoScrolling.toggle()
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: isTextAutoScrolling ? "pause.fill" : "play.fill")
-                    Text(isTextAutoScrolling ? LocalizedStrings.feedReadingPause : LocalizedStrings.feedReadingPlay)
-                }
-                .font(.custom("AvenirNext-DemiBold", size: 12))
-                .padding(.horizontal, 14)
-                .frame(height: 40)
-                .foregroundStyle(.white)
-                .background(Color.white.opacity(0.10))
-                .overlay {
-                    Capsule()
-                        .stroke(Color.white.opacity(0.28), lineWidth: 1)
-                }
-                .clipShape(Capsule())
-            }
-
-            Button {
-                cycleSpeed()
-            } label: {
-                Text("\(LocalizedStrings.feedReadingSpeed) \(speedLabel)")
-                    .font(.custom("AvenirNext-DemiBold", size: 12))
-                    .padding(.horizontal, 14)
-                    .frame(height: 40)
-                    .foregroundStyle(.white)
-                    .background(Color.white.opacity(0.10))
-                    .overlay {
-                        Capsule()
-                            .stroke(Color.white.opacity(0.28), lineWidth: 1)
-                    }
-                .clipShape(Capsule())
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var saveButton: some View {
@@ -360,7 +308,12 @@ struct PhraseCard: View {
         backgroundImageURL: nil,
         isSaved: false,
         isAudioPlaying: false,
+        learningState: ReelLearningState(),
+        highlightedTokens: [],
+        currentUserID: nil,
         onPlayAudio: {},
+        onSpeak: {},
+        onTranslationOpened: {},
         onAskAI: {},
         onSave: {}
     )

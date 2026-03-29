@@ -47,17 +47,19 @@ class FeedViewModel: ObservableObject {
     private let aiService = AIService.shared
     private let backgroundService = ReelBackgroundService.shared
     private let authService = AuthService.shared
+    private let usesRemoteBackgrounds = false
     
     // User preferences (these would come from onboarding)
-    private var userLevel: String = "Intermediate"
+    private var userLevel: String = "B1"
     private var userNativeLanguage: String = "Portuguese (Brazil)"
     private var userInterests: [String] = ["Technology", "Business"]
     private var userObjectives: [String] = ["Improve Speaking", "Expand Vocabulary"]
     private var favoriteCategories: [String] = []
     private var isFetchingMore = false
+    private var loadMoreTask: Task<Void, Never>?
     private var backgroundTasks: Set<UUID> = []
     private let pageSize = 8
-    private let prefetchThreshold = 2
+    private let initialPageSize = 5
     
     init() {
         Task {
@@ -71,27 +73,29 @@ class FeedViewModel: ObservableObject {
         errorMessage = nil
         
         do {
+            let currentUserID = SessionService.shared.currentUser?.sub
             if let token = SessionService.shared.accessToken {
-                let preferences = try await authService.fetchCurrentUserPreferences(accessToken: token)
-                userLevel = preferences.level
-                userNativeLanguage = preferences.nativeLanguage
-                if !preferences.interests.isEmpty {
-                    userInterests = preferences.interests
-                }
-                if !preferences.objectives.isEmpty {
-                    userObjectives = preferences.objectives
+                if let cachedPreferences = authService.cachedPreferences(for: currentUserID) {
+                    apply(preferences: cachedPreferences)
+                    Task {
+                        await refreshPreferencesInBackground(accessToken: token)
+                    }
+                } else {
+                    let preferences = try await authService.fetchCurrentUserPreferences(accessToken: token)
+                    apply(preferences: preferences)
                 }
             }
 
-            phrases = try await generateBatch(excludedTexts: [])
+            phrases = try await generateBatch(excludedTexts: [], count: initialPageSize)
 
             phrases = deduplicate(phrases).filter { isWithinTargetLength($0.text) }
-            if phrases.count < 3 {
-                try await fetchMorePhrases(force: true)
-            }
-            await primeInitialBackgrounds()
             tailState = .idle
             isLoading = false
+            if phrases.count < 3 {
+                Task {
+                    try? await fetchMorePhrases(force: true)
+                }
+            }
         } catch {
             errorMessage = error.localizedDescription
             isLoading = false
@@ -102,6 +106,7 @@ class FeedViewModel: ObservableObject {
     }
 
     func prefetchBackgrounds(around index: Int) {
+        guard usesRemoteBackgrounds else { return }
         guard !phrases.isEmpty else { return }
         let start = max(0, index - 1)
         let end = min(phrases.count - 1, index + 2)
@@ -112,6 +117,7 @@ class FeedViewModel: ObservableObject {
     }
 
     func isBackgroundReady(for phraseID: UUID) -> Bool {
+        guard usesRemoteBackgrounds else { return true }
         if let state = backgroundStates[phraseID] {
             if case .ready = state { return true }
             return false
@@ -120,6 +126,10 @@ class FeedViewModel: ObservableObject {
     }
 
     private func ensureBackground(for phrase: EnglishPhrase) {
+        guard usesRemoteBackgrounds else {
+            backgroundStates[phrase.id] = .ready(nil)
+            return
+        }
         if let state = backgroundStates[phrase.id], case .ready = state {
             return
         }
@@ -146,6 +156,7 @@ class FeedViewModel: ObservableObject {
     }
 
     private func primeInitialBackgrounds() async {
+        guard usesRemoteBackgrounds else { return }
         guard !phrases.isEmpty else { return }
         let primeItems = Array(phrases.prefix(3))
         await withTaskGroup(of: Void.self) { group in
@@ -159,6 +170,10 @@ class FeedViewModel: ObservableObject {
     }
 
     private func ensureBackgroundImmediately(for phrase: EnglishPhrase) async {
+        guard usesRemoteBackgrounds else {
+            backgroundStates[phrase.id] = .ready(nil)
+            return
+        }
         if let state = backgroundStates[phrase.id], case .ready = state {
             return
         }
@@ -180,26 +195,40 @@ class FeedViewModel: ObservableObject {
     func ensureMorePhrasesIfNeeded(currentIndex: Int) {
         guard !phrases.isEmpty else { return }
         let reachedTailPage = currentIndex >= phrases.count
-        let nearEndOfContent = currentIndex >= phrases.count - prefetchThreshold
-        guard reachedTailPage || nearEndOfContent else { return }
+        guard reachedTailPage else { return }
         guard !isFetchingMore else { return }
+        guard loadMoreTask == nil else { return }
 
-        Task {
+        loadMoreTask = Task { [weak self] in
+            guard let self else { return }
+            defer { self.loadMoreTask = nil }
             do {
-                try await fetchMorePhrases(force: reachedTailPage)
+                try await self.fetchMorePhrases(force: true)
             } catch {
-                await retryFetchMoreAfterConnectionDrop()
+                await self.retryFetchMoreAfterConnectionDrop()
             }
         }
     }
 
     func retryLoadMore() {
-        Task {
+        guard loadMoreTask == nil else { return }
+        loadMoreTask = Task { [weak self] in
+            guard let self else { return }
+            defer { self.loadMoreTask = nil }
             do {
-                try await fetchMorePhrases(force: true)
+                try await self.fetchMorePhrases(force: true)
             } catch {
-                await retryFetchMoreAfterConnectionDrop()
+                await self.retryFetchMoreAfterConnectionDrop()
             }
+        }
+    }
+
+    func cancelLoadMore() {
+        loadMoreTask?.cancel()
+        loadMoreTask = nil
+        isFetchingMore = false
+        if case .loading = tailState {
+            tailState = .idle
         }
     }
     
@@ -252,6 +281,10 @@ class FeedViewModel: ObservableObject {
         let totalWindow = 30
         var elapsed = 0
         while elapsed < totalWindow {
+            if Task.isCancelled {
+                tailState = .idle
+                return
+            }
             let remaining = max(0, totalWindow - elapsed)
             tailState = .reconnecting(remainingSeconds: remaining)
             do {
@@ -292,38 +325,61 @@ class FeedViewModel: ObservableObject {
             .replacingOccurrences(of: "_", with: "-")
             .replacingOccurrences(of: " ", with: "-")
 
-        // CEFR-like mapping, ready for future expansion to other languages.
-        if normalized.contains("a1") ||
-            normalized.contains("a2") ||
-            normalized.contains("beginner") ||
-            normalized.contains("elementary") {
+        if normalized.contains("a1") {
             return ContentPolicy(
-                minChars: 35,
-                maxChars: 260,
-                minWords: 6,
-                maxWords: 45,
-                preferredSentenceRange: "1 to 3 short sentences"
+                minChars: 28,
+                maxChars: 140,
+                minWords: 4,
+                maxWords: 18,
+                preferredSentenceRange: "1 or 2 very short sentences"
             )
         }
 
-        if normalized.contains("c1") ||
-            normalized.contains("c2") ||
-            normalized.contains("advanced") {
+        if normalized.contains("a2") {
+            return ContentPolicy(
+                minChars: 55,
+                maxChars: 220,
+                minWords: 8,
+                maxWords: 30,
+                preferredSentenceRange: "1 to 3 short connected sentences"
+            )
+        }
+
+        if normalized.contains("b2") {
+            return ContentPolicy(
+                minChars: 170,
+                maxChars: 520,
+                minWords: 24,
+                maxWords: 82,
+                preferredSentenceRange: "2 to 4 well-connected sentences"
+            )
+        }
+
+        if normalized.contains("c1") {
             return ContentPolicy(
                 minChars: 220,
-                maxChars: 900,
+                maxChars: 720,
                 minWords: 32,
-                maxWords: 150,
-                preferredSentenceRange: "3 to 6 well-connected sentences"
+                maxWords: 115,
+                preferredSentenceRange: "3 to 5 developed sentences"
             )
         }
 
-        // Default to intermediate family (B1/B2 + intermediate labels).
+        if normalized.contains("c2") {
+            return ContentPolicy(
+                minChars: 260,
+                maxChars: 860,
+                minWords: 38,
+                maxWords: 135,
+                preferredSentenceRange: "3 to 6 nuanced sentences"
+            )
+        }
+
         return ContentPolicy(
-            minChars: 120,
-            maxChars: 560,
-            minWords: 18,
-            maxWords: 90,
+            minChars: 110,
+            maxChars: 360,
+            minWords: 16,
+            maxWords: 56,
             preferredSentenceRange: "2 to 4 sentences"
         )
     }
@@ -340,7 +396,7 @@ class FeedViewModel: ObservableObject {
             wordCount <= policy.maxWords
     }
 
-    private func generateBatch(excludedTexts: [String]) async throws -> [EnglishPhrase] {
+    private func generateBatch(excludedTexts: [String], count: Int? = nil) async throws -> [EnglishPhrase] {
         let effectiveInterests = Array(Set(userInterests + favoriteCategories)).sorted()
         let policy = contentPolicy
         return try await aiService.generatePhrases(
@@ -348,7 +404,7 @@ class FeedViewModel: ObservableObject {
             nativeLanguage: userNativeLanguage,
             interests: effectiveInterests,
             objectives: userObjectives,
-            count: pageSize,
+            count: count ?? pageSize,
             excludedTexts: excludedTexts,
             minWordsPerCard: policy.minWords,
             maxWordsPerCard: policy.maxWords,
@@ -416,6 +472,26 @@ class FeedViewModel: ObservableObject {
         
         Task {
             await loadPhrases()
+        }
+    }
+
+    private func apply(preferences: UserPreferences) {
+        userLevel = preferences.level
+        userNativeLanguage = preferences.nativeLanguage
+        if !preferences.interests.isEmpty {
+            userInterests = preferences.interests
+        }
+        if !preferences.objectives.isEmpty {
+            userObjectives = preferences.objectives
+        }
+    }
+
+    private func refreshPreferencesInBackground(accessToken: String) async {
+        do {
+            let preferences = try await authService.fetchCurrentUserPreferences(accessToken: accessToken)
+            apply(preferences: preferences)
+        } catch {
+            // Keep the feed responsive; remote refresh is best-effort here.
         }
     }
 }

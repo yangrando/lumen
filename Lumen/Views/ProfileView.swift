@@ -10,7 +10,8 @@ struct ProfileView: View {
     @State private var currentUser: AuthUser?
     @State private var showLogoutConfirm = false
     @State private var showDeleteConfirm = false
-    @State private var accountActionError: String?
+    @State private var feedbackMessage: AppFeedbackMessage?
+    @State private var animateLogoGlow = false
 
     var body: some View {
         NavigationStack {
@@ -32,7 +33,9 @@ struct ProfileView: View {
                         .padding(.bottom, 44)
                     }
                 }
+
             }
+            .appFeedbackBanner($feedbackMessage)
             .toolbar(.hidden, for: .navigationBar)
             .alert(LocalizedStrings.accountLogoutConfirmTitle, isPresented: $showLogoutConfirm) {
                 Button(LocalizedStrings.accountCancel, role: .cancel) {}
@@ -51,22 +54,26 @@ struct ProfileView: View {
                     Task {
                         do {
                             try await sessionService.deleteAccount()
+                            await AppFeedbackPresenter.show(
+                                UserFacingMessageMapper.successFeedback(message: LocalizedStrings.accountDeleteToastSuccessMessage),
+                                in: $feedbackMessage
+                            )
+                            try? await Task.sleep(nanoseconds: 900_000_000)
                             dismiss()
                         } catch {
-                            accountActionError = error.localizedDescription
+                            await AppFeedbackPresenter.show(
+                                AppFeedbackMessage(
+                                    title: LocalizedStrings.accountDeleteToastErrorTitle,
+                                    message: LocalizedStrings.accountDeleteToastErrorMessage,
+                                    tone: .error
+                                ),
+                                in: $feedbackMessage
+                            )
                         }
                     }
                 }
             } message: {
                 Text(LocalizedStrings.accountDeleteConfirmMessage)
-            }
-            .alert(LocalizedStrings.feedErrorTitle, isPresented: Binding(
-                get: { accountActionError != nil },
-                set: { isPresented in if !isPresented { accountActionError = nil } }
-            )) {
-                Button(LocalizedStrings.commonOk, role: .cancel) {}
-            } message: {
-                Text(accountActionError ?? "")
             }
             .task {
                 if currentUser == nil {
@@ -125,55 +132,38 @@ struct ProfileView: View {
         VStack(spacing: 18) {
             ZStack {
                 Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                LumenColors.gradientStart.opacity(0.40),
-                                LumenColors.gradientEnd.opacity(0.20),
-                                .clear
-                            ],
-                            center: .center,
-                            startRadius: 24,
-                            endRadius: 120
-                        )
-                    )
-                    .frame(width: 220, height: 220)
+                    .fill(LumenColors.gradientStart.opacity(0.22))
+                    .frame(width: 150, height: 150)
+                    .blur(radius: 24)
+                    .scaleEffect(animateLogoGlow ? 1.08 : 0.88)
 
                 Circle()
-                    .fill(LumenColors.navyLight)
-                    .frame(width: 186, height: 186)
-                    .overlay {
-                        Circle()
-                            .stroke(Color.black.opacity(0.35), lineWidth: 10)
-                    }
-                    .overlay {
-                        Image(systemName: "person.crop.circle.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 142, height: 142)
-                            .foregroundStyle(.white.opacity(0.92), LumenColors.textSecondary.opacity(0.65))
-                    }
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                LumenColors.gradientStart.opacity(0.32),
+                                Color.white.opacity(0.04),
+                                LumenColors.gradientEnd.opacity(0.18)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.2
+                    )
+                    .frame(width: 140, height: 140)
+                    .rotationEffect(.degrees(animateLogoGlow ? 12 : -12))
 
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Circle()
-                            .fill(LumenColors.navyLight)
-                            .frame(width: 52, height: 52)
-                            .overlay {
-                                Image(systemName: "pencil")
-                                    .font(.system(size: 20, weight: .bold))
-                                    .foregroundStyle(LumenColors.gradientStart)
-                            }
-                            .overlay {
-                                Circle()
-                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                            }
-                            .offset(x: -12, y: -18)
-                    }
+                Image("LumenLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 104, height: 104)
+                    .shadow(color: LumenColors.gradientStart.opacity(0.22), radius: 18, x: 0, y: 8)
+            }
+            .frame(height: 170)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
+                    animateLogoGlow = true
                 }
-                .frame(width: 220, height: 220)
             }
 
             VStack(spacing: 6) {
@@ -196,6 +186,30 @@ struct ProfileView: View {
                 .foregroundStyle(.white)
 
             VStack(spacing: 14) {
+                NavigationLink {
+                    ReviewTodayView(accessToken: accessToken)
+                } label: {
+                    settingsRow(
+                        icon: "arrow.clockwise.circle.fill",
+                        title: "Review Today",
+                        tint: Color(red: 0.20, green: 0.36, blue: 0.52),
+                        showsChevron: true
+                    )
+                }
+                .buttonStyle(.plain)
+
+                NavigationLink {
+                    ProgressOverviewView(accessToken: accessToken)
+                } label: {
+                    settingsRow(
+                        icon: "chart.line.uptrend.xyaxis",
+                        title: "Progress Overview",
+                        tint: Color(red: 0.18, green: 0.40, blue: 0.56),
+                        showsChevron: true
+                    )
+                }
+                .buttonStyle(.plain)
+
                 NavigationLink {
                     UserPreferencesView(accessToken: accessToken)
                 } label: {
