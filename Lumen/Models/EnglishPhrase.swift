@@ -11,29 +11,59 @@ import Foundation
 struct EnglishPhrase: Identifiable, Equatable {
     
     let id: UUID
+    let reelID: String
     let text: String
     let translation: String
     let difficulty: DifficultyLevel
     let category: String
     let example: String?
     let audioURL: URL?
+    let goal: String?
+    let contentType: String?
+    let keywords: [String]
+    let focusWords: [String]
+    let grammarFocus: String?
+    let speakingSuitable: Bool
+    let reviewPriorityHint: String?
+    let generationExplanation: String?
+    let difficultyMode: String?
     
     init(
         id: UUID = UUID(),
+        reelID: String = "",
         text: String,
         translation: String,
         difficulty: DifficultyLevel,
         category: String,
         example: String? = nil,
-        audioURL: URL? = nil
+        audioURL: URL? = nil,
+        goal: String? = nil,
+        contentType: String? = nil,
+        keywords: [String] = [],
+        focusWords: [String] = [],
+        grammarFocus: String? = nil,
+        speakingSuitable: Bool = false,
+        reviewPriorityHint: String? = nil,
+        generationExplanation: String? = nil,
+        difficultyMode: String? = nil
     ) {
         self.id = id
+        self.reelID = reelID
         self.text = text
         self.translation = translation
         self.difficulty = difficulty
         self.category = category
         self.example = example
         self.audioURL = audioURL
+        self.goal = goal
+        self.contentType = contentType
+        self.keywords = keywords
+        self.focusWords = focusWords
+        self.grammarFocus = grammarFocus
+        self.speakingSuitable = speakingSuitable
+        self.reviewPriorityHint = reviewPriorityHint
+        self.generationExplanation = generationExplanation
+        self.difficultyMode = difficultyMode
     }
     
     static func == (lhs: EnglishPhrase, rhs: EnglishPhrase) -> Bool {

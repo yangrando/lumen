@@ -492,7 +492,10 @@ enum ReelTrackingIdentity {
 
 extension EnglishPhrase {
     var trackingReelID: String {
-        ReelTrackingIdentity.make(text: text, category: category, difficulty: difficulty.rawValue)
+        if !reelID.isEmpty {
+            return reelID
+        }
+        return ReelTrackingIdentity.make(text: text, category: category, difficulty: difficulty.rawValue)
     }
 }
 

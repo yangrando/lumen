@@ -12,6 +12,7 @@ final class AudioRecordingService: NSObject, ObservableObject {
     private var timer: Timer?
     private var activeFileURL: URL?
     private var recordingStartedAt: Date?
+    private var stopContinuation: CheckedContinuation<URL?, Never>?
 
     func startRecording() async -> Bool {
         errorMessage = nil
@@ -61,14 +62,24 @@ final class AudioRecordingService: NSObject, ObservableObject {
         }
     }
 
-    func stopRecording() -> URL? {
+    func stopRecording() async -> URL? {
+        guard let recorder else { return activeFileURL }
         guard isRecording else { return activeFileURL }
-        recorder?.stop()
+
         isRecording = false
         stopTimer()
         elapsedSeconds = max(elapsedSeconds, Date().timeIntervalSince(recordingStartedAt ?? Date()))
-        deactivateSessionIfPossible()
-        return activeFileURL
+
+        return await withCheckedContinuation { continuation in
+            stopContinuation = continuation
+            recorder.stop()
+
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(2))
+                guard let self, self.stopContinuation != nil else { return }
+                self.finishStoppingRecording(successfully: true, fallback: true)
+            }
+        }
     }
 
     func cancelRecording() {
@@ -77,6 +88,10 @@ final class AudioRecordingService: NSObject, ObservableObject {
         isRecording = false
         elapsedSeconds = 0
         stopTimer()
+        if let stopContinuation {
+            self.stopContinuation = nil
+            stopContinuation.resume(returning: nil)
+        }
         deactivateSessionIfPossible()
         deleteActiveFileIfNeeded()
         activeFileURL = nil
@@ -122,6 +137,21 @@ final class AudioRecordingService: NSObject, ObservableObject {
             // Best effort only.
         }
     }
+
+    private func finishStoppingRecording(successfully flag: Bool, fallback: Bool = false) {
+        let urlToReturn = flag ? activeFileURL : nil
+        recorder = nil
+        deactivateSessionIfPossible()
+        if let stopContinuation {
+            self.stopContinuation = nil
+            stopContinuation.resume(returning: urlToReturn)
+        }
+        if !flag {
+            errorMessage = LocalizedStrings.speakingRecordingFinishedFailed
+        } else if fallback {
+            // Best effort only when the delegate doesn't respond promptly.
+        }
+    }
 }
 
 extension AudioRecordingService: AVAudioRecorderDelegate {
@@ -129,9 +159,7 @@ extension AudioRecordingService: AVAudioRecorderDelegate {
         Task { @MainActor in
             self.isRecording = false
             self.stopTimer()
-            if !flag {
-                self.errorMessage = LocalizedStrings.speakingRecordingFinishedFailed
-            }
+            self.finishStoppingRecording(successfully: flag)
         }
     }
 }

@@ -62,6 +62,7 @@ struct SpeakingHistoryResponse: Codable {
 
 final class SpeakingPracticeService {
     static let shared = SpeakingPracticeService()
+    private let logger = Logger.shared
 
     private init() {}
 
@@ -100,7 +101,9 @@ final class SpeakingPracticeService {
             .appendingPathComponent("speaking")
             .appendingPathComponent("analyze")
 
-        let audioData = try Data(contentsOf: audioFileURL)
+        logger.info("Speaking analyze starting for reelID=\(reelID ?? "nil") reviewItemID=\(reviewItemID.map(String.init) ?? "nil")")
+        let audioData = try await loadAudioData(from: audioFileURL)
+        logger.info("Speaking analyze loaded audio bytes=\(audioData.count)")
         let boundary = "Boundary-\(UUID().uuidString)"
 
         var request = URLRequest(url: url)
@@ -123,13 +126,37 @@ final class SpeakingPracticeService {
                 "tz": timeZoneIdentifier
             ]
         )
+        logger.logAPIRequest(url: url.absoluteString, method: "POST")
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            if let http = response as? HTTPURLResponse {
+                logger.logAPIResponse(statusCode: http.statusCode, body: String(data: data, encoding: .utf8))
+            }
             throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Failed to analyze speaking attempt")
         }
 
+        logger.logAPIResponse(
+            statusCode: (response as? HTTPURLResponse)?.statusCode ?? 200,
+            body: String(data: data, encoding: .utf8)
+        )
+
         return try JSONDecoder().decode(SpeakingAttempt.self, from: data)
+    }
+
+    private func loadAudioData(from url: URL) async throws -> Data {
+        let fileManager = FileManager.default
+        for attempt in 0..<10 {
+            if fileManager.fileExists(atPath: url.path),
+               let attributes = try? fileManager.attributesOfItem(atPath: url.path),
+               let size = attributes[.size] as? NSNumber,
+               size.intValue > 0 {
+                return try Data(contentsOf: url)
+            }
+            logger.warning("Speaking analyze waiting for audio file readiness attempt=\(attempt + 1) path=\(url.lastPathComponent)")
+            try await Task.sleep(for: .milliseconds(150))
+        }
+        throw AIServiceError.networkError("Recorded audio file is not ready yet")
     }
 
     func fetchHistory(

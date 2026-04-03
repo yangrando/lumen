@@ -64,6 +64,7 @@ struct AskAIView: View {
                         HStack(spacing: 10) {
                             Button {
                                 Task {
+                                    AudioService.shared.stop()
                                     let result = await speechService.toggleRecording()
                                     switch result {
                                     case .started:

@@ -153,6 +153,7 @@ struct SpeakingPracticeView: View {
             HStack(spacing: 12) {
                 Button {
                     Task {
+                        audioService.stop()
                         if viewModel.isRecording {
                             if let response = await viewModel.stopAndSubmit() {
                                 onCompleted?(response)

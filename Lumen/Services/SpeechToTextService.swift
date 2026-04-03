@@ -34,12 +34,16 @@ final class SpeechToTextService: NSObject, ObservableObject {
 
     func stopRecording() {
         audioEngine.stop()
-        audioEngine.inputNode.removeTap(onBus: 0)
+        if audioEngine.inputNode.numberOfInputs > 0 || audioEngine.inputNode.numberOfOutputs > 0 {
+            audioEngine.inputNode.removeTap(onBus: 0)
+        }
+        audioEngine.reset()
         recognitionRequest?.endAudio()
         recognitionTask?.cancel()
         recognitionTask = nil
         recognitionRequest = nil
         isRecording = false
+        deactivateSessionIfPossible()
     }
 
     private func startRecording() async -> ToggleResult {
@@ -69,14 +73,24 @@ final class SpeechToTextService: NSObject, ObservableObject {
                 mode: .measurement,
                 options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers]
             )
+            try session.setPreferredSampleRate(44_100)
+            try session.setPreferredInputNumberOfChannels(1)
             try session.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             errorMessage = error.localizedDescription
             return .failed
         }
 
+        audioEngine.reset()
+
+        guard let format = await acquireValidInputFormat() else {
+            errorMessage = LocalizedStrings.askAIAudioInputUnavailable
+            recognitionRequest = nil
+            deactivateSessionIfPossible()
+            return .failed
+        }
+
         let inputNode = audioEngine.inputNode
-        let format = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             self?.recognitionRequest?.append(buffer)
@@ -130,5 +144,31 @@ final class SpeechToTextService: NSObject, ObservableObject {
         }
 
         return speechAllowed && micAllowed
+    }
+
+    private func deactivateSessionIfPossible() {
+        do {
+            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        } catch {
+            // Best effort only.
+        }
+    }
+
+    private func acquireValidInputFormat() async -> AVAudioFormat? {
+        for _ in 0..<6 {
+            let inputNode = audioEngine.inputNode
+            let preferred = inputNode.inputFormat(forBus: 0)
+            if preferred.sampleRate > 0, preferred.channelCount > 0 {
+                return preferred
+            }
+
+            let fallback = inputNode.outputFormat(forBus: 0)
+            if fallback.sampleRate > 0, fallback.channelCount > 0 {
+                return fallback
+            }
+
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        return nil
     }
 }

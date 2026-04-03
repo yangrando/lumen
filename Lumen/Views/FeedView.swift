@@ -42,7 +42,7 @@ struct FeedView: View {
                 .ignoresSafeArea()
             
             // Content
-            if viewModel.isLoading {
+            if viewModel.isLoading && viewModel.phrases.isEmpty {
                 if sessionService.justCompletedOnboarding {
                     OnboardingCompletionView(autoAdvance: false)
                 } else {
@@ -211,7 +211,7 @@ struct FeedView: View {
                 },
                 onSpeakingStarted: {
                     Task {
-                        await TrackingService.shared.startSession(.speaking, metadata: ["source": .string("ask_ai")])
+                        _ = await TrackingService.shared.startSession(.speaking, metadata: ["source": .string("ask_ai")])
                         await TrackingService.shared.track(
                             event: .speakingStarted,
                             reelID: phrase.trackingReelID,
@@ -294,7 +294,7 @@ struct FeedView: View {
                 xpTracker.load(for: currentUserID)
                 await syncSavedReels()
                 viewModel.updateFavoriteSignals(from: scopedFavorites)
-                await TrackingService.shared.startSession(.feed, metadata: ["source": .string("main_feed")])
+                _ = await TrackingService.shared.startSession(.feed, metadata: ["source": .string("main_feed")])
             }
         }
         .onChange(of: favorites.count) { _, _ in
@@ -787,6 +787,28 @@ struct FeedView: View {
             "category": .string(phrase.category),
             "difficulty": .string(phrase.difficulty.rawValue)
         ]
+        if let goal = phrase.goal, !goal.isEmpty {
+            metadata["goal"] = .string(goal)
+        }
+        if let contentType = phrase.contentType, !contentType.isEmpty {
+            metadata["content_type"] = .string(contentType)
+        }
+        if let grammarFocus = phrase.grammarFocus, !grammarFocus.isEmpty {
+            metadata["grammar_focus"] = .string(grammarFocus)
+        }
+        if !phrase.keywords.isEmpty {
+            metadata["keywords"] = .string(phrase.keywords.joined(separator: ", "))
+        }
+        if !phrase.focusWords.isEmpty {
+            metadata["focus_words"] = .string(phrase.focusWords.joined(separator: ", "))
+        }
+        metadata["speaking_suitable"] = .bool(phrase.speakingSuitable)
+        if let reviewPriorityHint = phrase.reviewPriorityHint, !reviewPriorityHint.isEmpty {
+            metadata["review_priority_hint"] = .string(reviewPriorityHint)
+        }
+        if let difficultyMode = phrase.difficultyMode, !difficultyMode.isEmpty {
+            metadata["difficulty_mode"] = .string(difficultyMode)
+        }
         extra.forEach { metadata[$0.key] = $0.value }
         return metadata
     }
@@ -839,11 +861,11 @@ struct VerticalPageView<Page: View>: UIViewControllerRepresentable {
     
     func updateUIViewController(_ uiViewController: UIPageViewController, context: Context) {
         context.coordinator.parent = self
-        context.coordinator.updateControllers(with: pages)
+        let rebuiltControllers = context.coordinator.updateControllers(with: pages)
         
         guard !context.coordinator.controllers.isEmpty else { return }
         let safePage = min(max(currentPage, 0), context.coordinator.controllers.count - 1)
-        if safePage == context.coordinator.currentPage {
+        if safePage == context.coordinator.currentPage && !rebuiltControllers {
             return
         }
         
@@ -870,10 +892,10 @@ struct VerticalPageView<Page: View>: UIViewControllerRepresentable {
             self.currentPage = parent.currentPage
         }
         
-        func updateControllers(with pages: [Page]) {
+        func updateControllers(with pages: [Page]) -> Bool {
             if controllers.count != pages.count {
                 controllers = pages.map { Self.makeHostingController(rootView: $0) }
-                return
+                return true
             }
             
             for index in pages.indices {
@@ -882,6 +904,7 @@ struct VerticalPageView<Page: View>: UIViewControllerRepresentable {
                     hosting.view.backgroundColor = .clear
                 }
             }
+            return false
         }
 
         private static func makeHostingController(rootView: Page) -> UIViewController {

@@ -72,7 +72,7 @@ struct ReviewTodayView: View {
         }
         .onAppear {
             Task {
-                await TrackingService.shared.startSession(.review, metadata: ["source": .string("review_today")])
+                _ = await TrackingService.shared.startSession(.review, metadata: ["source": .string("review_today")])
             }
         }
         .onDisappear {

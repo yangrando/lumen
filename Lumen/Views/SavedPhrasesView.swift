@@ -128,6 +128,9 @@ struct SavedPhrasesView: View {
                                 isPlaying: audioService.currentlyPlayingPhraseID == audioPhraseID(for: phrase),
                                 onPlayAudio: {
                                     toggleAudio(for: phrase)
+                                },
+                                onRemove: {
+                                    removePhrase(phrase)
                                 }
                             )
                             .listRowBackground(Color.clear)
@@ -148,7 +151,7 @@ struct SavedPhrasesView: View {
             Task {
                 await sessionService.ensureCurrentUserLoaded()
                 await syncSavedReels()
-                await TrackingService.shared.startSession(.review, metadata: ["source": .string("saved_phrases")])
+                _ = await TrackingService.shared.startSession(.review, metadata: ["source": .string("saved_phrases")])
             }
         }
         .onDisappear {
@@ -178,11 +181,19 @@ struct SavedPhrasesView: View {
     }
 
     private func deletePhrases(at offsets: IndexSet) {
+        let phrasesToDelete = offsets.map { filteredPhrases[$0] }
+        removePhrases(phrasesToDelete)
+    }
+
+    private func removePhrase(_ phrase: FavoritePhrase) {
+        removePhrases([phrase])
+    }
+
+    private func removePhrases(_ phrasesToDelete: [FavoritePhrase]) {
         Task {
             await sessionService.ensureCurrentUserLoaded()
             guard let userID = sessionService.currentUser?.sub else { return }
 
-            let phrasesToDelete = offsets.map { filteredPhrases[$0] }
             for phrase in phrasesToDelete {
                 modelContext.delete(phrase)
                 await SavedReelsService.shared.enqueueUnsave(userID: userID, reelID: phrase.reelID)
@@ -276,6 +287,7 @@ struct SavedPhraseRow: View {
     let phrase: FavoritePhrase
     let isPlaying: Bool
     let onPlayAudio: () -> Void
+    let onRemove: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -305,17 +317,36 @@ struct SavedPhraseRow: View {
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(LumenColors.textSecondary)
 
-            Button(action: onPlayAudio) {
-                HStack(spacing: 8) {
-                    Image(systemName: isPlaying ? "stop.fill" : "play.fill")
-                    Text(isPlaying ? LocalizedStrings.feedStopAudio : LocalizedStrings.feedListen)
+            HStack(spacing: 10) {
+                Button(action: onPlayAudio) {
+                    HStack(spacing: 8) {
+                        Image(systemName: isPlaying ? "stop.fill" : "play.fill")
+                        Text(isPlaying ? LocalizedStrings.feedStopAudio : LocalizedStrings.feedListen)
+                    }
+                    .font(.system(size: 13, weight: .semibold))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 36)
+                    .foregroundStyle(.white)
+                    .background(Color.white.opacity(0.12))
+                    .clipShape(Capsule())
                 }
-                .font(.system(size: 13, weight: .semibold))
-                .frame(maxWidth: .infinity)
-                .frame(height: 36)
-                .foregroundStyle(.white)
-                .background(Color.white.opacity(0.12))
-                .clipShape(Capsule())
+
+                Button(action: onRemove) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "heart.slash.fill")
+                        Text(LocalizedStrings.feedUnsaveButton)
+                    }
+                    .font(.system(size: 13, weight: .semibold))
+                    .padding(.horizontal, 14)
+                    .frame(height: 36)
+                    .foregroundStyle(Color(red: 1.0, green: 0.76, blue: 0.80))
+                    .background(Color(red: 0.42, green: 0.12, blue: 0.20).opacity(0.45))
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+                    .clipShape(Capsule())
+                }
             }
         }
         .padding(12)

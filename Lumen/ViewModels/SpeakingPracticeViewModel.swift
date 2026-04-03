@@ -51,7 +51,7 @@ final class SpeakingPracticeViewModel: ObservableObject {
         guard !isUploading else { return nil }
         errorMessage = nil
 
-        guard let fileURL = recordingService.stopRecording() else {
+        guard let fileURL = await recordingService.stopRecording() else {
             errorMessage = LocalizedStrings.speakingRecordBeforeSubmit
             return nil
         }

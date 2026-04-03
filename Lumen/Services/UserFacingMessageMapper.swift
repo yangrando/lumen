@@ -53,8 +53,15 @@ enum UserFacingMessageMapper {
         if lowered.contains("not connected") || lowered.contains("network") || lowered.contains("internet connection") {
             return LocalizedStrings.commonErrorConnection
         }
+        if lowered.contains("quota") || lowered.contains("resource_exhausted") || lowered.contains("rate limit") || lowered.contains("retry in") {
+            return "Phrase generation is temporarily busy. Please try again in a few seconds."
+        }
         if lowered.hasPrefix("network error:") {
             let cleaned = trimmed.replacingOccurrences(of: "Network Error:", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let cleanedLowered = cleaned.lowercased()
+            if cleanedLowered.contains("quota") || cleanedLowered.contains("resource_exhausted") || cleanedLowered.contains("rate limit") || cleanedLowered.contains("retry in") {
+                return "Phrase generation is temporarily busy. Please try again in a few seconds."
+            }
             return cleaned.isEmpty ? LocalizedStrings.commonErrorGeneric : cleaned
         }
         if lowered.hasPrefix("decoding error:") {

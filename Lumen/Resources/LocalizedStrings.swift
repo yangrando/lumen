@@ -174,6 +174,7 @@ struct LocalizedStrings {
     static var askAIStopRecord: String { NSLocalizedString("ask.ai.stop.record", comment: "") }
     static var askAIAudioPermissionDenied: String { NSLocalizedString("ask.ai.audio.permission.denied", comment: "") }
     static var askAISpeechUnavailable: String { NSLocalizedString("ask.ai.speech.unavailable", comment: "") }
+    static var askAIAudioInputUnavailable: String { localized("ask.ai.audio.input.unavailable", fallback: "Microphone input is not available right now. Try again in a moment.") }
     static var askAIQuestionRequired: String { NSLocalizedString("ask.ai.question.required", comment: "") }
     
     static let feedLoadingTitle = NSLocalizedString("feed.loading.title", comment: "")

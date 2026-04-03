@@ -4,6 +4,7 @@ import Foundation
 
 class AIService {
     static let shared = AIService()
+    private let requestTimeout: TimeInterval = 180
     
     private let baseURL: String = {
         if let value = Bundle.main.object(forInfoDictionaryKey: "AI_BASE_URL") as? String,
@@ -38,8 +39,9 @@ class AIService {
         maxWordsPerCard: Int = 90,
         minCharactersPerCard: Int = 120,
         maxCharactersPerCard: Int = 560,
-        preferredSentenceRange: String = "2 to 4 sentences"
-    ) async throws -> [EnglishPhrase] {
+        preferredSentenceRange: String = "2 to 4 sentences",
+        requestID: String? = nil
+    ) async throws -> GeneratedPhraseBatch {
         logger.info("Starting phrase generation - Level: \(level), Interests: \(interests.joined(separator: ", ")), Count: \(count)")
         
         let prompt = buildPrompt(
@@ -58,26 +60,39 @@ class AIService {
         
         logger.debug("Generated prompt for API call")
         
-        let response = try await callOpenAI(
+        var requestMeta: [String: Any] = [
+            "count": count,
+            "cefr_level": level,
+            "native_language": nativeLanguage,
+            "interests": interests,
+            "objectives": objectives,
+            "excluded_texts": excludedTexts,
+            "enforce_translation_language": true,
+            "min_words_per_card": minWordsPerCard,
+            "max_words_per_card": maxWordsPerCard,
+            "min_chars_per_card": minCharactersPerCard,
+            "max_chars_per_card": maxCharactersPerCard
+        ]
+        if let requestID, !requestID.isEmpty {
+            requestMeta["request_id"] = requestID
+        }
+
+        let response = try await callBackend(
             prompt: prompt,
             task: "generate_phrases",
-            meta: [
-                "count": count,
-                "cefr_level": level,
-                "native_language": nativeLanguage,
-                "enforce_translation_language": true,
-                "min_words_per_card": minWordsPerCard,
-                "max_words_per_card": maxWordsPerCard,
-                "min_chars_per_card": minCharactersPerCard,
-                "max_chars_per_card": maxCharactersPerCard
-            ]
+            meta: requestMeta
         )
         logger.debug("Received response from OpenAI API")
-        
-        let phrases = try parsePhrases(from: response)
+
+        let phrases = try parsePhrases(from: response.text)
+        if let metadata = response.meta {
+            logger.info(
+                "Phrase batch metadata - requestID: \(metadata.requestID ?? "-"), requested: \(metadata.requestedCount ?? count), returned: \(metadata.returnedCount ?? phrases.count), partial: \(metadata.partialBatch ?? false), mode: \(metadata.generationMode ?? "-"), latencyMs: \(metadata.serverTimingMs ?? 0)"
+            )
+        }
         logger.success("Successfully parsed \(phrases.count) phrases")
-        
-        return phrases
+
+        return GeneratedPhraseBatch(phrases: phrases, metadata: response.meta)
     }
 
     func askAboutPhrase(
@@ -103,7 +118,7 @@ class AIService {
         Keep it practical and easy to understand.
         """
 
-        return try await callOpenAI(prompt: prompt, task: "answer_doubt")
+        return try await callBackend(prompt: prompt, task: "answer_doubt").text
     }
     
     // MARK: - Get AI Feedback
@@ -132,7 +147,7 @@ class AIService {
         Keep the explanation simple and appropriate for their level.
         """
         
-        let response = try await callOpenAI(prompt: prompt, task: "explain_phrase")
+        let response = try await callBackend(prompt: prompt, task: "explain_phrase").text
         logger.success("Feedback received for phrase: '\(phrase)'")
         
         return response
@@ -150,11 +165,11 @@ class AIService {
         
         let prompt = "Translate this English phrase to \(targetLanguage). Only provide the translation, nothing else:\n\n\(phrase)"
         
-        let response = try await callOpenAI(
+        let response = try await callBackend(
             prompt: prompt,
             task: "translate_phrase",
             meta: ["target_language": targetLanguage]
-        )
+        ).text
         let translation = response.trimmingCharacters(in: .whitespaces)
         
         logger.success("Translation completed: '\(phrase)' -> '\(translation)'")
@@ -234,7 +249,7 @@ class AIService {
         """
     }
     
-    private func callOpenAI(prompt: String, task: String?, meta: [String: Any]? = nil) async throws -> String {
+    private func callBackend(prompt: String, task: String?, meta: [String: Any]? = nil) async throws -> BackendResponse {
         logger.debug("Preparing backend AI request")
         let accessToken = await MainActor.run { SessionService.shared.accessToken }
         guard let accessToken else {
@@ -251,7 +266,7 @@ class AIService {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        request.timeoutInterval = 90
+        request.timeoutInterval = requestTimeout
         
         logger.logAPIRequest(url: baseURL, method: "POST")
         
@@ -290,29 +305,26 @@ class AIService {
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-            let errorMessage = "Invalid response from server (Status: \(statusCode))"
-            logger.error(errorMessage)
-            
-            // Try to extract error message from response
             if let errorResponse = try? JSONDecoder().decode(BackendErrorResponse.self, from: data) {
                 logger.error("Backend Error: \(errorResponse.detail)")
+                throw AIServiceError.networkError(errorResponse.detail)
             }
-            
+            let errorMessage = "Invalid response from server (Status: \(statusCode))"
+            logger.error(errorMessage)
             throw AIServiceError.networkError(errorMessage)
         }
         
         // Decode the response
         logger.debug("Decoding backend response...")
         let decodedResponse = try JSONDecoder().decode(BackendResponse.self, from: data)
-        
-        let content = decodedResponse.text
-        if content.isEmpty {
+
+        if decodedResponse.text.isEmpty {
             logger.error("Could not extract content from backend response")
             throw AIServiceError.decodingError("Could not extract content from response")
         }
-        
+
         logger.success("Successfully decoded backend response")
-        return content
+        return decodedResponse
     }
     
     // MARK: - Parse Phrases from JSON Response
@@ -347,10 +359,20 @@ class AIService {
             let difficultyLevel = DifficultyLevel(label: phraseResponse.difficulty)
             
             return EnglishPhrase(
+                reelID: phraseResponse.reelID ?? "",
                 text: phraseResponse.text,
                 translation: phraseResponse.translation,
                 difficulty: difficultyLevel,
-                category: phraseResponse.category
+                category: phraseResponse.category,
+                goal: phraseResponse.goal,
+                contentType: phraseResponse.contentType,
+                keywords: phraseResponse.keywords ?? [],
+                focusWords: phraseResponse.focusWords ?? [],
+                grammarFocus: phraseResponse.grammarFocus,
+                speakingSuitable: phraseResponse.speakingSuitable ?? false,
+                reviewPriorityHint: phraseResponse.reviewPriorityHint,
+                generationExplanation: phraseResponse.generationExplanation,
+                difficultyMode: phraseResponse.difficultyMode
             )
         }
         
@@ -361,19 +383,96 @@ class AIService {
 
 // MARK: - Models for API Communication
 
-struct BackendResponse: Codable {
+struct BackendResponse: Decodable {
     let text: String
+    let meta: PhraseBatchMetadata?
 }
 
-struct BackendErrorResponse: Codable {
+struct PhraseBatchMetadata: Decodable {
+    let requestedCount: Int?
+    let returnedCount: Int?
+    let generationMode: String?
+    let partialBatch: Bool?
+    let hasMore: Bool?
+    let serverTimingMs: Int?
+    let requestID: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case requestedCount = "requested_count"
+        case returnedCount = "returned_count"
+        case generationMode = "generation_mode"
+        case partialBatch = "partial_batch"
+        case hasMore = "has_more"
+        case serverTimingMs = "server_timing_ms"
+        case requestID = "request_id"
+    }
+}
+
+struct GeneratedPhraseBatch {
+    let phrases: [EnglishPhrase]
+    let metadata: PhraseBatchMetadata?
+}
+
+struct BackendErrorResponse: Decodable {
     let detail: String
 }
 
-struct PhraseResponse: Codable {
+struct PhraseResponse: Decodable {
+    let reelID: String?
     let text: String
     let translation: String
     let category: String
     let difficulty: String
+    let goal: String?
+    let contentType: String?
+    let keywords: [String]?
+    let focusWords: [String]?
+    let grammarFocus: String?
+    let speakingSuitable: Bool?
+    let reviewPriorityHint: String?
+    let generationExplanation: String?
+    let difficultyMode: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case reelID = "reel_id"
+        case text
+        case translation
+        case category
+        case detectedTopic = "detected_topic"
+        case difficulty
+        case targetLevel = "target_level"
+        case goal
+        case contentType = "content_type"
+        case keywords
+        case focusWords = "focus_words"
+        case grammarFocus = "grammar_focus"
+        case speakingSuitable = "speaking_suitable"
+        case reviewPriorityHint = "review_priority_hint"
+        case generationExplanation = "generation_explanation"
+        case difficultyMode = "difficulty_mode"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        reelID = try container.decodeIfPresent(String.self, forKey: .reelID)
+        text = try container.decode(String.self, forKey: .text)
+        translation = try container.decode(String.self, forKey: .translation)
+        category = try container.decodeIfPresent(String.self, forKey: .detectedTopic)
+            ?? container.decodeIfPresent(String.self, forKey: .category)
+            ?? "General"
+        difficulty = try container.decodeIfPresent(String.self, forKey: .targetLevel)
+            ?? container.decodeIfPresent(String.self, forKey: .difficulty)
+            ?? "B1"
+        goal = try container.decodeIfPresent(String.self, forKey: .goal)
+        contentType = try container.decodeIfPresent(String.self, forKey: .contentType)
+        keywords = try container.decodeIfPresent([String].self, forKey: .keywords)
+        focusWords = try container.decodeIfPresent([String].self, forKey: .focusWords)
+        grammarFocus = try container.decodeIfPresent(String.self, forKey: .grammarFocus)
+        speakingSuitable = try container.decodeIfPresent(Bool.self, forKey: .speakingSuitable)
+        reviewPriorityHint = try container.decodeIfPresent(String.self, forKey: .reviewPriorityHint)
+        generationExplanation = try container.decodeIfPresent(String.self, forKey: .generationExplanation)
+        difficultyMode = try container.decodeIfPresent(String.self, forKey: .difficultyMode)
+    }
 }
 
 // MARK: - Error Handling
