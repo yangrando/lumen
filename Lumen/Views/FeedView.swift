@@ -836,6 +836,7 @@ struct VerticalPageView<Page: View>: UIViewControllerRepresentable {
             transitionStyle: .scroll,
             navigationOrientation: .vertical
         )
+        context.coordinator.pageViewController = controller
         controller.view.backgroundColor = .clear
         controller.view.isOpaque = false
         controller.view.insetsLayoutMarginsFromSafeArea = false
@@ -861,11 +862,26 @@ struct VerticalPageView<Page: View>: UIViewControllerRepresentable {
     
     func updateUIViewController(_ uiViewController: UIPageViewController, context: Context) {
         context.coordinator.parent = self
-        _ = context.coordinator.updateControllers(with: pages)
+        context.coordinator.pageViewController = uiViewController
+        let rebuiltControllers = context.coordinator.updateControllers(with: pages)
         
         guard !context.coordinator.controllers.isEmpty else { return }
         let safePage = min(max(currentPage, 0), context.coordinator.controllers.count - 1)
+        if context.coordinator.isTransitioning {
+            context.coordinator.pendingPage = safePage
+            return
+        }
         if safePage == context.coordinator.currentPage {
+            if rebuiltControllers,
+               let visible = uiViewController.viewControllers?.first,
+               let visibleIndex = context.coordinator.indexOfControllerIdentity(visible),
+               visibleIndex == safePage {
+                uiViewController.setViewControllers(
+                    [visible],
+                    direction: .forward,
+                    animated: false
+                )
+            }
             return
         }
         
@@ -885,6 +901,9 @@ struct VerticalPageView<Page: View>: UIViewControllerRepresentable {
         var parent: VerticalPageView
         var controllers: [UIViewController]
         var currentPage: Int
+        weak var pageViewController: UIPageViewController?
+        var isTransitioning = false
+        var pendingPage: Int?
         
         init(_ parent: VerticalPageView) {
             self.parent = parent
@@ -913,6 +932,10 @@ struct VerticalPageView<Page: View>: UIViewControllerRepresentable {
             return rebuilt
         }
 
+        func indexOfControllerIdentity(_ viewController: UIViewController) -> Int? {
+            controllers.firstIndex(where: { $0 === viewController })
+        }
+        
         private static func makeHostingController(rootView: Page) -> UIViewController {
             let hosting = UIHostingController(rootView: rootView)
             hosting.view.backgroundColor = .clear
@@ -948,17 +971,52 @@ struct VerticalPageView<Page: View>: UIViewControllerRepresentable {
         
         func pageViewController(
             _ pageViewController: UIPageViewController,
+            willTransitionTo pendingViewControllers: [UIViewController]
+        ) {
+            isTransitioning = true
+        }
+
+        func pageViewController(
+            _ pageViewController: UIPageViewController,
             didFinishAnimating finished: Bool,
             previousViewControllers: [UIViewController],
             transitionCompleted completed: Bool
         ) {
+            isTransitioning = false
             guard
                 completed,
                 let visible = pageViewController.viewControllers?.first,
                 let index = controllers.firstIndex(where: { $0 === visible })
-            else { return }
+            else {
+                applyPendingPageIfNeeded()
+                return
+            }
             currentPage = index
             parent.currentPage = index
+            applyPendingPageIfNeeded()
+        }
+
+        private func applyPendingPageIfNeeded() {
+            guard
+                let pageViewController,
+                let pendingPage
+            else { return }
+
+            let safePendingPage = min(max(pendingPage, 0), controllers.count - 1)
+            self.pendingPage = nil
+
+            guard safePendingPage != currentPage else { return }
+
+            let direction: UIPageViewController.NavigationDirection =
+                safePendingPage >= currentPage ? .forward : .reverse
+
+            pageViewController.setViewControllers(
+                [controllers[safePendingPage]],
+                direction: direction,
+                animated: false
+            )
+            currentPage = safePendingPage
+            parent.currentPage = safePendingPage
         }
     }
 }

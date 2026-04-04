@@ -87,7 +87,7 @@ class AIService {
         let phrases = try parsePhrases(from: response.text)
         if let metadata = response.meta {
             logger.info(
-                "Phrase batch metadata - requestID: \(metadata.requestID ?? "-"), requested: \(metadata.requestedCount ?? count), returned: \(metadata.returnedCount ?? phrases.count), partial: \(metadata.partialBatch ?? false), mode: \(metadata.generationMode ?? "-"), latencyMs: \(metadata.serverTimingMs ?? 0), servedFromBuffer: \(metadata.servedFromBuffer ?? 0), generatedFresh: \(metadata.generatedFresh ?? 0), bufferBefore: \(metadata.bufferSizeBefore ?? 0), bufferAfter: \(metadata.bufferSizeAfter ?? 0), refillTriggered: \(metadata.refillTriggered ?? false), refillMode: \(metadata.refillMode ?? "-"), batchID: \(metadata.batchID ?? "-")"
+                "Phrase batch metadata - requestID: \(metadata.requestID ?? "-"), requested: \(metadata.requestedCount ?? count), returned: \(metadata.returnedCount ?? phrases.count), partial: \(metadata.partialBatch ?? false), mode: \(metadata.generationMode ?? "-"), latencyMs: \(metadata.serverTimingMs ?? 0), servedFromBuffer: \(metadata.servedFromBuffer ?? 0), generatedFresh: \(metadata.generatedFresh ?? 0), bufferBefore: \(metadata.bufferSizeBefore ?? 0), bufferAfter: \(metadata.bufferSizeAfter ?? 0), refillTriggered: \(metadata.refillTriggered ?? false), refillMode: \(metadata.refillMode ?? "-"), bufferHitRate: \(metadata.bufferHitRate ?? 0), batchID: \(metadata.batchID ?? "-")"
             )
         }
         logger.success("Successfully parsed \(phrases.count) phrases")
@@ -402,6 +402,7 @@ struct PhraseBatchMetadata: Decodable {
     let bufferSizeAfter: Int?
     let refillTriggered: Bool?
     let refillMode: String?
+    let bufferHitRate: Double?
     let batchID: String?
 
     private enum CodingKeys: String, CodingKey {
@@ -418,6 +419,7 @@ struct PhraseBatchMetadata: Decodable {
         case bufferSizeAfter = "buffer_size_after"
         case refillTriggered = "refill_triggered"
         case refillMode = "refill_mode"
+        case bufferHitRate = "buffer_hit_rate"
         case batchID = "batch_id"
     }
 }

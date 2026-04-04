@@ -68,14 +68,17 @@ class FeedViewModel: ObservableObject {
     private var lastFetchAddedCount = 0
     private var activeFetchRequestID: String?
     private var fetchCooldownUntil: Date?
-    private let preloadThreshold = 6
-    private let lowWatermark = 6
-    private let visibleBufferFloor = 8
-    private let refillSize = 10
-    private let targetBufferSize = 16
-    private let minimumAutomaticFetchSpacing: TimeInterval = 3
+    private var furthestConsumedIndex = 0
+    private var firstBlockingLoadingLogged = false
+    private let preloadThreshold = 22
+    private let lowWatermark = 22
+    private let visibleBufferFloor = 28
+    private let refillSize = 32
+    private let targetBufferSize = 64
+    private let minimumBlockingRecoveryBuffer = 28
+    private let minimumAutomaticFetchSpacing: TimeInterval = 2
     private let lowYieldFetchCooldown: TimeInterval = 12
-    private let initialPageSize = 12
+    private let initialPageSize = 40
     
     init() {
         Task {
@@ -112,9 +115,9 @@ class FeedViewModel: ObservableObject {
             logger.info(
                 "Feed initial load completed - requested: \(initialPageSize), visibleLoaded: \(phrases.count), queued: \(queuedPhrases.count), bufferTarget: \(targetBufferSize)"
             )
-            if totalAvailableReels(after: currentVisibleIndex) <= lowWatermark {
+            if totalAvailableReels(after: currentVisibleIndex) < targetBufferSize {
                 logger.info(
-                    "Feed initial top-up triggered - visibleLoaded: \(phrases.count), queued: \(queuedPhrases.count), threshold: \(lowWatermark)"
+                    "Feed initial top-up triggered - visibleLoaded: \(phrases.count), queued: \(queuedPhrases.count), totalAvailable: \(totalAvailableReels(after: currentVisibleIndex)), targetBuffer: \(targetBufferSize)"
                 )
                 loadMoreTask = Task { [weak self] in
                     guard let self else { return }
@@ -225,6 +228,7 @@ class FeedViewModel: ObservableObject {
     func ensureMorePhrasesIfNeeded(currentIndex: Int) {
         guard !phrases.isEmpty || !queuedPhrases.isEmpty else { return }
         currentVisibleIndex = max(0, min(currentIndex, max(phrases.count, 0)))
+        furthestConsumedIndex = max(furthestConsumedIndex, min(currentVisibleIndex, max(phrases.count - 1, 0)))
         let promoted = promoteBufferedPhrasesIfNeeded(trigger: "scroll", desiredVisibleRemaining: visibleBufferFloor)
         let remaining = remainingReels(after: currentVisibleIndex)
         let totalAvailable = totalAvailableReels(after: currentVisibleIndex)
@@ -258,7 +262,7 @@ class FeedViewModel: ObservableObject {
         let trigger = reachedTailPage ? "tail_exhausted" : "preload_threshold"
         let requestedCount = recommendedFetchCount(currentIndex: currentVisibleIndex)
         logger.info(
-            "Feed preload triggered - trigger: \(trigger), visibleIndex: \(currentVisibleIndex), visibleTotal: \(phrases.count), queued: \(queuedPhrases.count), remainingVisible: \(remaining), totalAvailable: \(totalAvailable), requested: \(requestedCount)"
+            "Feed preload triggered - trigger: \(trigger), visibleIndex: \(currentVisibleIndex), visibleTotal: \(phrases.count), queued: \(queuedPhrases.count), remainingVisible: \(remaining), totalAvailable: \(totalAvailable), requested: \(requestedCount), preloadLead: \(totalAvailable)"
         )
 
         loadMoreTask = Task { [weak self] in
@@ -330,6 +334,12 @@ class FeedViewModel: ObservableObject {
         isBackgroundFetching = !isBlockingFetch
         if isBlockingFetch {
             tailState = .loading
+            if !firstBlockingLoadingLogged {
+                firstBlockingLoadingLogged = true
+                logger.warning(
+                    "Feed first blocking loading - consumedReels: \(furthestConsumedIndex + 1), visibleIndex: \(currentVisibleIndex), visibleCount: \(phrases.count), queuedCount: \(queuedPhrases.count), trigger: \(trigger)"
+                )
+            }
         }
         if trigger != "manual_retry" {
             lastAutomaticFetchAt = Date()
@@ -342,6 +352,11 @@ class FeedViewModel: ObservableObject {
             isBackgroundFetching = false
         }
 
+        var returnedCount = 0
+        var appended = 0
+        var promoted = 0
+        var bufferAfter = bufferBefore
+
         let excluded = allKnownTexts()
         let newBatch = try await generateBatch(excludedTexts: excluded, count: requestedCount, requestID: requestID)
         guard activeFetchRequestID == requestID else {
@@ -349,9 +364,35 @@ class FeedViewModel: ObservableObject {
             return
         }
 
-        let appended = ingestIncoming(newBatch.phrases, source: trigger)
-        let promoted = promoteBufferedPhrasesIfNeeded(trigger: trigger, desiredVisibleRemaining: visibleBufferFloor)
-        let returnedCount = newBatch.metadata?.returnedCount ?? newBatch.phrases.count
+        returnedCount += newBatch.metadata?.returnedCount ?? newBatch.phrases.count
+        appended += ingestIncoming(newBatch.phrases, source: trigger)
+        promoted += promoteBufferedPhrasesIfNeeded(trigger: trigger, desiredVisibleRemaining: visibleBufferFloor)
+        bufferAfter = totalAvailableReels(after: currentVisibleIndex)
+
+        if isBlockingFetch && bufferAfter < minimumBlockingRecoveryBuffer {
+            let recoveryCount = max(refillSize, minimumBlockingRecoveryBuffer - bufferAfter + lowWatermark)
+            logger.info(
+                "Feed blocking recovery top-up starting - trigger: \(trigger), requestID: \(requestID), bufferAfter: \(bufferAfter), recoveryTarget: \(minimumBlockingRecoveryBuffer), requested: \(recoveryCount)"
+            )
+
+            let recoveryBatch = try await generateBatch(
+                excludedTexts: allKnownTexts(),
+                count: recoveryCount,
+                requestID: requestID
+            )
+            guard activeFetchRequestID == requestID else {
+                logger.warning("Feed blocking recovery ignored stale response - requestID: \(requestID), activeRequestID: \(activeFetchRequestID ?? "-")")
+                return
+            }
+
+            returnedCount += recoveryBatch.metadata?.returnedCount ?? recoveryBatch.phrases.count
+            appended += ingestIncoming(recoveryBatch.phrases, source: "\(trigger)_blocking_recovery")
+            promoted += promoteBufferedPhrasesIfNeeded(trigger: "\(trigger)_blocking_recovery", desiredVisibleRemaining: visibleBufferFloor)
+            bufferAfter = totalAvailableReels(after: currentVisibleIndex)
+            logger.info(
+                "Feed blocking recovery top-up completed - trigger: \(trigger), requestID: \(requestID), bufferAfter: \(bufferAfter), returnedTotal: \(returnedCount), appendedTotal: \(appended), promotedTotal: \(promoted)"
+            )
+        }
 
         if appended == 0 {
             lastFetchAddedCount = 0
@@ -366,7 +407,6 @@ class FeedViewModel: ObservableObject {
         }
         lastFetchAddedCount = appended
         fetchCooldownUntil = nil
-        let bufferAfter = totalAvailableReels(after: currentVisibleIndex)
         logger.info(
             "Feed buffer fetch completed - trigger: \(trigger), requestID: \(requestID), visibleAfter: \(phrases.count), queuedAfter: \(queuedPhrases.count), bufferAfter: \(bufferAfter), returned: \(returnedCount), appended: \(appended), promoted: \(promoted)"
         )
@@ -374,6 +414,29 @@ class FeedViewModel: ObservableObject {
             activeFetchRequestID = nil
         }
         tailState = .idle
+
+        let shouldContinueTopUp =
+            trigger != "manual_retry" &&
+            (
+                bufferAfter < targetBufferSize ||
+                appended < max(lowWatermark, requestedCount / 2)
+            )
+
+        if shouldContinueTopUp && loadMoreTask == nil {
+            logger.info(
+                "Feed chained top-up scheduled - previousTrigger: \(trigger), requestID: \(requestID), bufferAfter: \(bufferAfter), targetBuffer: \(targetBufferSize), requested: \(requestedCount), returned: \(returnedCount), appended: \(appended)"
+            )
+            loadMoreTask = Task { [weak self] in
+                guard let self else { return }
+                defer { self.loadMoreTask = nil }
+                do {
+                    try await Task.sleep(nanoseconds: 350_000_000)
+                    try await self.fetchMorePhrases(force: true, trigger: "chained_top_up")
+                } catch {
+                    await self.handleLoadMoreFailure(error)
+                }
+            }
+        }
     }
 
     private func handleLoadMoreFailure(_ error: Error) async {
@@ -515,9 +578,9 @@ class FeedViewModel: ObservableObject {
         let totalAvailable = totalAvailableReels(after: currentIndex)
         let missingToTarget = max(targetBufferSize - totalAvailable, 0)
         if lastFetchAddedCount > 0 && lastFetchAddedCount < lowWatermark {
-            return max(4, min(6, refillSize))
+            return max(refillSize, 40)
         }
-        return max(refillSize, min(max(refillSize, missingToTarget), initialPageSize))
+        return max(refillSize, min(max(refillSize, missingToTarget), 48))
     }
 
     private func isAcceptableFeedPhrase(_ phrase: EnglishPhrase) -> Bool {
@@ -717,6 +780,8 @@ class FeedViewModel: ObservableObject {
         lastFetchAddedCount = 0
         activeFetchRequestID = nil
         fetchCooldownUntil = nil
+        furthestConsumedIndex = 0
+        firstBlockingLoadingLogged = false
         bufferedPhraseCount = 0
         isBackgroundFetching = false
         tailState = .idle
