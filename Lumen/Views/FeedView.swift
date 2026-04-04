@@ -861,11 +861,11 @@ struct VerticalPageView<Page: View>: UIViewControllerRepresentable {
     
     func updateUIViewController(_ uiViewController: UIPageViewController, context: Context) {
         context.coordinator.parent = self
-        let rebuiltControllers = context.coordinator.updateControllers(with: pages)
+        _ = context.coordinator.updateControllers(with: pages)
         
         guard !context.coordinator.controllers.isEmpty else { return }
         let safePage = min(max(currentPage, 0), context.coordinator.controllers.count - 1)
-        if safePage == context.coordinator.currentPage && !rebuiltControllers {
+        if safePage == context.coordinator.currentPage {
             return
         }
         
@@ -893,18 +893,24 @@ struct VerticalPageView<Page: View>: UIViewControllerRepresentable {
         }
         
         func updateControllers(with pages: [Page]) -> Bool {
-            if controllers.count != pages.count {
-                controllers = pages.map { Self.makeHostingController(rootView: $0) }
-                return true
+            var rebuilt = false
+
+            if controllers.count < pages.count {
+                let additional = pages[controllers.count...].map { Self.makeHostingController(rootView: $0) }
+                controllers.append(contentsOf: additional)
+                rebuilt = true
+            } else if controllers.count > pages.count {
+                controllers.removeLast(controllers.count - pages.count)
+                rebuilt = true
             }
-            
+
             for index in pages.indices {
                 if let hosting = controllers[index] as? UIHostingController<Page> {
                     hosting.rootView = pages[index]
                     hosting.view.backgroundColor = .clear
                 }
             }
-            return false
+            return rebuilt
         }
 
         private static func makeHostingController(rootView: Page) -> UIViewController {

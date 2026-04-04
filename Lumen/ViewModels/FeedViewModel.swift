@@ -68,14 +68,14 @@ class FeedViewModel: ObservableObject {
     private var lastFetchAddedCount = 0
     private var activeFetchRequestID: String?
     private var fetchCooldownUntil: Date?
-    private let preloadThreshold = 3
-    private let lowWatermark = 4
-    private let visibleBufferFloor = 6
-    private let refillSize = 8
-    private let targetBufferSize = 12
-    private let minimumAutomaticFetchSpacing: TimeInterval = 6
+    private let preloadThreshold = 6
+    private let lowWatermark = 6
+    private let visibleBufferFloor = 8
+    private let refillSize = 10
+    private let targetBufferSize = 16
+    private let minimumAutomaticFetchSpacing: TimeInterval = 3
     private let lowYieldFetchCooldown: TimeInterval = 12
-    private let initialPageSize = 10
+    private let initialPageSize = 12
     
     init() {
         Task {
@@ -112,6 +112,20 @@ class FeedViewModel: ObservableObject {
             logger.info(
                 "Feed initial load completed - requested: \(initialPageSize), visibleLoaded: \(phrases.count), queued: \(queuedPhrases.count), bufferTarget: \(targetBufferSize)"
             )
+            if totalAvailableReels(after: currentVisibleIndex) <= lowWatermark {
+                logger.info(
+                    "Feed initial top-up triggered - visibleLoaded: \(phrases.count), queued: \(queuedPhrases.count), threshold: \(lowWatermark)"
+                )
+                loadMoreTask = Task { [weak self] in
+                    guard let self else { return }
+                    defer { self.loadMoreTask = nil }
+                    do {
+                        try await self.fetchMorePhrases(force: true, trigger: "initial_top_up")
+                    } catch {
+                        await self.handleLoadMoreFailure(error)
+                    }
+                }
+            }
         } catch {
             errorMessage = error.localizedDescription
             isLoading = false
@@ -351,11 +365,7 @@ class FeedViewModel: ObservableObject {
             return
         }
         lastFetchAddedCount = appended
-        if returnedCount < requestedCount || appended < lowWatermark {
-            fetchCooldownUntil = Date().addingTimeInterval(lowYieldFetchCooldown)
-        } else {
-            fetchCooldownUntil = nil
-        }
+        fetchCooldownUntil = nil
         let bufferAfter = totalAvailableReels(after: currentVisibleIndex)
         logger.info(
             "Feed buffer fetch completed - trigger: \(trigger), requestID: \(requestID), visibleAfter: \(phrases.count), queuedAfter: \(queuedPhrases.count), bufferAfter: \(bufferAfter), returned: \(returnedCount), appended: \(appended), promoted: \(promoted)"
@@ -494,14 +504,8 @@ class FeedViewModel: ObservableObject {
         if let fetchCooldownUntil, Date() < fetchCooldownUntil {
             return false
         }
-        if triggeredByTail && lastFetchAddedCount == 0 {
-            return false
-        }
         if let lastAutomaticFetchAt,
            Date().timeIntervalSince(lastAutomaticFetchAt) < minimumAutomaticFetchSpacing {
-            return false
-        }
-        if !triggeredByTail && lastFetchAddedCount > 0 && lastFetchAddedCount < lowWatermark {
             return false
         }
         return true

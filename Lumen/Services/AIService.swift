@@ -87,7 +87,7 @@ class AIService {
         let phrases = try parsePhrases(from: response.text)
         if let metadata = response.meta {
             logger.info(
-                "Phrase batch metadata - requestID: \(metadata.requestID ?? "-"), requested: \(metadata.requestedCount ?? count), returned: \(metadata.returnedCount ?? phrases.count), partial: \(metadata.partialBatch ?? false), mode: \(metadata.generationMode ?? "-"), latencyMs: \(metadata.serverTimingMs ?? 0)"
+                "Phrase batch metadata - requestID: \(metadata.requestID ?? "-"), requested: \(metadata.requestedCount ?? count), returned: \(metadata.returnedCount ?? phrases.count), partial: \(metadata.partialBatch ?? false), mode: \(metadata.generationMode ?? "-"), latencyMs: \(metadata.serverTimingMs ?? 0), servedFromBuffer: \(metadata.servedFromBuffer ?? 0), generatedFresh: \(metadata.generatedFresh ?? 0), bufferBefore: \(metadata.bufferSizeBefore ?? 0), bufferAfter: \(metadata.bufferSizeAfter ?? 0), refillTriggered: \(metadata.refillTriggered ?? false), refillMode: \(metadata.refillMode ?? "-"), batchID: \(metadata.batchID ?? "-")"
             )
         }
         logger.success("Successfully parsed \(phrases.count) phrases")
@@ -396,6 +396,13 @@ struct PhraseBatchMetadata: Decodable {
     let hasMore: Bool?
     let serverTimingMs: Int?
     let requestID: String?
+    let servedFromBuffer: Int?
+    let generatedFresh: Int?
+    let bufferSizeBefore: Int?
+    let bufferSizeAfter: Int?
+    let refillTriggered: Bool?
+    let refillMode: String?
+    let batchID: String?
 
     private enum CodingKeys: String, CodingKey {
         case requestedCount = "requested_count"
@@ -405,6 +412,13 @@ struct PhraseBatchMetadata: Decodable {
         case hasMore = "has_more"
         case serverTimingMs = "server_timing_ms"
         case requestID = "request_id"
+        case servedFromBuffer = "served_from_buffer"
+        case generatedFresh = "generated_fresh"
+        case bufferSizeBefore = "buffer_size_before"
+        case bufferSizeAfter = "buffer_size_after"
+        case refillTriggered = "refill_triggered"
+        case refillMode = "refill_mode"
+        case batchID = "batch_id"
     }
 }
 
