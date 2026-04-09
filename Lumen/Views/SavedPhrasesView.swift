@@ -330,6 +330,7 @@ struct SavedPhraseRow: View {
                     .background(Color.white.opacity(0.12))
                     .clipShape(Capsule())
                 }
+                .buttonStyle(.plain)
 
                 Button(action: onRemove) {
                     HStack(spacing: 6) {
@@ -347,6 +348,7 @@ struct SavedPhraseRow: View {
                     )
                     .clipShape(Capsule())
                 }
+                .buttonStyle(.plain)
             }
         }
         .padding(12)

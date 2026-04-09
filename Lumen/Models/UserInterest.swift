@@ -20,6 +20,7 @@ enum UserInterest: String, CaseIterable, Identifiable {
     case art = "Art"
     case music = "Music"
     case food = "Food"
+    case culture = "Culture"
     case fashion = "Fashion"
     case gaming = "Gaming"
     
@@ -47,6 +48,8 @@ enum UserInterest: String, CaseIterable, Identifiable {
             return "music.note"
         case .food:
             return "fork.knife"
+        case .culture:
+            return "globe.europe.africa"
         case .fashion:
             return "tshirt"
         case .gaming:

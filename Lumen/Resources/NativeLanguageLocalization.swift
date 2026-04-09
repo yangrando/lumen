@@ -9,19 +9,20 @@ enum NativeLanguageLocalization {
 
     static func localizedString(forKey key: String, fallback: String = "") -> String {
         let languageCode = resolvedLanguageCode()
-        guard
-            let path = Bundle.main.path(forResource: languageCode, ofType: "lproj"),
-            let bundle = Bundle(path: path)
-        else {
-            let localized = NSLocalizedString(key, comment: "")
-            return localized == key ? fallback : localized
+        let bundle = localizedBundle(for: languageCode)
+
+        if let bundle {
+            let localized = NSLocalizedString(key, bundle: bundle, comment: "")
+            if localized != key {
+                return localized
+            }
         }
 
-        let localized = NSLocalizedString(key, bundle: bundle, comment: "")
-        if localized == key {
-            return fallback.isEmpty ? NSLocalizedString(key, comment: "") : fallback
+        let systemLocalized = NSLocalizedString(key, comment: "")
+        if systemLocalized != key {
+            return systemLocalized
         }
-        return localized
+        return fallback.isEmpty ? key : fallback
     }
 
     static func preferredNativeLanguage() -> String {
@@ -37,5 +38,25 @@ enum NativeLanguageLocalization {
             return "es"
         }
         return "en"
+    }
+
+    private static func localizedBundle(for languageCode: String) -> Bundle? {
+        let candidates: [String]
+        switch languageCode {
+        case "pt-BR":
+            candidates = ["pt-BR", "pt"]
+        case "es":
+            candidates = ["es"]
+        default:
+            candidates = [languageCode, "en"]
+        }
+
+        for candidate in candidates {
+            if let path = Bundle.main.path(forResource: candidate, ofType: "lproj"),
+               let bundle = Bundle(path: path) {
+                return bundle
+            }
+        }
+        return nil
     }
 }

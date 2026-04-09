@@ -70,15 +70,15 @@ class FeedViewModel: ObservableObject {
     private var fetchCooldownUntil: Date?
     private var furthestConsumedIndex = 0
     private var firstBlockingLoadingLogged = false
-    private let preloadThreshold = 22
-    private let lowWatermark = 22
-    private let visibleBufferFloor = 28
-    private let refillSize = 32
-    private let targetBufferSize = 64
-    private let minimumBlockingRecoveryBuffer = 28
-    private let minimumAutomaticFetchSpacing: TimeInterval = 2
+    private let preloadThreshold = 24
+    private let lowWatermark = 24
+    private let visibleBufferFloor = 32
+    private let refillSize = 36
+    private let targetBufferSize = 72
+    private let minimumBlockingRecoveryBuffer = 40
+    private let minimumAutomaticFetchSpacing: TimeInterval = 1
     private let lowYieldFetchCooldown: TimeInterval = 12
-    private let initialPageSize = 40
+    private let initialPageSize = 48
     
     init() {
         Task {
@@ -248,7 +248,8 @@ class FeedViewModel: ObservableObject {
             tailState = .loading
             return
         }
-        let shouldPreload = totalAvailable <= lowWatermark || (remaining <= preloadThreshold && queuedPhrases.count <= 1)
+        let proactiveThreshold = max(lowWatermark, targetBufferSize / 2)
+        let shouldPreload = totalAvailable <= proactiveThreshold || remaining <= preloadThreshold
         guard reachedTailPage || shouldPreload else { return }
         guard !isFetchingMore else { return }
         guard loadMoreTask == nil else { return }
@@ -262,7 +263,7 @@ class FeedViewModel: ObservableObject {
         let trigger = reachedTailPage ? "tail_exhausted" : "preload_threshold"
         let requestedCount = recommendedFetchCount(currentIndex: currentVisibleIndex)
         logger.info(
-            "Feed preload triggered - trigger: \(trigger), visibleIndex: \(currentVisibleIndex), visibleTotal: \(phrases.count), queued: \(queuedPhrases.count), remainingVisible: \(remaining), totalAvailable: \(totalAvailable), requested: \(requestedCount), preloadLead: \(totalAvailable)"
+                "Feed preload triggered - trigger: \(trigger), visibleIndex: \(currentVisibleIndex), visibleTotal: \(phrases.count), queued: \(queuedPhrases.count), remainingVisible: \(remaining), totalAvailable: \(totalAvailable), proactiveThreshold: \(proactiveThreshold), requested: \(requestedCount), preloadLead: \(totalAvailable)"
         )
 
         loadMoreTask = Task { [weak self] in
@@ -578,9 +579,9 @@ class FeedViewModel: ObservableObject {
         let totalAvailable = totalAvailableReels(after: currentIndex)
         let missingToTarget = max(targetBufferSize - totalAvailable, 0)
         if lastFetchAddedCount > 0 && lastFetchAddedCount < lowWatermark {
-            return max(refillSize, 40)
+            return max(refillSize, 48)
         }
-        return max(refillSize, min(max(refillSize, missingToTarget), 48))
+        return max(refillSize, min(max(refillSize, missingToTarget), 56))
     }
 
     private func isAcceptableFeedPhrase(_ phrase: EnglishPhrase) -> Bool {

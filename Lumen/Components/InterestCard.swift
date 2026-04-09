@@ -128,6 +128,8 @@ private extension UserInterest {
             return "Saude"
         case .art:
             return "Arte"
+        case .culture:
+            return "Cultura"
         case .fashion:
             return "Moda"
         case .gaming:

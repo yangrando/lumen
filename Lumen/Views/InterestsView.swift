@@ -180,6 +180,7 @@ struct InterestsView: View {
             .science,
             .sports,
             .business,
+            .culture,
             .health,
             .art,
             .fashion,
