@@ -102,7 +102,7 @@ struct ProfileView: View {
             }
             .padding(.horizontal, 24)
 
-            Text("Profile")
+            Text(LocalizedStrings.profileTitle)
                 .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(.white)
 
@@ -181,7 +181,7 @@ struct ProfileView: View {
 
     private var settingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Settings")
+            Text(LocalizedStrings.profileSettingsTitle)
                 .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(.white)
 
@@ -191,7 +191,7 @@ struct ProfileView: View {
                 } label: {
                     settingsRow(
                         icon: "arrow.clockwise.circle.fill",
-                        title: "Review Today",
+                        title: LocalizedStrings.profileReviewToday,
                         tint: Color(red: 0.20, green: 0.36, blue: 0.52),
                         showsChevron: true
                     )
@@ -203,7 +203,7 @@ struct ProfileView: View {
                 } label: {
                     settingsRow(
                         icon: "chart.line.uptrend.xyaxis",
-                        title: "Progress Overview",
+                        title: LocalizedStrings.profileProgressOverview,
                         tint: Color(red: 0.18, green: 0.40, blue: 0.56),
                         showsChevron: true
                     )
@@ -215,7 +215,7 @@ struct ProfileView: View {
                 } label: {
                     settingsRow(
                         icon: "person.fill",
-                        title: "Profile Settings",
+                        title: LocalizedStrings.profileProfileSettings,
                         tint: Color(red: 0.22, green: 0.28, blue: 0.43),
                         showsChevron: true
                     )
@@ -225,7 +225,7 @@ struct ProfileView: View {
                 Button(action: {}) {
                     settingsRow(
                         icon: "bell.fill",
-                        title: "Notifications",
+                        title: LocalizedStrings.profileNotifications,
                         tint: Color(red: 0.22, green: 0.28, blue: 0.43),
                         showsChevron: true
                     )
@@ -235,7 +235,7 @@ struct ProfileView: View {
                 Button(action: {}) {
                     settingsRow(
                         icon: "questionmark.circle.fill",
-                        title: "Help & Feedback",
+                        title: LocalizedStrings.profileHelpFeedback,
                         tint: Color(red: 0.22, green: 0.28, blue: 0.43),
                         showsChevron: true
                     )
@@ -308,7 +308,7 @@ struct ProfileView: View {
 
     private var displayName: String {
         let trimmed = currentUser?.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return trimmed.isEmpty ? "Lumen Learner" : trimmed
+        return trimmed.isEmpty ? LocalizedStrings.profileDefaultName : trimmed
     }
 
     private var displayHandle: String {

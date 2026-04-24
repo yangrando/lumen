@@ -33,13 +33,48 @@ struct UserPreferences: Codable {
     let level: String
     let nativeLanguage: String
     let interests: [String]
+    let subtopics: [String]
     let objectives: [String]
+    let contentStylePreference: String
+    let profession: String?
 
     enum CodingKeys: String, CodingKey {
         case level
         case nativeLanguage = "native_language"
         case interests
+        case subtopics
         case objectives
+        case contentStylePreference = "content_style_preference"
+        case profession
+    }
+
+    init(
+        level: String,
+        nativeLanguage: String,
+        interests: [String],
+        subtopics: [String] = [],
+        objectives: [String],
+        contentStylePreference: String = "Mixed",
+        profession: String? = nil
+    ) {
+        self.level = level
+        self.nativeLanguage = nativeLanguage
+        self.interests = interests
+        self.subtopics = subtopics
+        self.objectives = objectives
+        self.contentStylePreference = contentStylePreference
+        self.profession = profession
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        level = try container.decode(String.self, forKey: .level)
+        nativeLanguage = try container.decode(String.self, forKey: .nativeLanguage)
+        interests = try container.decodeIfPresent([String].self, forKey: .interests) ?? []
+        subtopics = try container.decodeIfPresent([String].self, forKey: .subtopics) ?? []
+        objectives = try container.decodeIfPresent([String].self, forKey: .objectives) ?? []
+        contentStylePreference = try container.decodeIfPresent(String.self, forKey: .contentStylePreference) ?? "Mixed"
+        profession = try container.decodeIfPresent(String.self, forKey: .profession)
     }
 }
 
@@ -51,13 +86,19 @@ struct UserPreferencesRequestPayload: Codable {
     let level: String
     let nativeLanguage: String
     let interests: [String]
+    let subtopics: [String]
     let objectives: [String]
+    let contentStylePreference: String
+    let profession: String?
 
     enum CodingKeys: String, CodingKey {
         case level
         case nativeLanguage = "native_language"
         case interests
+        case subtopics
         case objectives
+        case contentStylePreference = "content_style_preference"
+        case profession
     }
 }
 
@@ -249,7 +290,10 @@ final class AuthService {
                 level: preferences.level,
                 nativeLanguage: preferences.nativeLanguage,
                 interests: preferences.interests,
-                objectives: preferences.objectives
+                subtopics: preferences.subtopics,
+                objectives: preferences.objectives,
+                contentStylePreference: preferences.contentStylePreference,
+                profession: preferences.profession
             )
         )
 

@@ -9,7 +9,10 @@ struct UserPreferencesView: View {
     @State private var selectedLevel: EnglishLevel = .b1
     @State private var selectedNativeLanguage = "Portuguese (Brazil)"
     @State private var selectedInterests: Set<UserInterest> = []
+    @State private var selectedSubtopics: Set<LearningSubtopic> = []
     @State private var selectedObjectives: Set<LearningObjective> = []
+    @State private var selectedContentStylePreference: ContentStylePreference = .mixed
+    @State private var selectedProfession: ProfessionOption?
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var errorMessage: String?
@@ -36,7 +39,7 @@ struct UserPreferencesView: View {
                 }
             }
         }
-        .navigationTitle("Settings")
+        .navigationTitle(LocalizedStrings.preferencesTitle)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await load()
@@ -108,30 +111,30 @@ struct UserPreferencesView: View {
 
     private var personalInformationCard: some View {
         VStack(alignment: .leading, spacing: 18) {
-            sectionTitle("Personal Information")
+            sectionTitle(LocalizedStrings.preferencesPersonalInformation)
 
             settingsCard {
                 settingsField(
-                    label: "FULL NAME",
+                    label: LocalizedStrings.preferencesFullName,
                     value: displayName
                 )
 
                 DividerRow()
 
                 settingsField(
-                    label: "EMAIL ADDRESS",
-                    value: currentUser?.email ?? "No email available"
+                    label: LocalizedStrings.preferencesEmailAddress,
+                    value: currentUser?.email ?? LocalizedStrings.preferencesNoEmailAvailable
                 )
 
                 DividerRow()
 
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("NATIVE LANGUAGE")
+                    Text(LocalizedStrings.preferencesNativeLanguage.uppercased())
                         .font(.system(size: 12, weight: .bold))
                         .tracking(1.1)
                         .foregroundStyle(Color(red: 0.54, green: 0.60, blue: 0.71))
 
-                    Picker("Native language", selection: $selectedNativeLanguage) {
+                    Picker(LocalizedStrings.preferencesNativeLanguage, selection: $selectedNativeLanguage) {
                         ForEach(nativeLanguages) { language in
                             Text(language.localizedLabel).tag(language.value)
                         }
@@ -145,20 +148,37 @@ struct UserPreferencesView: View {
 
     private var learningContextCard: some View {
         VStack(alignment: .leading, spacing: 18) {
-            sectionTitle("Learning Context")
+            sectionTitle(LocalizedStrings.preferencesLearningContext)
 
             settingsCard(spacing: 24) {
                 VStack(alignment: .leading, spacing: 12) {
                     chipTitle(LocalizedStrings.preferencesInterests.uppercased())
-                    FlexibleChips(
-                        items: UserInterest.allCases.map(\.rawValue),
-                        selectedItems: Set(selectedInterests.map(\.rawValue)),
-                        onToggle: { raw in
-                            guard let item = UserInterest(rawValue: raw) else { return }
+                    ChipSelectionGrid(
+                        items: UserInterest.allCases,
+                        selectedItems: selectedInterests,
+                        title: \.displayTitle,
+                        onToggle: { item in
                             if selectedInterests.contains(item) {
                                 selectedInterests.remove(item)
                             } else {
                                 selectedInterests.insert(item)
+                            }
+                            selectedSubtopics = Set(selectedSubtopics.filter { !$0.topics.isDisjoint(with: selectedInterests) })
+                        }
+                    )
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    chipTitle(LocalizedStrings.preferencesSubtopics.uppercased())
+                    ChipSelectionGrid(
+                        items: availableSubtopics,
+                        selectedItems: selectedSubtopics,
+                        title: \.displayTitle,
+                        onToggle: { item in
+                            if selectedSubtopics.contains(item) {
+                                selectedSubtopics.remove(item)
+                            } else {
+                                selectedSubtopics.insert(item)
                             }
                         }
                     )
@@ -166,17 +186,37 @@ struct UserPreferencesView: View {
 
                 VStack(alignment: .leading, spacing: 12) {
                     chipTitle(LocalizedStrings.preferencesObjectives.uppercased())
-                    FlexibleChips(
-                        items: LearningObjective.allCases.map(\.rawValue),
-                        selectedItems: Set(selectedObjectives.map(\.rawValue)),
-                        onToggle: { raw in
-                            guard let item = LearningObjective(rawValue: raw) else { return }
+                    ChipSelectionGrid(
+                        items: LearningObjective.onboardingCases,
+                        selectedItems: selectedObjectives,
+                        title: \.displayTitle,
+                        onToggle: { item in
                             if selectedObjectives.contains(item) {
                                 selectedObjectives.remove(item)
                             } else {
                                 selectedObjectives.insert(item)
                             }
                         }
+                    )
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    chipTitle(LocalizedStrings.preferencesContentStyle.uppercased())
+                    ChipSelectionGrid(
+                        items: ContentStylePreference.allCases,
+                        selectedItems: Set([selectedContentStylePreference]),
+                        title: \.displayTitle,
+                        onToggle: { selectedContentStylePreference = $0 }
+                    )
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    chipTitle(LocalizedStrings.preferencesProfession.uppercased())
+                    ChipSelectionGrid(
+                        items: ProfessionOption.allCases,
+                        selectedItems: selectedProfession.map { Set([$0]) } ?? [],
+                        title: \.displayTitle,
+                        onToggle: { selectedProfession = selectedProfession == $0 ? nil : $0 }
                     )
                 }
 
@@ -308,7 +348,13 @@ struct UserPreferencesView: View {
             selectedLevel = EnglishLevel(label: preferences.level)
             selectedNativeLanguage = preferences.nativeLanguage
             selectedInterests = Set(preferences.interests.compactMap(UserInterest.init(rawValue:)))
+            selectedSubtopics = Set(
+                preferences.subtopics.compactMap(LearningSubtopic.from(id:))
+                    .filter { !$0.topics.isDisjoint(with: selectedInterests) }
+            )
             selectedObjectives = Set(preferences.objectives.compactMap(LearningObjective.init(rawValue:)))
+            selectedContentStylePreference = ContentStylePreference(rawValue: preferences.contentStylePreference) ?? .mixed
+            selectedProfession = preferences.profession.flatMap(ProfessionOption.init(rawValue:))
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
@@ -323,7 +369,10 @@ struct UserPreferencesView: View {
             level: selectedLevel.rawValue,
             nativeLanguage: selectedNativeLanguage,
             interests: selectedInterests.map(\.rawValue).sorted(),
-            objectives: selectedObjectives.map(\.rawValue).sorted()
+            subtopics: selectedSubtopics.map(\.id).sorted(),
+            objectives: selectedObjectives.map(\.rawValue).sorted(),
+            contentStylePreference: selectedContentStylePreference.rawValue,
+            profession: selectedProfession?.rawValue
         )
 
         do {
@@ -336,27 +385,31 @@ struct UserPreferencesView: View {
 
     private var displayName: String {
         let trimmed = currentUser?.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return trimmed.isEmpty ? "Lumen Learner" : trimmed
+        return trimmed.isEmpty ? LocalizedStrings.profileDefaultName : trimmed
+    }
+
+    private var availableSubtopics: [LearningSubtopic] {
+        LearningSubtopic.options(for: selectedInterests)
     }
 
     private var memberSinceText: String {
-        "Lumen learner"
+        LocalizedStrings.preferencesMemberSince
     }
 
     private var levelHelperText: String {
         switch selectedLevel {
         case .a1:
-            return "Short, highly familiar sentences with daily vocabulary and strong contextual support."
+            return LocalizedStrings.preferencesLevelHelperA1
         case .a2:
-            return "Simple connected phrases for common situations, routines, and basic opinions."
+            return LocalizedStrings.preferencesLevelHelperA2
         case .b1:
-            return "Independent reading on familiar themes with more detail and clearer narratives."
+            return LocalizedStrings.preferencesLevelHelperB1
         case .b2:
-            return "More natural connected texts with richer ideas, contrast, and less frequent vocabulary."
+            return LocalizedStrings.preferencesLevelHelperB2
         case .c1:
-            return "Advanced texts with nuanced ideas, denser vocabulary, and more flexible grammar."
+            return LocalizedStrings.preferencesLevelHelperC1
         case .c2:
-            return "Near-native complexity with subtle tone, idioms, and culturally rich references."
+            return LocalizedStrings.preferencesLevelHelperC2
         }
     }
 
@@ -378,58 +431,6 @@ private struct NativeLanguageOption: Identifiable {
     let value: String
     let localizedLabel: String
     var id: String { value }
-}
-
-private struct FlexibleChips: View {
-    let items: [String]
-    let selectedItems: Set<String>
-    let onToggle: (String) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(chunked(items, size: 2), id: \.self) { row in
-                HStack(spacing: 10) {
-                    ForEach(row, id: \.self) { item in
-                        Button {
-                            onToggle(item)
-                        } label: {
-                            Text(item)
-                                .font(.system(size: 12, weight: .semibold))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.85)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 10)
-                                .frame(maxWidth: .infinity)
-                                .foregroundStyle(selectedItems.contains(item) ? .white : LumenColors.textSecondary)
-                                .background(
-                                    selectedItems.contains(item)
-                                    ? AnyShapeStyle(LinearGradient.primaryGradient)
-                                    : AnyShapeStyle(Color.white.opacity(0.08))
-                                )
-                                .clipShape(Capsule())
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    if row.count == 1 {
-                        Color.clear.frame(maxWidth: .infinity)
-                    }
-                }
-            }
-        }
-    }
-
-    private func chunked(_ source: [String], size: Int) -> [[String]] {
-        guard size > 0 else { return [] }
-        var chunks: [[String]] = []
-        var index = 0
-        while index < source.count {
-            let end = min(index + size, source.count)
-            chunks.append(Array(source[index..<end]))
-            index += size
-        }
-        return chunks
-    }
 }
 
 private struct DividerRow: View {

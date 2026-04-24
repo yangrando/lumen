@@ -65,9 +65,9 @@ struct WelcomeView: View {
                     .disabled(isLoading)
 
                     HStack(spacing: 5) {
-                        Text("Já tem conta?")
+                        Text(LocalizedStrings.welcomeSignInPrompt)
                             .foregroundStyle(LumenColors.textSecondary)
-                        Button("clique aqui") {
+                        Button(LocalizedStrings.welcomeSignInLink) {
                             onSignIn()
                         }
                         .foregroundStyle(LinearGradient.primaryGradient)
@@ -130,7 +130,7 @@ struct WelcomeView: View {
 
             HStack(spacing: 4) {
                 Text(LocalizedStrings.welcomeTermsLink1)
-                Text("e")
+                Text(LocalizedStrings.commonAnd)
                 Text(LocalizedStrings.welcomeTermsLink2)
             }
             .foregroundStyle(LumenColors.gradientStart)

@@ -18,7 +18,7 @@ struct ObjectiveCard: View {
                         .foregroundStyle(.white.opacity(isSelected ? 0.95 : 0.82))
                 }
 
-                Text(objective.localizedTitle)
+                Text(objective.displayTitle)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.96))
                     .multilineTextAlignment(.leading)
@@ -88,32 +88,5 @@ struct ObjectiveCard: View {
         }
 
         return AnyShapeStyle(Color(red: 0.12, green: 0.16, blue: 0.23))
-    }
-}
-
-private extension LearningObjective {
-    var localizedTitle: String {
-        switch self {
-        case .businessCommunication:
-            return LocalizedStrings.objectiveBusinessCommunication
-        case .travelConfidence:
-            return LocalizedStrings.objectiveTravelConfidence
-        case .understandMovies:
-            return LocalizedStrings.objectiveUnderstandMovies
-        case .expandVocabulary:
-            return LocalizedStrings.objectiveExpandVocabulary
-        case .passExams:
-            return LocalizedStrings.objectivePassExams
-        case .improveSpeaking:
-            return LocalizedStrings.objectiveImproveSpeaking
-        case .dailyConversation:
-            return LocalizedStrings.objectiveDailyConversation
-        case .improveAccent:
-            return LocalizedStrings.objectiveImproveAccent
-        case .readingComprehension:
-            return LocalizedStrings.objectiveReadingComprehension
-        case .writingSkills:
-            return LocalizedStrings.objectiveWritingSkills
-        }
     }
 }

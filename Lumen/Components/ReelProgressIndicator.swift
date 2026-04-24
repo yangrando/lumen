@@ -10,7 +10,7 @@ struct ReelProgressIndicator: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Text("Progress:")
+                Text(LocalizedStrings.reelProgressLabel)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.72))
                 Text("\(state.progressCount) / \(ReelLearningState.totalSteps)")
@@ -31,7 +31,7 @@ struct ReelProgressIndicator: View {
             .frame(height: 7)
 
             if state.isCompleted {
-                Text("✔ Reel completed")
+                Text("✔ \(LocalizedStrings.reelCompleted)")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Color(red: 0.50, green: 0.93, blue: 0.72))
                     .transition(.opacity.combined(with: .move(edge: .top)))

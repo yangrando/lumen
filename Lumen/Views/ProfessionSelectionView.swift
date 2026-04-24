@@ -1,39 +1,32 @@
 import SwiftUI
 
-struct ObjectivesView: View {
-    @State private var selectedObjectives: Set<LearningObjective> = []
-
+struct ProfessionSelectionView: View {
     let onBack: () -> Void
-    let onContinue: ([LearningObjective]) -> Void
+    let onContinue: (ProfessionOption?) -> Void
+
+    @State private var selectedProfession: ProfessionOption?
 
     var body: some View {
         ZStack(alignment: .bottom) {
             onboardingBackground
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 24) {
                     header
 
-                    VStack(spacing: 14) {
-                        ForEach(orderedObjectives) { objective in
-                            ObjectiveCard(
-                                objective: objective,
-                                isSelected: selectedObjectives.contains(objective),
-                                action: {
-                                    if selectedObjectives.contains(objective) {
-                                        selectedObjectives.remove(objective)
-                                    } else {
-                                        selectedObjectives.insert(objective)
-                                    }
-                                }
-                            )
+                    ChipSelectionGrid(
+                        items: ProfessionOption.allCases,
+                        selectedItems: selectedProfession.map { Set([$0]) } ?? [],
+                        title: \.displayTitle,
+                        onToggle: { profession in
+                            selectedProfession = selectedProfession == profession ? nil : profession
                         }
-                    }
+                    )
 
                     Color.clear
-                        .frame(height: 120)
+                        .frame(height: 130)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 24)
                 .padding(.top, 28)
                 .padding(.bottom, 20)
             }
@@ -80,48 +73,46 @@ struct ObjectivesView: View {
                     .clipShape(Circle())
             }
 
-            Text(LocalizedStrings.objectivesPrimaryTitle)
+            Text(LocalizedStrings.professionTitle)
                 .font(.system(size: 24, weight: .bold))
                 .foregroundStyle(.white)
-                .multilineTextAlignment(.leading)
 
-            Text(LocalizedStrings.objectivesPrimaryDescription)
+            Text(LocalizedStrings.professionDescription)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(LumenColors.textSecondary)
-                .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private var bottomAction: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 12) {
             Rectangle()
                 .fill(Color.white.opacity(0.06))
                 .frame(height: 1)
 
-            VStack(spacing: 0) {
-                Button(action: {
-                    let selectedArray = Array(selectedObjectives).sorted { $0.rawValue < $1.rawValue }
-                    onContinue(selectedArray)
-                }) {
-                    Text(LocalizedStrings.objectivesCompleteButton)
+            VStack(spacing: 12) {
+                Button(LocalizedStrings.professionSkipButton) {
+                    onContinue(nil)
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(LumenColors.textSecondary)
+
+                Button {
+                    onContinue(selectedProfession)
+                } label: {
+                    Text(LocalizedStrings.professionContinueButton)
                         .font(.system(size: 17, weight: .bold))
                         .frame(maxWidth: .infinity)
                         .frame(height: 58)
                         .foregroundStyle(.white)
-                        .background(
-                            selectedObjectives.isEmpty
-                            ? AnyShapeStyle(Color.white.opacity(0.10))
-                            : AnyShapeStyle(LinearGradient.primaryGradient)
-                        )
+                        .background(AnyShapeStyle(LinearGradient.primaryGradient))
                         .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
-                .disabled(selectedObjectives.isEmpty)
-                .opacity(selectedObjectives.isEmpty ? 0.55 : 1)
             }
             .padding(.horizontal, 24)
-            .padding(.top, 30)
+            .padding(.top, 24)
             .padding(.bottom, 15)
             .background(
                 LinearGradient(
@@ -137,12 +128,4 @@ struct ObjectivesView: View {
             )
         }
     }
-
-    private var orderedObjectives: [LearningObjective] {
-        LearningObjective.onboardingCases
-    }
-}
-
-#Preview {
-    ObjectivesView(onBack: {}, onContinue: { _ in })
 }

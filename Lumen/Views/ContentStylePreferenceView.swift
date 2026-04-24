@@ -1,39 +1,30 @@
 import SwiftUI
 
-struct ObjectivesView: View {
-    @State private var selectedObjectives: Set<LearningObjective> = []
-
+struct ContentStylePreferenceView: View {
     let onBack: () -> Void
-    let onContinue: ([LearningObjective]) -> Void
+    let onContinue: (ContentStylePreference) -> Void
+
+    @State private var selectedStyle: ContentStylePreference = .mixed
 
     var body: some View {
         ZStack(alignment: .bottom) {
             onboardingBackground
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 24) {
                     header
 
-                    VStack(spacing: 14) {
-                        ForEach(orderedObjectives) { objective in
-                            ObjectiveCard(
-                                objective: objective,
-                                isSelected: selectedObjectives.contains(objective),
-                                action: {
-                                    if selectedObjectives.contains(objective) {
-                                        selectedObjectives.remove(objective)
-                                    } else {
-                                        selectedObjectives.insert(objective)
-                                    }
-                                }
-                            )
-                        }
-                    }
+                    ChipSelectionGrid(
+                        items: ContentStylePreference.allCases,
+                        selectedItems: Set([selectedStyle]),
+                        title: \.displayTitle,
+                        onToggle: { selectedStyle = $0 }
+                    )
 
                     Color.clear
-                        .frame(height: 120)
+                        .frame(height: 130)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 24)
                 .padding(.top, 28)
                 .padding(.bottom, 20)
             }
@@ -80,15 +71,13 @@ struct ObjectivesView: View {
                     .clipShape(Circle())
             }
 
-            Text(LocalizedStrings.objectivesPrimaryTitle)
+            Text(LocalizedStrings.contentStyleTitle)
                 .font(.system(size: 24, weight: .bold))
                 .foregroundStyle(.white)
-                .multilineTextAlignment(.leading)
 
-            Text(LocalizedStrings.objectivesPrimaryDescription)
+            Text(LocalizedStrings.contentStyleDescription)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(LumenColors.textSecondary)
-                .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -99,27 +88,18 @@ struct ObjectivesView: View {
                 .fill(Color.white.opacity(0.06))
                 .frame(height: 1)
 
-            VStack(spacing: 0) {
-                Button(action: {
-                    let selectedArray = Array(selectedObjectives).sorted { $0.rawValue < $1.rawValue }
-                    onContinue(selectedArray)
-                }) {
-                    Text(LocalizedStrings.objectivesCompleteButton)
-                        .font(.system(size: 17, weight: .bold))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 58)
-                        .foregroundStyle(.white)
-                        .background(
-                            selectedObjectives.isEmpty
-                            ? AnyShapeStyle(Color.white.opacity(0.10))
-                            : AnyShapeStyle(LinearGradient.primaryGradient)
-                        )
-                        .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .disabled(selectedObjectives.isEmpty)
-                .opacity(selectedObjectives.isEmpty ? 0.55 : 1)
+            Button {
+                onContinue(selectedStyle)
+            } label: {
+                Text(LocalizedStrings.contentStyleContinueButton)
+                    .font(.system(size: 17, weight: .bold))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 58)
+                    .foregroundStyle(.white)
+                    .background(AnyShapeStyle(LinearGradient.primaryGradient))
+                    .clipShape(Capsule())
             }
+            .buttonStyle(.plain)
             .padding(.horizontal, 24)
             .padding(.top, 30)
             .padding(.bottom, 15)
@@ -137,12 +117,4 @@ struct ObjectivesView: View {
             )
         }
     }
-
-    private var orderedObjectives: [LearningObjective] {
-        LearningObjective.onboardingCases
-    }
-}
-
-#Preview {
-    ObjectivesView(onBack: {}, onContinue: { _ in })
 }

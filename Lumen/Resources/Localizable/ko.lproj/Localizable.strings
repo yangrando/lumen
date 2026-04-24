@@ -261,16 +261,6 @@
 "progress.strongest.topics" = "Strongest Topics";
 "progress.weakest.topics" = "Weakest Topics";
 "progress.current.streak" = "Current streak";
-"progress.streak.label" = "Streak";
-"progress.longest.streak" = "Longest streak";
-"progress.today.status" = "Today";
-"progress.today.goal" = "Today's goal";
-"progress.goal.completed" = "Goal completed";
-"progress.goal.in.progress" = "In progress";
-"progress.goal.keep.going" = "Keep going today.";
-"progress.goal.momentum" = "You're on track today.";
-"progress.streak.alive" = "Streak secured today.";
-"progress.streak.keep.alive" = "Keep your streak alive.";
 "progress.day" = "day";
 "progress.days" = "days";
 "progress.comprehension" = "Comprehension";

@@ -46,34 +46,34 @@ enum EnglishLevel: String, CaseIterable, Identifiable {
     var description: String {
         switch self {
         case .a1:
-            return "Understands familiar words and very simple phrases."
+            return LocalizedStrings.levelBeginnerDescription
         case .a2:
-            return "Handles everyday situations with simple sentence patterns."
+            return LocalizedStrings.levelElementaryDescription
         case .b1:
-            return "Communicates about routine topics with growing independence."
+            return LocalizedStrings.levelIntermediateDescription
         case .b2:
-            return "Understands and produces more detailed, connected language."
+            return LocalizedStrings.levelUpperIntermediateDescription
         case .c1:
-            return "Uses English flexibly across complex topics and contexts."
+            return LocalizedStrings.levelAdvancedDescription
         case .c2:
-            return "Understands subtle meaning and communicates with near-native ease."
+            return LocalizedStrings.levelProficientDescription
         }
     }
 
     var shortTitle: String {
         switch self {
         case .a1:
-            return "Starter"
+            return LocalizedStrings.levelBeginnerTitle
         case .a2:
-            return "Elementary"
+            return LocalizedStrings.levelElementaryTitle
         case .b1:
-            return "Independent"
+            return LocalizedStrings.levelIntermediateTitle
         case .b2:
-            return "Upper-Intermediate"
+            return LocalizedStrings.levelUpperIntermediateTitle
         case .c1:
-            return "Advanced"
+            return LocalizedStrings.levelAdvancedTitle
         case .c2:
-            return "Proficient"
+            return LocalizedStrings.levelProficientTitle
         }
     }
 

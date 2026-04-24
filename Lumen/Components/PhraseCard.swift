@@ -11,6 +11,7 @@ struct PhraseCard: View {
     let highlightedTokens: [HighlightedWord]
     let currentUserID: String?
     @State private var isTranslationVisible = false
+    @State private var isDetailsSheetPresented = false
     @State private var localIsSaved = false
     @State private var selectedWordDetail: WordDetail?
     let onPlayAudio: () -> Void
@@ -27,7 +28,7 @@ struct PhraseCard: View {
     var body: some View {
         GeometryReader { geometry in
             let horizontalMargin = max(20, geometry.safeAreaInsets.leading + 20)
-            let trailingMargin = max(20, geometry.safeAreaInsets.trailing + 20)
+            let trailingMargin = max(28, geometry.safeAreaInsets.trailing + 28)
             let topMargin: CGFloat = 52
             let bottomMenuBottomSpacing: CGFloat = 30
             let bottomMenuHeight: CGFloat = 50
@@ -90,6 +91,10 @@ struct PhraseCard: View {
                             translationText
                         }
 
+                        if phrase.hasStructuredDetails {
+                            structuredDetailsSection
+                        }
+
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     .padding(.horizontal, 28)
@@ -117,7 +122,7 @@ struct PhraseCard: View {
                     )
                     topActionButton(
                         icon: "mic.fill",
-                        title: "Speak",
+                        title: LocalizedStrings.feedSpeak,
                         action: onSpeak
                     )
                     topActionButton(
@@ -152,6 +157,12 @@ struct PhraseCard: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $isDetailsSheetPresented) {
+            detailsSheet
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(.ultraThinMaterial)
+        }
     }
 
     private var editorialStyle: EditorialStyle {
@@ -163,21 +174,17 @@ struct PhraseCard: View {
     }
 
     private var topicBadge: some View {
-        Text("\(phrase.category) • \(phrase.difficulty.rawValue)")
-            .font(.custom("AvenirNext-Bold", size: 12))
-            .foregroundStyle(Color(red: 0.19, green: 0.84, blue: 0.98))
-            .multilineTextAlignment(.leading)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
-            .background(
-                Capsule()
-                    .fill(Color(red: 0.09, green: 0.16, blue: 0.27).opacity(editorialStyle == .glass ? 0.78 : 0.88))
-            )
-            .overlay {
-                Capsule()
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        HStack(spacing: 8) {
+            badgeLabel("\(phrase.category) • \(phrase.difficulty.rawValue)", accent: Color(red: 0.19, green: 0.84, blue: 0.98))
+            if let subtopic = phrase.subtopic, !subtopic.isEmpty {
+                badgeLabel(prettyLabel(subtopic), accent: .white.opacity(0.88))
             }
-            .shadow(color: Color.black.opacity(0.10), radius: 8, x: 0, y: 4)
+            if phrase.isFactLike {
+                badgeLabel("FACT", accent: Color(red: 1.0, green: 0.87, blue: 0.45))
+            } else if phrase.isDialogueLike {
+                badgeLabel("DIALOGUE", accent: Color(red: 0.71, green: 0.84, blue: 1.0))
+            }
+        }
     }
 
     private var subjectBadge: some View {
@@ -224,10 +231,12 @@ struct PhraseCard: View {
                     .font(.custom("AvenirNext-DemiBold", size: 9))
                     .tracking(1.6)
                     .foregroundStyle(isPrimary ? Color(red: 0.19, green: 0.84, blue: 0.98) : Color.white.opacity(0.62))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .minimumScaleFactor(0.85)
             }
-            .frame(width: 56)
+            .frame(width: isPrimary ? 68 : 62)
         }
         .buttonStyle(.plain)
     }
@@ -273,6 +282,116 @@ struct PhraseCard: View {
         }
         .frame(maxWidth: 560, maxHeight: 132)
         .transition(.opacity.combined(with: .move(edge: .bottom)))
+    }
+
+    @ViewBuilder
+    private var structuredDetailsSection: some View {
+        Button {
+            isDetailsSheetPresented = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "chevron.up.circle.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                Text(LocalizedStrings.feedShowDetails)
+                    .font(.system(size: 13, weight: .semibold))
+                Spacer()
+            }
+            .foregroundStyle(.white.opacity(0.9))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                Capsule()
+                    .fill(Color.white.opacity(0.08))
+            )
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: 560, alignment: .leading)
+    }
+
+    private var detailsSheet: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 14) {
+                Capsule()
+                    .fill(Color.white.opacity(0.18))
+                    .frame(width: 46, height: 5)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 8)
+
+                Text(phrase.text)
+                    .font(.custom("AvenirNext-Bold", size: 22))
+                    .foregroundStyle(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if !phrase.translation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text(phrase.translation)
+                        .font(.custom("AvenirNext-Regular", size: 16))
+                        .foregroundStyle(.white.opacity(0.78))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if let context = phrase.context, !context.isEmpty {
+                    infoBlock(title: LocalizedStrings.feedContext, body: context, accent: Color(red: 0.63, green: 0.85, blue: 1.0))
+                }
+                if let explanation = phrase.explanation, !explanation.isEmpty {
+                    infoBlock(title: LocalizedStrings.feedExplanation, body: explanation, accent: Color(red: 0.70, green: 0.93, blue: 0.82))
+                }
+                if let didYouKnow = phrase.didYouKnow, !didYouKnow.isEmpty {
+                    infoBlock(title: LocalizedStrings.feedDidYouKnow, body: didYouKnow, accent: Color(red: 1.0, green: 0.87, blue: 0.45))
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 28)
+        }
+        .background(Color(red: 0.06, green: 0.10, blue: 0.18))
+    }
+
+    private func infoBlock(title: String, body: String, accent: Color) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title.uppercased())
+                .font(.custom("AvenirNext-DemiBold", size: 10))
+                .tracking(1.6)
+                .foregroundStyle(accent)
+            Text(body)
+                .font(.custom("AvenirNext-Regular", size: 15))
+                .foregroundStyle(.white.opacity(0.93))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(red: 0.08, green: 0.13, blue: 0.22).opacity(0.72))
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        }
+    }
+
+    private func badgeLabel(_ text: String, accent: Color) -> some View {
+        Text(text)
+            .font(.custom("AvenirNext-Bold", size: 12))
+            .foregroundStyle(accent)
+            .multilineTextAlignment(.leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(
+                Capsule()
+                    .fill(Color(red: 0.09, green: 0.16, blue: 0.27).opacity(editorialStyle == .glass ? 0.78 : 0.88))
+            )
+            .overlay {
+                Capsule()
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            }
+            .shadow(color: Color.black.opacity(0.10), radius: 8, x: 0, y: 4)
+    }
+
+    private func prettyLabel(_ raw: String) -> String {
+        raw
+            .replacingOccurrences(of: "_", with: " ")
+            .split(separator: " ")
+            .map { $0.capitalized }
+            .joined(separator: " ")
     }
 
     private var saveButton: some View {

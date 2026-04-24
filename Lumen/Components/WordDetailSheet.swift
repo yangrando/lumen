@@ -37,7 +37,7 @@ struct WordDetailSheet: View {
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Example")
+                        Text(LocalizedStrings.wordDetailsExample)
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(LumenColors.textSecondary)
                         Text(detail.exampleSentence)
@@ -49,7 +49,7 @@ struct WordDetailSheet: View {
                         Button {
                             saveWord()
                         } label: {
-                            Text(isSaved ? "Saved" : "Save word")
+                            Text(isSaved ? LocalizedStrings.wordDetailsSaved : LocalizedStrings.wordDetailsSaveWord)
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
@@ -64,7 +64,7 @@ struct WordDetailSheet: View {
                         } label: {
                             HStack(spacing: 8) {
                                 Image(systemName: "speaker.wave.2.fill")
-                                Text("Hear pronunciation")
+                                Text(LocalizedStrings.wordDetailsHearPronunciation)
                             }
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(.white)
@@ -79,7 +79,7 @@ struct WordDetailSheet: View {
                 }
                 .padding(20)
             }
-            .navigationTitle("Word details")
+            .navigationTitle(LocalizedStrings.wordDetailsTitle)
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(true)
             .toolbar {

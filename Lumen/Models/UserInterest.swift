@@ -56,4 +56,35 @@ enum UserInterest: String, CaseIterable, Identifiable {
             return "gamecontroller"
         }
     }
+
+    var displayTitle: String {
+        switch self {
+        case .entertainment:
+            return "Filmes & Séries"
+        case .music:
+            return "Música"
+        case .travel:
+            return "Viagens"
+        case .food:
+            return "Culinária"
+        case .technology:
+            return "Tecnologia"
+        case .science:
+            return "Ciência"
+        case .sports:
+            return "Esportes"
+        case .business:
+            return "Negócios"
+        case .health:
+            return "Saúde"
+        case .art:
+            return "Arte"
+        case .culture:
+            return "Cultura"
+        case .fashion:
+            return "Moda"
+        case .gaming:
+            return "Games"
+        }
+    }
 }

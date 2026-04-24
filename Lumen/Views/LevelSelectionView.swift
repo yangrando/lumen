@@ -75,13 +75,13 @@ struct LevelSelectionView: View {
             }
 
             VStack(alignment: .leading, spacing: 12) {
-                Text("Choose your English level")
+                Text(LocalizedStrings.levelSelectionTitle)
                     .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.95)
 
-                Text("We will adapt sentence length, vocabulary load, and grammar complexity to your current stage.")
+                Text(LocalizedStrings.levelSelectionDescription)
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(Color.white.opacity(0.68))
                     .fixedSize(horizontal: false, vertical: true)

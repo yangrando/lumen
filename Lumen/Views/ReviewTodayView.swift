@@ -23,7 +23,7 @@ struct ReviewTodayView: View {
                 emptyState
             }
         }
-        .navigationTitle("Review Today")
+        .navigationTitle(LocalizedStrings.reviewTodayTitle)
         .appFeedbackBanner($viewModel.feedbackMessage)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
@@ -39,7 +39,7 @@ struct ReviewTodayView: View {
         }
         .sheet(item: $speakingReviewItem) { item in
             SpeakingPracticeView(
-                title: "Speaking Review",
+                title: LocalizedStrings.reviewTodaySpeakingReview,
                 accessToken: accessToken,
                 targetText: item.promptText,
                 reelID: item.sourceReelID,
@@ -178,12 +178,12 @@ struct ReviewTodayView: View {
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.white.opacity(0.70))
 
-            Text("\(response.totalDueCount) item\(response.totalDueCount == 1 ? "" : "s")")
+            Text("\(response.totalDueCount) \(response.totalDueCount == 1 ? LocalizedStrings.reviewTodayItem : LocalizedStrings.reviewTodayItems)")
                 .font(.system(size: 30, weight: .bold))
                 .foregroundStyle(.white)
 
             if let generated = response.generatedToday["total"] {
-                Text("Generated or reused \(generated) review candidates for today.")
+                Text(String(format: LocalizedStrings.reviewTodayGeneratedSummary, String(generated)))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(LumenColors.textSecondary)
             }
@@ -267,7 +267,7 @@ struct ReviewTodayView: View {
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "mic.fill")
-                        Text("Practice speaking")
+                        Text(LocalizedStrings.reviewTodayPracticeSpeaking)
                     }
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.white)

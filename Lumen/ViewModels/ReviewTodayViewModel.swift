@@ -46,6 +46,7 @@ final class ReviewTodayViewModel: ObservableObject {
                 result: result,
                 clientResultID: token
             )
+            NotificationCenter.default.post(name: .progressOverviewShouldRefresh, object: nil)
             remove(itemID: item.id)
             submissionTokensByItemID[item.id] = nil
         } catch {

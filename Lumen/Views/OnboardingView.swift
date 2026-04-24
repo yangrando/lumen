@@ -12,7 +12,10 @@ struct OnboardingView: View {
         case nativeLanguage
         case levelSelection
         case interests
+        case subtopics
         case objectives
+        case contentStyle
+        case profession
         case completion
         case feed
     }
@@ -21,7 +24,10 @@ struct OnboardingView: View {
     @State private var selectedLevel: EnglishLevel? = nil
     @State private var selectedNativeLanguage: String = ""
     @State private var selectedInterests: [UserInterest] = []
+    @State private var selectedSubtopics: [LearningSubtopic] = []
     @State private var selectedObjectives: [LearningObjective] = []
+    @State private var selectedContentStylePreference: ContentStylePreference = .mixed
+    @State private var selectedProfession: ProfessionOption?
     @State private var isAuthenticating = false
     @State private var authErrorMessage: String? = nil
     @State private var authAlertMessage: String? = nil
@@ -91,6 +97,10 @@ struct OnboardingView: View {
                     },
                     onContinue: { language in
                         selectedNativeLanguage = language
+                        // Persist the chosen language immediately so subsequent onboarding
+                        // screens render in that language, but avoid a root refresh that
+                        // would recreate the onboarding flow.
+                        NativeLanguageLocalization.savePreferredNativeLanguage(language, notify: false)
                         currentStep = .levelSelection
                     }
                 )
@@ -101,16 +111,47 @@ struct OnboardingView: View {
                     },
                     onContinue: { interests in
                         selectedInterests = interests
+                        currentStep = .subtopics
+                    }
+                )
+            case .subtopics:
+                SubtopicsView(
+                    interests: selectedInterests,
+                    onBack: {
+                        currentStep = .interests
+                    },
+                    onContinue: { subtopics in
+                        selectedSubtopics = subtopics
                         currentStep = .objectives
                     }
                 )
             case .objectives:
                 ObjectivesView(
                     onBack: {
-                        currentStep = .interests
+                        currentStep = .subtopics
                     },
                     onContinue: { objectives in
                         selectedObjectives = objectives
+                        currentStep = .contentStyle
+                    }
+                )
+            case .contentStyle:
+                ContentStylePreferenceView(
+                    onBack: {
+                        currentStep = .objectives
+                    },
+                    onContinue: { preference in
+                        selectedContentStylePreference = preference
+                        currentStep = .profession
+                    }
+                )
+            case .profession:
+                ProfessionSelectionView(
+                    onBack: {
+                        currentStep = .contentStyle
+                    },
+                    onContinue: { profession in
+                        selectedProfession = profession
                         currentStep = .completion
                     }
                 )
@@ -125,6 +166,9 @@ struct OnboardingView: View {
             }
         }
         .onAppear {
+            if selectedNativeLanguage.isEmpty {
+                selectedNativeLanguage = NativeLanguageLocalization.preferredNativeLanguage()
+            }
             Task {
                 await restoreSessionIfPossible()
             }
@@ -273,7 +317,10 @@ struct OnboardingView: View {
             level: selectedLevel.rawValue,
             nativeLanguage: selectedNativeLanguage,
             interests: selectedInterests.map(\.rawValue),
-            objectives: selectedObjectives.map(\.rawValue)
+            subtopics: selectedSubtopics.map(\.id),
+            objectives: selectedObjectives.map(\.rawValue),
+            contentStylePreference: selectedContentStylePreference.rawValue,
+            profession: selectedProfession?.rawValue
         )
 
         do {

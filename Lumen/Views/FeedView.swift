@@ -245,7 +245,7 @@ struct FeedView: View {
         .sheet(item: $speakingPhrase) { phrase in
             if let accessToken = sessionService.accessToken {
                 SpeakingPracticeView(
-                    title: "Speak This Reel",
+                    title: LocalizedStrings.feedSpeakThisReel,
                     accessToken: accessToken,
                     targetText: phrase.text,
                     reelID: phrase.trackingReelID,
@@ -342,14 +342,14 @@ struct FeedView: View {
     private var bottomNavigationBar: some View {
         HStack(spacing: 0) {
             navItem(
-                title: "FEED",
+                title: LocalizedStrings.feedTabFeed,
                 systemImage: "newspaper.fill",
                 isActive: true,
                 action: {}
             )
 
             navItem(
-                title: "SAVED",
+                title: LocalizedStrings.feedTabSaved,
                 systemImage: "bookmark.fill",
                 isActive: false,
                 action: {
@@ -361,7 +361,7 @@ struct FeedView: View {
                 showProfile = true
             } label: {
                 navItemLabel(
-                    title: "PROFILE",
+                    title: LocalizedStrings.feedTabProfile,
                     systemImage: "person.fill",
                     isActive: false
                 )
@@ -656,6 +656,7 @@ struct FeedView: View {
             _ = xpTracker.award(for: action, userID: currentUserID)
         }
         if result.completedNow {
+            NotificationCenter.default.post(name: .progressOverviewShouldRefresh, object: nil)
             Task { @MainActor in
                 await AppFeedbackPresenter.show(
                     AppFeedbackMessage(
@@ -793,6 +794,15 @@ struct FeedView: View {
         if let contentType = phrase.contentType, !contentType.isEmpty {
             metadata["content_type"] = .string(contentType)
         }
+        if let contentTemplate = phrase.contentTemplate, !contentTemplate.isEmpty {
+            metadata["content_template"] = .string(contentTemplate)
+        }
+        if let contentStyle = phrase.contentStyle, !contentStyle.isEmpty {
+            metadata["content_style"] = .string(contentStyle)
+        }
+        if let subtopic = phrase.subtopic, !subtopic.isEmpty {
+            metadata["subtopic"] = .string(subtopic)
+        }
         if let grammarFocus = phrase.grammarFocus, !grammarFocus.isEmpty {
             metadata["grammar_focus"] = .string(grammarFocus)
         }
@@ -808,6 +818,15 @@ struct FeedView: View {
         }
         if let difficultyMode = phrase.difficultyMode, !difficultyMode.isEmpty {
             metadata["difficulty_mode"] = .string(difficultyMode)
+        }
+        if let context = phrase.context, !context.isEmpty {
+            metadata["context"] = .string(context)
+        }
+        if let explanation = phrase.explanation, !explanation.isEmpty {
+            metadata["explanation"] = .string(explanation)
+        }
+        if let didYouKnow = phrase.didYouKnow, !didYouKnow.isEmpty {
+            metadata["did_you_know"] = .string(didYouKnow)
         }
         extra.forEach { metadata[$0.key] = $0.value }
         return metadata

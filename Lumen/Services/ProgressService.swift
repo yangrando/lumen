@@ -1,5 +1,29 @@
 import Foundation
 
+extension Notification.Name {
+    static let progressOverviewShouldRefresh = Notification.Name("lumen.progressOverviewShouldRefresh")
+}
+
+struct ProgressTodaySummary: Codable {
+    let goalTarget: Int?
+    let goalProgress: Int
+    let goalCompleted: Bool
+    let streakEligible: Bool
+    let meaningfulReels: Int
+    let speakingCompleted: Int
+    let reviewActions: Int
+
+    enum CodingKeys: String, CodingKey {
+        case goalTarget = "goal_target"
+        case goalProgress = "goal_progress"
+        case goalCompleted = "goal_completed"
+        case streakEligible = "streak_eligible"
+        case meaningfulReels = "meaningful_reels"
+        case speakingCompleted = "speaking_completed"
+        case reviewActions = "review_actions"
+    }
+}
+
 struct TopicPerformanceSummary: Codable, Identifiable {
     let topic: String
     let reelsViewed: Int
@@ -25,9 +49,22 @@ struct TopicPerformanceSummary: Codable, Identifiable {
 struct ProgressOverview: Codable {
     let hasData: Bool
     let currentStreak: Int
+    let longestStreak: Int
     let totalStudyDays: Int
     let weeklyGoalTarget: Int
     let weeklyGoalProgress: Int
+    let dailyGoalEnabled: Bool
+    let dailyGoalTarget: Int?
+    let dailyGoalProgress: Int
+    let dailyGoalCompleted: Bool
+    let todayGoalTarget: Int?
+    let todayGoalProgress: Int
+    let todayGoalCompleted: Bool
+    let todayStreakEligible: Bool
+    let todayMeaningfulReels: Int
+    let todaySpeakingCompleted: Int
+    let todayReviewActions: Int
+    let todayActivitySummary: ProgressTodaySummary
     let minutesStudiedThisWeek: Int
     let meaningfulReelsCompleted: Int
     let reviewsCompleted: Int
@@ -44,9 +81,22 @@ struct ProgressOverview: Codable {
     enum CodingKeys: String, CodingKey {
         case hasData = "has_data"
         case currentStreak = "current_streak"
+        case longestStreak = "longest_streak"
         case totalStudyDays = "total_study_days"
         case weeklyGoalTarget = "weekly_goal_target"
         case weeklyGoalProgress = "weekly_goal_progress"
+        case dailyGoalEnabled = "daily_goal_enabled"
+        case dailyGoalTarget = "daily_goal_target"
+        case dailyGoalProgress = "daily_goal_progress"
+        case dailyGoalCompleted = "daily_goal_completed"
+        case todayGoalTarget = "today_goal_target"
+        case todayGoalProgress = "today_goal_progress"
+        case todayGoalCompleted = "today_goal_completed"
+        case todayStreakEligible = "today_streak_eligible"
+        case todayMeaningfulReels = "today_meaningful_reels"
+        case todaySpeakingCompleted = "today_speaking_completed"
+        case todayReviewActions = "today_review_actions"
+        case todayActivitySummary = "today_activity_summary"
         case minutesStudiedThisWeek = "minutes_studied_this_week"
         case meaningfulReelsCompleted = "meaningful_reels_completed"
         case reviewsCompleted = "reviews_completed"
@@ -64,9 +114,22 @@ struct ProgressOverview: Codable {
     init(
         hasData: Bool,
         currentStreak: Int,
+        longestStreak: Int,
         totalStudyDays: Int,
         weeklyGoalTarget: Int,
         weeklyGoalProgress: Int,
+        dailyGoalEnabled: Bool,
+        dailyGoalTarget: Int?,
+        dailyGoalProgress: Int,
+        dailyGoalCompleted: Bool,
+        todayGoalTarget: Int?,
+        todayGoalProgress: Int,
+        todayGoalCompleted: Bool,
+        todayStreakEligible: Bool,
+        todayMeaningfulReels: Int,
+        todaySpeakingCompleted: Int,
+        todayReviewActions: Int,
+        todayActivitySummary: ProgressTodaySummary,
         minutesStudiedThisWeek: Int,
         meaningfulReelsCompleted: Int,
         reviewsCompleted: Int,
@@ -82,9 +145,22 @@ struct ProgressOverview: Codable {
     ) {
         self.hasData = hasData
         self.currentStreak = currentStreak
+        self.longestStreak = longestStreak
         self.totalStudyDays = totalStudyDays
         self.weeklyGoalTarget = weeklyGoalTarget
         self.weeklyGoalProgress = weeklyGoalProgress
+        self.dailyGoalEnabled = dailyGoalEnabled
+        self.dailyGoalTarget = dailyGoalTarget
+        self.dailyGoalProgress = dailyGoalProgress
+        self.dailyGoalCompleted = dailyGoalCompleted
+        self.todayGoalTarget = todayGoalTarget
+        self.todayGoalProgress = todayGoalProgress
+        self.todayGoalCompleted = todayGoalCompleted
+        self.todayStreakEligible = todayStreakEligible
+        self.todayMeaningfulReels = todayMeaningfulReels
+        self.todaySpeakingCompleted = todaySpeakingCompleted
+        self.todayReviewActions = todayReviewActions
+        self.todayActivitySummary = todayActivitySummary
         self.minutesStudiedThisWeek = minutesStudiedThisWeek
         self.meaningfulReelsCompleted = meaningfulReelsCompleted
         self.reviewsCompleted = reviewsCompleted
@@ -105,8 +181,30 @@ struct ProgressOverview: Codable {
         let weakestTopics = try container.decodeIfPresent([TopicPerformanceSummary].self, forKey: .weakestTopics) ?? []
         let totalStudyDays = try container.decodeIfPresent(Int.self, forKey: .totalStudyDays) ?? 0
         let currentStreak = try container.decodeIfPresent(Int.self, forKey: .currentStreak) ?? 0
+        let longestStreak = try container.decodeIfPresent(Int.self, forKey: .longestStreak) ?? currentStreak
         let weeklyGoalTarget = try container.decodeIfPresent(Int.self, forKey: .weeklyGoalTarget) ?? 5
         let weeklyGoalProgress = try container.decodeIfPresent(Int.self, forKey: .weeklyGoalProgress) ?? 0
+        let dailyGoalEnabled = try container.decodeIfPresent(Bool.self, forKey: .dailyGoalEnabled) ?? false
+        let dailyGoalTarget = try container.decodeIfPresent(Int.self, forKey: .dailyGoalTarget)
+        let dailyGoalProgress = try container.decodeIfPresent(Int.self, forKey: .dailyGoalProgress) ?? 0
+        let dailyGoalCompleted = try container.decodeIfPresent(Bool.self, forKey: .dailyGoalCompleted) ?? false
+        let todayGoalTarget = try container.decodeIfPresent(Int.self, forKey: .todayGoalTarget) ?? dailyGoalTarget
+        let todayGoalProgress = try container.decodeIfPresent(Int.self, forKey: .todayGoalProgress) ?? dailyGoalProgress
+        let todayGoalCompleted = try container.decodeIfPresent(Bool.self, forKey: .todayGoalCompleted) ?? dailyGoalCompleted
+        let todayStreakEligible = try container.decodeIfPresent(Bool.self, forKey: .todayStreakEligible) ?? false
+        let todayMeaningfulReels = try container.decodeIfPresent(Int.self, forKey: .todayMeaningfulReels) ?? 0
+        let todaySpeakingCompleted = try container.decodeIfPresent(Int.self, forKey: .todaySpeakingCompleted) ?? 0
+        let todayReviewActions = try container.decodeIfPresent(Int.self, forKey: .todayReviewActions) ?? 0
+        let todayActivitySummary = try container.decodeIfPresent(ProgressTodaySummary.self, forKey: .todayActivitySummary)
+            ?? ProgressTodaySummary(
+                goalTarget: todayGoalTarget,
+                goalProgress: todayGoalProgress,
+                goalCompleted: todayGoalCompleted,
+                streakEligible: todayStreakEligible,
+                meaningfulReels: todayMeaningfulReels,
+                speakingCompleted: todaySpeakingCompleted,
+                reviewActions: todayReviewActions
+            )
         let minutesStudiedThisWeek = try container.decodeIfPresent(Int.self, forKey: .minutesStudiedThisWeek) ?? 0
         let meaningfulReelsCompleted = try container.decodeIfPresent(Int.self, forKey: .meaningfulReelsCompleted) ?? 0
         let reviewsCompleted = try container.decodeIfPresent(Int.self, forKey: .reviewsCompleted) ?? 0
@@ -123,9 +221,22 @@ struct ProgressOverview: Codable {
         self.init(
             hasData: hasData,
             currentStreak: currentStreak,
+            longestStreak: longestStreak,
             totalStudyDays: totalStudyDays,
             weeklyGoalTarget: weeklyGoalTarget,
             weeklyGoalProgress: weeklyGoalProgress,
+            dailyGoalEnabled: dailyGoalEnabled,
+            dailyGoalTarget: dailyGoalTarget,
+            dailyGoalProgress: dailyGoalProgress,
+            dailyGoalCompleted: dailyGoalCompleted,
+            todayGoalTarget: todayGoalTarget,
+            todayGoalProgress: todayGoalProgress,
+            todayGoalCompleted: todayGoalCompleted,
+            todayStreakEligible: todayStreakEligible,
+            todayMeaningfulReels: todayMeaningfulReels,
+            todaySpeakingCompleted: todaySpeakingCompleted,
+            todayReviewActions: todayReviewActions,
+            todayActivitySummary: todayActivitySummary,
             minutesStudiedThisWeek: minutesStudiedThisWeek,
             meaningfulReelsCompleted: meaningfulReelsCompleted,
             reviewsCompleted: reviewsCompleted,

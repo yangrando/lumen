@@ -108,7 +108,7 @@ struct InterestsView: View {
                 .foregroundStyle(LumenColors.gradientStart)
                 .frame(width: 24)
 
-            Text("A IA do Lumen usara esses topicos para gerar frases em ingles contextualizadas com o que voce gosta.")
+            Text(LocalizedStrings.interestsHint)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(.white.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)

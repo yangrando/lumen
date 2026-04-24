@@ -19,7 +19,13 @@ struct EnglishPhrase: Identifiable, Equatable {
     let example: String?
     let audioURL: URL?
     let goal: String?
+    let subtopic: String?
     let contentType: String?
+    let contentTemplate: String?
+    let contentStyle: String?
+    let context: String?
+    let explanation: String?
+    let didYouKnow: String?
     let keywords: [String]
     let focusWords: [String]
     let grammarFocus: String?
@@ -38,7 +44,13 @@ struct EnglishPhrase: Identifiable, Equatable {
         example: String? = nil,
         audioURL: URL? = nil,
         goal: String? = nil,
+        subtopic: String? = nil,
         contentType: String? = nil,
+        contentTemplate: String? = nil,
+        contentStyle: String? = nil,
+        context: String? = nil,
+        explanation: String? = nil,
+        didYouKnow: String? = nil,
         keywords: [String] = [],
         focusWords: [String] = [],
         grammarFocus: String? = nil,
@@ -56,7 +68,13 @@ struct EnglishPhrase: Identifiable, Equatable {
         self.example = example
         self.audioURL = audioURL
         self.goal = goal
+        self.subtopic = subtopic
         self.contentType = contentType
+        self.contentTemplate = contentTemplate
+        self.contentStyle = contentStyle
+        self.context = context
+        self.explanation = explanation
+        self.didYouKnow = didYouKnow
         self.keywords = keywords
         self.focusWords = focusWords
         self.grammarFocus = grammarFocus
@@ -68,6 +86,22 @@ struct EnglishPhrase: Identifiable, Equatable {
     
     static func == (lhs: EnglishPhrase, rhs: EnglishPhrase) -> Bool {
         lhs.id == rhs.id
+    }
+
+    var hasStructuredDetails: Bool {
+        [context, explanation, didYouKnow].contains { value in
+            guard let value else { return false }
+            return !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+    }
+
+    var isDialogueLike: Bool {
+        text.contains("\n") || (contentTemplate ?? "").lowercased().contains("dialog") || (contentType ?? "").lowercased() == "dialogue"
+    }
+
+    var isFactLike: Bool {
+        let template = (contentTemplate ?? "").lowercased()
+        return template.contains("fact") || template.contains("culture tip") || template.contains("did you know")
     }
 
 }

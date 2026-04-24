@@ -136,7 +136,7 @@ struct ManualSignUpView: View {
                 .fill(Color.white.opacity(0.08))
                 .frame(height: 1)
 
-            Text("OR CONTINUE WITH")
+            Text(LocalizedStrings.commonOrContinueWith)
                 .font(.system(size: 10, weight: .bold))
                 .tracking(2.1)
                 .foregroundStyle(Color.white.opacity(0.28))

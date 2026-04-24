@@ -16,7 +16,7 @@ struct SpeakingPracticeView: View {
     @StateObject private var viewModel: SpeakingPracticeViewModel
 
     init(
-        title: String = "Speaking Practice",
+        title: String = LocalizedStrings.progressSpeaking,
         accessToken: String,
         targetText: String,
         reelID: String?,
@@ -89,7 +89,7 @@ struct SpeakingPracticeView: View {
 
     private var targetCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Repeat exactly")
+            Text(LocalizedStrings.speakingPracticeRepeatExactly)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(LumenColors.gradientStart)
 
@@ -98,7 +98,7 @@ struct SpeakingPracticeView: View {
                 .foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text("Listen first if you want, then record your voice repeating the same sentence.")
+            Text(LocalizedStrings.speakingPracticeInstruction)
                 .font(.system(size: 14))
                 .foregroundStyle(LumenColors.textSecondary)
 
@@ -108,7 +108,7 @@ struct SpeakingPracticeView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "speaker.wave.2.fill")
-                    Text("Listen to target")
+                    Text(LocalizedStrings.speakingPracticeListenToTarget)
                 }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.white)
@@ -134,7 +134,7 @@ struct SpeakingPracticeView: View {
     private var controlsCard: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text(viewModel.isRecording ? "Recording..." : (viewModel.isUploading ? "Analyzing..." : "Ready to practice"))
+                Text(viewModel.isRecording ? LocalizedStrings.speakingPracticeRecording : (viewModel.isUploading ? LocalizedStrings.speakingPracticeAnalyzing : LocalizedStrings.speakingPracticeReady))
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(.white)
 
@@ -165,7 +165,7 @@ struct SpeakingPracticeView: View {
                 } label: {
                     HStack(spacing: 10) {
                         Image(systemName: viewModel.isRecording ? "stop.fill" : "mic.fill")
-                        Text(viewModel.isRecording ? "Stop and submit" : "Start recording")
+                        Text(viewModel.isRecording ? LocalizedStrings.speakingPracticeStopAndSubmit : LocalizedStrings.speakingPracticeStartRecording)
                     }
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.white)
@@ -180,10 +180,14 @@ struct SpeakingPracticeView: View {
                 Button {
                     viewModel.retry()
                 } label: {
-                    Text("Retry")
+                    Text(LocalizedStrings.speakingPracticeRetry)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.white)
-                        .frame(width: 92, height: 54)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.9)
+                        .padding(.horizontal, 10)
+                        .frame(width: 118, height: 54)
                         .background(Color.white.opacity(0.10))
                         .clipShape(Capsule())
                 }
@@ -208,7 +212,7 @@ struct SpeakingPracticeView: View {
         return VStack(alignment: .leading, spacing: 14) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Pronunciation Score")
+                    Text(LocalizedStrings.speakingPracticeScore)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(LumenColors.textSecondary)
 
@@ -220,7 +224,7 @@ struct SpeakingPracticeView: View {
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("Similarity")
+                    Text(LocalizedStrings.speakingPracticeSimilarity)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(LumenColors.textSecondary)
 
@@ -240,25 +244,25 @@ struct SpeakingPracticeView: View {
             }
 
             if let transcript = attempt.transcript, !transcript.isEmpty {
-                detailBlock(title: "You said", value: transcript)
+                detailBlock(title: LocalizedStrings.speakingPracticeYouSaid, value: transcript)
             }
 
             if !attempt.missingWords.isEmpty {
-                detailBlock(title: "Missing words", value: attempt.missingWords.joined(separator: ", "))
+                detailBlock(title: LocalizedStrings.speakingPracticeMissingWords, value: attempt.missingWords.joined(separator: ", "))
             }
 
             if !attempt.incorrectWords.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Pronunciation differences")
+                    Text(LocalizedStrings.speakingPracticePronunciationDifferences)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(LumenColors.textSecondary)
 
                     ForEach(attempt.incorrectWords.prefix(3)) { pair in
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("You said: \"\(pair.heard)\"")
+                            Text("\(LocalizedStrings.speakingPracticeYouSaidLabel) \"\(pair.heard)\"")
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundStyle(Color(red: 1.0, green: 0.63, blue: 0.25))
-                            Text("Expected: \"\(pair.expected)\"")
+                            Text("\(LocalizedStrings.speakingPracticeExpectedLabel) \"\(pair.expected)\"")
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundStyle(Color(red: 0.42, green: 0.88, blue: 0.99))
                         }
@@ -270,9 +274,9 @@ struct SpeakingPracticeView: View {
                 }
             }
 
-            detailBlock(title: "Feedback", value: attempt.feedback)
+            detailBlock(title: LocalizedStrings.speakingPracticeFeedback, value: attempt.feedback)
 
-            Text(attempt.recommendation == "good_job" ? "Good job" : "Try again")
+            Text(attempt.recommendation == "good_job" ? LocalizedStrings.feedbackSuccessTitle : LocalizedStrings.commonRetry)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 12)

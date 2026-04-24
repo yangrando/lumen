@@ -591,10 +591,10 @@ class FeedViewModel: ObservableObject {
         let charCount = text.count
         let wordCount = text.split { $0.isWhitespace || $0.isNewline }.count
         let policy = contentPolicy
-        let relaxedMinChars = max(80, policy.minChars - 35)
-        let relaxedMaxChars = policy.maxChars + 120
-        let relaxedMinWords = max(12, policy.minWords - 4)
-        let relaxedMaxWords = policy.maxWords + 20
+        let relaxedMinChars = max(10, policy.minChars - 8)
+        let relaxedMaxChars = policy.maxChars + 40
+        let relaxedMinWords = max(3, policy.minWords - 2)
+        let relaxedMaxWords = policy.maxWords + 6
 
         return charCount >= relaxedMinChars &&
             charCount <= relaxedMaxChars &&
@@ -636,60 +636,60 @@ class FeedViewModel: ObservableObject {
 
         if normalized.contains("a1") {
             return ContentPolicy(
-                minChars: 28,
-                maxChars: 140,
+                minChars: 12,
+                maxChars: 90,
                 minWords: 4,
-                maxWords: 18,
-                preferredSentenceRange: "1 or 2 very short sentences"
+                maxWords: 10,
+                preferredSentenceRange: "1 short sentence"
             )
         }
 
         if normalized.contains("a2") {
             return ContentPolicy(
-                minChars: 55,
-                maxChars: 220,
-                minWords: 8,
-                maxWords: 30,
-                preferredSentenceRange: "1 to 3 short connected sentences"
+                minChars: 18,
+                maxChars: 110,
+                minWords: 5,
+                maxWords: 12,
+                preferredSentenceRange: "1 short sentence"
             )
         }
 
         if normalized.contains("b2") {
             return ContentPolicy(
-                minChars: 170,
-                maxChars: 520,
-                minWords: 24,
-                maxWords: 82,
-                preferredSentenceRange: "2 to 4 well-connected sentences"
+                minChars: 28,
+                maxChars: 140,
+                minWords: 7,
+                maxWords: 16,
+                preferredSentenceRange: "1 short sentence"
             )
         }
 
         if normalized.contains("c1") {
             return ContentPolicy(
-                minChars: 220,
-                maxChars: 720,
-                minWords: 32,
-                maxWords: 115,
-                preferredSentenceRange: "3 to 5 developed sentences"
+                minChars: 32,
+                maxChars: 160,
+                minWords: 8,
+                maxWords: 18,
+                preferredSentenceRange: "1 short sentence"
             )
         }
 
         if normalized.contains("c2") {
             return ContentPolicy(
-                minChars: 260,
-                maxChars: 860,
-                minWords: 38,
-                maxWords: 135,
-                preferredSentenceRange: "3 to 6 nuanced sentences"
+                minChars: 36,
+                maxChars: 180,
+                minWords: 8,
+                maxWords: 20,
+                preferredSentenceRange: "1 short sentence"
             )
         }
 
         return ContentPolicy(
-            minChars: 110,
-            maxChars: 360,
-            minWords: 16,
-            maxWords: 56,
-            preferredSentenceRange: "2 to 4 sentences"
+            minChars: 24,
+            maxChars: 130,
+            minWords: 6,
+            maxWords: 14,
+            preferredSentenceRange: "1 short sentence"
         )
     }
 

@@ -8,11 +8,13 @@ struct OnboardingCompletionView: View {
     @State private var pulse = false
     @State private var activeStep = 0
 
-    private let steps = [
-        "Analisando seus interesses",
-        "Montando o seu feed",
-        "Gerando os primeiros reels"
-    ]
+    private var steps: [String] {
+        [
+            LocalizedStrings.onboardingCompletionStepAnalyze,
+            LocalizedStrings.onboardingCompletionStepBuild,
+            LocalizedStrings.onboardingCompletionStepGenerate
+        ]
+    }
 
     init(autoAdvance: Bool = true, onStart: (() -> Void)? = nil) {
         self.autoAdvance = autoAdvance
@@ -53,11 +55,11 @@ struct OnboardingCompletionView: View {
                 }
 
                 VStack(spacing: 12) {
-                    Text("Criando sua experiência")
+                    Text(LocalizedStrings.onboardingCompletionTitle)
                         .font(.system(size: 30, weight: .bold))
                         .foregroundStyle(.white)
 
-                    Text("Estamos preparando o seu feed inicial com frases no nível certo, temas do seu interesse e reels personalizados.")
+                    Text(LocalizedStrings.onboardingCompletionDescription)
                         .font(.system(size: 16, weight: .medium))
                         .foregroundStyle(LumenColors.textSecondary)
                         .multilineTextAlignment(.center)

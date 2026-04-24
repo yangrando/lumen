@@ -15,6 +15,7 @@ struct AskAIView: View {
     @State private var isLoading = false
     @State private var validationError: String?
     @State private var hasReportedSpeakingCompletion = false
+    @State private var askTask: Task<Void, Never>?
 
     var body: some View {
         NavigationStack {
@@ -93,7 +94,8 @@ struct AskAIView: View {
                             }
 
                             Button {
-                                Task { await ask() }
+                                askTask?.cancel()
+                                askTask = Task { await ask() }
                             } label: {
                                 HStack {
                                     Image(systemName: "paperplane.fill")
@@ -147,6 +149,9 @@ struct AskAIView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(LocalizedStrings.commonClose) {
+                        askTask?.cancel()
+                        askTask = nil
+                        isLoading = false
                         if speechService.isRecording {
                             speechService.stopRecording()
                             if !hasReportedSpeakingCompletion {
@@ -163,6 +168,11 @@ struct AskAIView: View {
                     }
                     .foregroundStyle(.white)
                 }
+            }
+            .onDisappear {
+                askTask?.cancel()
+                askTask = nil
+                isLoading = false
             }
             .onChange(of: speechService.transcript) { _, value in
                 guard !value.isEmpty else { return }
@@ -182,7 +192,12 @@ struct AskAIView: View {
         isLoading = true
         onSubmitQuestion?(trimmed)
         answer = await onAsk(trimmed)
+        if Task.isCancelled {
+            isLoading = false
+            return
+        }
         isLoading = false
+        askTask = nil
     }
 }
 

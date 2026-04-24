@@ -104,36 +104,3 @@ struct InterestCard: View {
         return AnyShapeStyle(Color(red: 0.14, green: 0.18, blue: 0.27))
     }
 }
-
-private extension UserInterest {
-    var displayTitle: String {
-        switch self {
-        case .entertainment:
-            return "Filmes & Series"
-        case .music:
-            return "Musica"
-        case .travel:
-            return "Viagens"
-        case .food:
-            return "Culinaria"
-        case .technology:
-            return "Tecnologia & Ciencia"
-        case .science:
-            return "Pesquisa"
-        case .sports:
-            return "Esportes"
-        case .business:
-            return "Negocios"
-        case .health:
-            return "Saude"
-        case .art:
-            return "Arte"
-        case .culture:
-            return "Cultura"
-        case .fashion:
-            return "Moda"
-        case .gaming:
-            return "Games"
-        }
-    }
-}

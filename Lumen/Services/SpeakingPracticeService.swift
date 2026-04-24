@@ -63,6 +63,7 @@ struct SpeakingHistoryResponse: Codable {
 final class SpeakingPracticeService {
     static let shared = SpeakingPracticeService()
     private let logger = Logger.shared
+    private let analyzeTimeout: Duration = .seconds(45)
 
     private init() {}
 
@@ -108,7 +109,7 @@ final class SpeakingPracticeService {
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.timeoutInterval = 240
+        request.timeoutInterval = analyzeTimeout.timeInterval
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.httpBody = buildMultipartBody(
@@ -128,7 +129,7 @@ final class SpeakingPracticeService {
         )
         logger.logAPIRequest(url: url.absoluteString, method: "POST")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await data(for: request, timeout: analyzeTimeout)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             if let http = response as? HTTPURLResponse {
                 logger.logAPIResponse(statusCode: http.statusCode, body: String(data: data, encoding: .utf8))
@@ -142,6 +143,48 @@ final class SpeakingPracticeService {
         )
 
         return try JSONDecoder().decode(SpeakingAttempt.self, from: data)
+    }
+
+    private func data(for request: URLRequest, timeout: Duration) async throws -> (Data, URLResponse) {
+        enum RequestOutcome {
+            case response(Data, URLResponse)
+            case timedOut
+        }
+
+        let requestTask = Task {
+            try await URLSession.shared.data(for: request)
+        }
+        let timeoutTask = Task {
+            try await Task.sleep(for: timeout)
+        }
+
+        defer {
+            requestTask.cancel()
+            timeoutTask.cancel()
+        }
+
+        return try await withThrowingTaskGroup(of: RequestOutcome.self) { group in
+            group.addTask {
+                let (data, response) = try await requestTask.value
+                return .response(data, response)
+            }
+            group.addTask {
+                try await timeoutTask.value
+                return .timedOut
+            }
+
+            guard let outcome = try await group.next() else {
+                throw URLError(.unknown)
+            }
+
+            group.cancelAll()
+            switch outcome {
+            case .response(let data, let response):
+                return (data, response)
+            case .timedOut:
+                throw URLError(.timedOut)
+            }
+        }
     }
 
     private func loadAudioData(from url: URL) async throws -> Data {
@@ -226,5 +269,11 @@ final class SpeakingPracticeService {
 private extension Data {
     mutating func appendString(_ value: String) {
         append(Data(value.utf8))
+    }
+}
+
+private extension Duration {
+    var timeInterval: TimeInterval {
+        TimeInterval(components.seconds) + (TimeInterval(components.attoseconds) / 1_000_000_000_000_000_000)
     }
 }

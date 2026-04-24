@@ -8,10 +8,12 @@
 import SwiftUI
 import SwiftData
 import GoogleSignIn
+import Combine
 
 @main
 struct LumenApp: App {
     @State private var showSplash = true
+    @State private var localizationRefreshID = UUID()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
@@ -42,6 +44,10 @@ struct LumenApp: App {
                     await TrackingService.shared.handleScenePhaseChange(newPhase)
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: NativeLanguageLocalization.didChangeNotification)) { _ in
+                localizationRefreshID = UUID()
+            }
+            .id(localizationRefreshID)
         }
         .modelContainer(for: [FavoritePhrase.self, SavedWord.self])
     }

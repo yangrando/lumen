@@ -36,6 +36,7 @@ final class SessionService: ObservableObject {
         currentUser = nil
         justCompletedOnboarding = false
         KeychainService.shared.delete(tokenKey)
+        NativeLanguageLocalization.clearPreferredNativeLanguage()
         Task {
             await TrackingService.shared.handleLogout()
         }

@@ -5,6 +5,8 @@ import Foundation
 class AIService {
     static let shared = AIService()
     private let requestTimeout: TimeInterval = 180
+    private let questionTimeout: Duration = .seconds(35)
+    private let feedbackTimeout: Duration = .seconds(35)
     
     private let baseURL: String = {
         if let value = Bundle.main.object(forInfoDictionaryKey: "AI_BASE_URL") as? String,
@@ -35,11 +37,11 @@ class AIService {
         objectives: [String],
         count: Int = 5,
         excludedTexts: [String] = [],
-        minWordsPerCard: Int = 24,
-        maxWordsPerCard: Int = 90,
-        minCharactersPerCard: Int = 120,
-        maxCharactersPerCard: Int = 560,
-        preferredSentenceRange: String = "2 to 4 sentences",
+        minWordsPerCard: Int = 6,
+        maxWordsPerCard: Int = 14,
+        minCharactersPerCard: Int = 24,
+        maxCharactersPerCard: Int = 130,
+        preferredSentenceRange: String = "1 short sentence",
         requestID: String? = nil
     ) async throws -> GeneratedPhraseBatch {
         logger.info("Starting phrase generation - Level: \(level), Interests: \(interests.joined(separator: ", ")), Count: \(count)")
@@ -118,7 +120,11 @@ class AIService {
         Keep it practical and easy to understand.
         """
 
-        return try await callBackend(prompt: prompt, task: "answer_doubt").text
+        return try await callBackend(
+            prompt: prompt,
+            task: "answer_doubt",
+            timeout: questionTimeout
+        ).text
     }
     
     // MARK: - Get AI Feedback
@@ -147,7 +153,11 @@ class AIService {
         Keep the explanation simple and appropriate for their level.
         """
         
-        let response = try await callBackend(prompt: prompt, task: "explain_phrase").text
+        let response = try await callBackend(
+            prompt: prompt,
+            task: "explain_phrase",
+            timeout: feedbackTimeout
+        ).text
         logger.success("Feedback received for phrase: '\(phrase)'")
         
         return response
@@ -202,25 +212,20 @@ class AIService {
         """
         
         return """
-        Generate \(count) English learning cards for someone at CEFR \(level) level.
+        Generate \(count) short English reel phrases for someone at CEFR \(level) level.
 
         User Interests: \(interestsStr)
         Learning Objectives: \(objectivesStr)
 
         Content mix requirements:
-        - Prioritize relevant content, not generic motivational lines.
-        - Every card MUST include at least one concrete anchor:
-          a) a historical fact with year/date,
-          b) a real event, person, or place,
-          c) a cultural curiosity with context,
-          d) a music reference identifying song and artist.
+        - Prioritize practical, natural English someone could genuinely hear or say.
+        - Keep the phrase short and reel-friendly, while still useful for learning.
         - Length target per card:
           a) \(minWordsPerCard)-\(maxWordsPerCard) words,
           b) \(minCharactersPerCard)-\(maxCharactersPerCard) characters.
         - Preferred structure: \(preferredSentenceRange).
-        - Keep each card coherent, factual, and useful for real English learning.
+        - Use only one main idea per card.
         - Ensure cards are diverse in topic and wording; avoid repetition.
-        - For music-related cards: do not provide long copyrighted lyrics; if needed, use an excerpt with at most 8 words and focus on explanation/context.
         \(exclusionBlock)
 
         For each card, provide:
@@ -249,7 +254,12 @@ class AIService {
         """
     }
     
-    private func callBackend(prompt: String, task: String?, meta: [String: Any]? = nil) async throws -> BackendResponse {
+    private func callBackend(
+        prompt: String,
+        task: String?,
+        meta: [String: Any]? = nil,
+        timeout: Duration? = nil
+    ) async throws -> BackendResponse {
         logger.debug("Preparing backend AI request")
         let accessToken = await MainActor.run { SessionService.shared.accessToken }
         guard let accessToken else {
@@ -266,7 +276,7 @@ class AIService {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        request.timeoutInterval = requestTimeout
+        request.timeoutInterval = timeout?.timeInterval ?? requestTimeout
         
         logger.logAPIRequest(url: baseURL, method: "POST")
         
@@ -289,7 +299,7 @@ class AIService {
         
         // Make the request
         logger.debug("Sending request to backend API...")
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await data(for: request, timeout: timeout)
         
         // Log response
         if let httpResponse = response as? HTTPURLResponse {
@@ -325,6 +335,52 @@ class AIService {
 
         logger.success("Successfully decoded backend response")
         return decodedResponse
+    }
+
+    private func data(for request: URLRequest, timeout: Duration?) async throws -> (Data, URLResponse) {
+        guard let timeout else {
+            return try await URLSession.shared.data(for: request)
+        }
+
+        enum RequestOutcome {
+            case response(Data, URLResponse)
+            case timedOut
+        }
+
+        let requestTask = Task {
+            try await URLSession.shared.data(for: request)
+        }
+        let timeoutTask = Task {
+            try await Task.sleep(for: timeout)
+        }
+
+        defer {
+            requestTask.cancel()
+            timeoutTask.cancel()
+        }
+
+        return try await withThrowingTaskGroup(of: RequestOutcome.self) { group in
+            group.addTask {
+                let (data, response) = try await requestTask.value
+                return .response(data, response)
+            }
+            group.addTask {
+                try await timeoutTask.value
+                return .timedOut
+            }
+
+            guard let outcome = try await group.next() else {
+                throw URLError(.unknown)
+            }
+
+            group.cancelAll()
+            switch outcome {
+            case .response(let data, let response):
+                return (data, response)
+            case .timedOut:
+                throw URLError(.timedOut)
+            }
+        }
     }
     
     // MARK: - Parse Phrases from JSON Response
@@ -365,7 +421,13 @@ class AIService {
                 difficulty: difficultyLevel,
                 category: phraseResponse.category,
                 goal: phraseResponse.goal,
+                subtopic: phraseResponse.subtopic,
                 contentType: phraseResponse.contentType,
+                contentTemplate: phraseResponse.contentTemplate,
+                contentStyle: phraseResponse.contentStyle,
+                context: phraseResponse.context,
+                explanation: phraseResponse.explanation,
+                didYouKnow: phraseResponse.didYouKnow,
                 keywords: phraseResponse.keywords ?? [],
                 focusWords: phraseResponse.focusWords ?? [],
                 grammarFocus: phraseResponse.grammarFocus,
@@ -378,6 +440,12 @@ class AIService {
         
         logger.success("Successfully parsed \(phrases.count) EnglishPhrase objects")
         return phrases
+    }
+}
+
+private extension Duration {
+    var timeInterval: TimeInterval {
+        TimeInterval(components.seconds) + (TimeInterval(components.attoseconds) / 1_000_000_000_000_000_000)
     }
 }
 
@@ -440,7 +508,13 @@ struct PhraseResponse: Decodable {
     let category: String
     let difficulty: String
     let goal: String?
+    let subtopic: String?
     let contentType: String?
+    let contentTemplate: String?
+    let contentStyle: String?
+    let context: String?
+    let explanation: String?
+    let didYouKnow: String?
     let keywords: [String]?
     let focusWords: [String]?
     let grammarFocus: String?
@@ -458,7 +532,13 @@ struct PhraseResponse: Decodable {
         case difficulty
         case targetLevel = "target_level"
         case goal
+        case subtopic
         case contentType = "content_type"
+        case contentTemplate = "content_template"
+        case contentStyle = "content_style"
+        case context
+        case explanation
+        case didYouKnow = "did_you_know"
         case keywords
         case focusWords = "focus_words"
         case grammarFocus = "grammar_focus"
@@ -480,7 +560,13 @@ struct PhraseResponse: Decodable {
             ?? container.decodeIfPresent(String.self, forKey: .difficulty)
             ?? "B1"
         goal = try container.decodeIfPresent(String.self, forKey: .goal)
+        subtopic = try container.decodeIfPresent(String.self, forKey: .subtopic)
         contentType = try container.decodeIfPresent(String.self, forKey: .contentType)
+        contentTemplate = try container.decodeIfPresent(String.self, forKey: .contentTemplate)
+        contentStyle = try container.decodeIfPresent(String.self, forKey: .contentStyle)
+        context = try container.decodeIfPresent(String.self, forKey: .context)
+        explanation = try container.decodeIfPresent(String.self, forKey: .explanation)
+        didYouKnow = try container.decodeIfPresent(String.self, forKey: .didYouKnow)
         keywords = try container.decodeIfPresent([String].self, forKey: .keywords)
         focusWords = try container.decodeIfPresent([String].self, forKey: .focusWords)
         grammarFocus = try container.decodeIfPresent(String.self, forKey: .grammarFocus)
