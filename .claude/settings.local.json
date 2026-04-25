@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(gunzip -c \"/Users/yanfelipegrando/.claude/projects/-Users-yanfelipegrando-Documents-GitHub-Lumen--claude-worktrees-determined-perlman-757abb/9876893d-48ed-4bb9-8f2b-7f459aac175c/tool-results/webfetch-1777121338477-0gzpnw.bin\")",
+      "Bash(tar -tf /tmp/lumen_design.tar)",
+      "Read(//private/tmp/**)",
+      "Bash(tar -xf lumen_design.tar)",
+      "mcp__filesystem__directory_tree",
+      "mcp__filesystem__read_text_file",
+      "Bash(mkdir -p /tmp/lumen_fonts)",
+      "Read(//tmp/**)",
+      "Bash(curl -sL \"https://fonts.gstatic.com/s/spacegrotesk/v16/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gozuiqy5nqUB6o.woff2\" -o SpaceGrotesk-Light.woff2)",
+      "Bash(curl -sL \"https://fonts.gstatic.com/s/spacegrotesk/v16/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gozuiqy5nqUB6o.woff2\" -o test.woff2)",
+      "Bash(curl -sL \"https://github.com/floriankarsten/space-grotesk/raw/master/fonts/ttf/SpaceGrotesk-Light.ttf\" -o SpaceGrotesk-Light.ttf -w \"%{http_code} %{size_download}\\\\n\")",
+      "Bash(curl -sL \"https://github.com/floriankarsten/space-grotesk/raw/master/fonts/ttf/SpaceGrotesk-Regular.ttf\" -o SpaceGrotesk-Regular.ttf -w \"%{http_code} %{size_download}\\\\n\")",
+      "Bash(curl -sL \"https://github.com/floriankarsten/space-grotesk/raw/master/fonts/ttf/SpaceGrotesk-Medium.ttf\" -o SpaceGrotesk-Medium.ttf -w \"%{http_code} %{size_download}\\\\n\")",
+      "Bash(curl -sL \"https://github.com/floriankarsten/space-grotesk/raw/master/fonts/ttf/SpaceGrotesk-SemiBold.ttf\" -o SpaceGrotesk-SemiBold.ttf -w \"%{http_code} %{size_download}\\\\n\")",
+      "Bash(curl -sL \"https://github.com/floriankarsten/space-grotesk/raw/master/fonts/ttf/SpaceGrotesk-Bold.ttf\" -o SpaceGrotesk-Bold.ttf -w \"%{http_code} %{size_download}\\\\n\")",
+      "Bash(curl -sL \"https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@5.0.0/files/space-grotesk-latin-300-normal.woff2\" -o SpaceGrotesk-Light.woff2 -w \"%{http_code} %{size_download}\\\\n\")",
+      "Bash(curl -sL \"https://cdn.jsdelivr.net/npm/@fontsource/geist-mono@1.0.0/files/geist-mono-latin-400-normal.woff2\" -o GeistMono-Regular.woff2 -w \"%{http_code} %{size_download}\\\\n\")",
+      "Bash(npm pack *)",
+      "Bash(xargs tar *)",
+      "Bash(xargs -I{} tar -tzf {})",
+      "Bash(curl -sL \"https://github.com/vercel/geist-font/raw/main/packages/next/src/fonts/geist-mono/GeistMono-Regular.woff2\" -o GeistMono-Regular.woff2 -w \"%{http_code} %{size_download}\\\\n\")",
+      "Bash(curl -sL \"https://github.com/floriankarsten/space-grotesk/raw/main/fonts/ttf/SpaceGrotesk-Regular.ttf\" -o SpaceGrotesk-Regular.ttf -w \"%{http_code} %{size_download}\\\\n\")",
+      "Bash(curl -sA 'Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\)' 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Instrument+Serif:ital@1&display=swap')",
+      "Bash(curl -sA \"Mozilla/5.0\" \"https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap\")",
+      "Bash(xcodebuild -project Lumen.xcodeproj -scheme Lumen -destination 'platform=iOS Simulator,name=iPhone 16' -quiet build)",
+      "Bash(xcodebuild -project Lumen.xcodeproj -scheme Lumen -destination 'generic/platform=iOS Simulator' -quiet build)",
+      "Bash(xcodebuild -project Lumen.xcodeproj -scheme Lumen -destination 'generic/platform=iOS Simulator' build)"
+    ]
+  }
+}

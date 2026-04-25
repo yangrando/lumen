@@ -28,6 +28,14 @@
 		<string>SplineSans-SemiBold.ttf</string>
 		<string>SplineSans-Medium.ttf</string>
 		<string>SplineSans-Light.ttf</string>
+		<string>SpaceGrotesk-Light.ttf</string>
+		<string>SpaceGrotesk-Regular.ttf</string>
+		<string>SpaceGrotesk-Medium.ttf</string>
+		<string>SpaceGrotesk-SemiBold.ttf</string>
+		<string>SpaceGrotesk-Bold.ttf</string>
+		<string>GeistMono-Regular.ttf</string>
+		<string>GeistMono-Medium.ttf</string>
+		<string>InstrumentSerif-Italic.ttf</string>
 	</array>
 </dict>
 </plist>
