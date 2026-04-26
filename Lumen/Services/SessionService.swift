@@ -12,7 +12,15 @@ final class SessionService: ObservableObject {
     private let tokenKey = "lumen_access_token"
     private let onboardingCompletedPrefix = "lumen_onboarding_completed_"
 
+    private let hasLaunchedKey = "lumen_has_launched"
+
     private init() {
+        // Keychain persists across uninstalls on iOS; UserDefaults does not.
+        // On a fresh install, clear any leftover token so login is always required.
+        if !UserDefaults.standard.bool(forKey: hasLaunchedKey) {
+            KeychainService.shared.delete(tokenKey)
+            UserDefaults.standard.set(true, forKey: hasLaunchedKey)
+        }
         accessToken = KeychainService.shared.get(tokenKey)
     }
 
@@ -28,7 +36,11 @@ final class SessionService: ObservableObject {
 
     func ensureCurrentUserLoaded() async {
         guard currentUser == nil, let token = accessToken else { return }
-        currentUser = try? await AuthService.shared.fetchCurrentUser(accessToken: token)
+        do {
+            currentUser = try await AuthService.shared.fetchCurrentUser(accessToken: token)
+        } catch {
+            Logger.shared.warning("ensureCurrentUserLoaded failed — user-specific features may be unavailable: \(error.localizedDescription)")
+        }
     }
 
     func clearSession() {
@@ -55,13 +67,15 @@ final class SessionService: ObservableObject {
     }
 
     func logout() async {
-        if let token = accessToken {
+        let token = accessToken
+        let provider = currentUser?.provider
+        clearSession()  // Keychain is cleared immediately — never depends on network success
+        if let token {
             try? await AuthService.shared.logout(accessToken: token)
         }
-        if currentUser?.provider == AuthProvider.google.rawValue {
+        if provider == AuthProvider.google.rawValue {
             SocialAuthService.shared.signOutGoogleIfNeeded()
         }
-        clearSession()
     }
 
     func deleteAccount() async throws {
@@ -69,10 +83,11 @@ final class SessionService: ObservableObject {
             clearSession()
             return
         }
+        let provider = currentUser?.provider
+        clearSession()  // Keychain cleared before the network call
         try await AuthService.shared.deleteAccount(accessToken: token)
-        if currentUser?.provider == AuthProvider.google.rawValue {
+        if provider == AuthProvider.google.rawValue {
             SocialAuthService.shared.signOutGoogleIfNeeded()
         }
-        clearSession()
     }
 }

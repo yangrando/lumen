@@ -150,6 +150,7 @@ final class AuthService {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 30
         request.httpBody = try JSONEncoder().encode(AuthRequestPayload(id_token: idToken))
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -172,6 +173,7 @@ final class AuthService {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 30
         request.httpBody = try JSONEncoder().encode(EmailSignupRequestPayload(name: name, email: email, password: password))
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -192,6 +194,7 @@ final class AuthService {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 30
         request.httpBody = try JSONEncoder().encode(EmailLoginRequestPayload(email: email, password: password))
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -212,6 +215,7 @@ final class AuthService {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "GET"
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 20
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -231,6 +235,7 @@ final class AuthService {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 15
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
@@ -247,6 +252,7 @@ final class AuthService {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "DELETE"
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 30
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
@@ -289,6 +295,7 @@ final class AuthService {
         request.httpMethod = "PUT"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 30
         request.httpBody = try JSONEncoder().encode(
             UserPreferencesRequestPayload(
                 level: preferences.level,

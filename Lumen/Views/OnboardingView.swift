@@ -203,6 +203,15 @@ struct OnboardingView: View {
             }
         } catch {
             sessionService.clearSession()
+            // URLErrors indicate a connectivity problem; everything else (backend 401/403,
+            // token expired, server error) means the saved session is no longer valid.
+            if let urlError = error as? URLError,
+               [.notConnectedToInternet, .networkConnectionLost,
+                .cannotFindHost, .cannotConnectToHost, .timedOut].contains(urlError.code) {
+                authAlertMessage = LocalizedStrings.commonErrorConnection
+            } else {
+                authAlertMessage = LocalizedStrings.commonErrorUnauthenticated
+            }
         }
     }
 
@@ -225,7 +234,7 @@ struct OnboardingView: View {
                     currentStep = .nativeLanguage
                 }
             }
-        } catch SocialAuthError.userCancelled {
+        } catch LumenError.userCancelled {
             sessionService.clearSession()
             currentStep = .welcome
             authAlertMessage = LocalizedStrings.authCancelled
@@ -241,19 +250,9 @@ struct OnboardingView: View {
     }
 
     private func localizedAuthErrorMessage(for error: Error) -> String {
-        if let socialError = error as? SocialAuthError {
-            switch socialError {
-            case .appleTokenUnavailable:
-                return LocalizedStrings.authAppleTokenUnavailable
-            case .googleNotConfigured:
-                return LocalizedStrings.authGoogleNotConfigured
-            case .googleSessionFailed, .googleMissingIDToken, .invalidGoogleCallback:
-                return LocalizedStrings.authGoogleFailed
-            case .userCancelled:
-                return LocalizedStrings.authCancelled
-            }
+        if let lumenError = error as? LumenError {
+            return lumenError.errorDescription ?? LocalizedStrings.authLoginFailed
         }
-
         return LocalizedStrings.authLoginFailed
     }
 
@@ -329,7 +328,9 @@ struct OnboardingView: View {
                 sessionService.markOnboardingCompleted(for: userID)
             }
         } catch {
-            // Keep onboarding flow uninterrupted; user can edit preferences later.
+            // Non-blocking: user proceeds to the feed; preferences can be edited later.
+            // Log so the issue is visible in debug sessions.
+            Logger.shared.warning("persistOnboardingPreferences failed — preferences not saved to backend: \(error.localizedDescription)")
         }
     }
 
