@@ -272,7 +272,10 @@ final class AuthService {
 
         let preferences = try JSONDecoder().decode(UserPreferencesResponse.self, from: data).preferences
         cachePreferences(preferences)
-        NativeLanguageLocalization.savePreferredNativeLanguage(preferences.nativeLanguage)
+        // Use notify: false — posting during session restore rebuilds the entire view tree via
+        // LumenApp's .id(localizationRefreshID) and creates a duplicate FeedViewModel/feed request.
+        // Callers that intentionally change the language (e.g. Settings) should notify explicitly.
+        NativeLanguageLocalization.savePreferredNativeLanguage(preferences.nativeLanguage, notify: false)
         return preferences
     }
 
@@ -305,7 +308,7 @@ final class AuthService {
 
         let saved = try JSONDecoder().decode(UserPreferencesResponse.self, from: data).preferences
         cachePreferences(saved)
-        NativeLanguageLocalization.savePreferredNativeLanguage(saved.nativeLanguage)
+        NativeLanguageLocalization.savePreferredNativeLanguage(saved.nativeLanguage, notify: false)
         return saved
     }
 

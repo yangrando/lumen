@@ -19,138 +19,151 @@ struct UserPreferencesView: View {
 
     var body: some View {
         ZStack {
-            LumenColors.navyDark
+            LumenColors.ink900
                 .ignoresSafeArea()
 
             if isLoading {
                 ProgressView()
-                    .tint(.white)
+                    .tint(LumenColors.accent)
             } else {
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 28) {
-                        profileHero
-                        personalInformationCard
-                        learningContextCard
-                        accountActions
+                    VStack(alignment: .leading, spacing: 22) {
+                        // Settings title + version (design-spec)
+                        HStack {
+                            Text(LocalizedStrings.preferencesTitle)
+                                .font(LumenFont.grotesk(22, weight: .semibold))
+                                .foregroundStyle(LumenColors.ink50)
+                            Spacer()
+                            Text("v 1.0")
+                                .font(LumenFont.mono(10, weight: .medium))
+                                .tracking(1.4)
+                                .foregroundStyle(LumenColors.ink400)
+                        }
+
+                        // Account section
+                        settingsGroup(header: "ACCOUNT") {
+                            settingsListRow(
+                                label: LocalizedStrings.preferencesFullName,
+                                value: displayName
+                            )
+                            Divider().background(LumenColors.ink700)
+                            settingsListRow(
+                                label: LocalizedStrings.preferencesEmailAddress,
+                                value: currentUser?.email ?? LocalizedStrings.preferencesNoEmailAvailable,
+                                isAccent: false
+                            )
+                        }
+
+                        // Practice section
+                        settingsGroup(header: "PRACTICE") {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text(LocalizedStrings.preferencesNativeLanguage.uppercased())
+                                    .font(LumenFont.mono(10, weight: .medium))
+                                    .tracking(1.4)
+                                    .foregroundStyle(LumenColors.ink400)
+
+                                Picker(LocalizedStrings.preferencesNativeLanguage, selection: $selectedNativeLanguage) {
+                                    ForEach(nativeLanguages) { language in
+                                        Text(language.localizedLabel).tag(language.value)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .tint(LumenColors.accent)
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 14)
+
+                            Divider().background(LumenColors.ink700)
+
+                            settingsListRow(
+                                label: LocalizedStrings.preferencesEnglishLevel,
+                                value: selectedLevel.rawValue
+                            )
+                        }
+
+                        // Learning context — collapsible sections
+                        learningContextSection
+
+                        // Save button
+                        if let errorMessage, !errorMessage.isEmpty {
+                            Text(errorMessage)
+                                .font(LumenFont.grotesk(13, weight: .medium))
+                                .foregroundStyle(LumenColors.bad)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: .infinity)
+                        }
+
+                        LumenButton(
+                            kind: .primary, size: .lg,
+                            isDisabled: isSaving,
+                            isFullWidth: true,
+                            label: isSaving ? LocalizedStrings.preferencesSaving : LocalizedStrings.preferencesSaveChanges
+                        ) {
+                            Task { await save() }
+                        }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 18)
-                    .padding(.bottom, 32)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 36)
                 }
             }
         }
-        .navigationTitle(LocalizedStrings.preferencesTitle)
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await load()
         }
     }
 
-    private var profileHero: some View {
-        VStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                LumenColors.gradientStart.opacity(0.42),
-                                LumenColors.gradientEnd.opacity(0.22),
-                                .clear
-                            ],
-                            center: .center,
-                            startRadius: 18,
-                            endRadius: 96
-                        )
-                    )
-                    .frame(width: 176, height: 176)
+    // MARK: – Design-spec helpers
 
-                ZStack(alignment: .bottomTrailing) {
-                    Circle()
-                        .fill(LumenColors.navyLight)
-                        .frame(width: 128, height: 128)
-                        .overlay {
-                            Circle()
-                                .stroke(Color.black.opacity(0.32), lineWidth: 8)
-                        }
-                        .overlay {
-                            Image(systemName: "person.crop.circle.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 92, height: 92)
-                                .foregroundStyle(.white.opacity(0.94), LumenColors.textSecondary.opacity(0.65))
-                        }
+    private func settingsGroup(header: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(header)
+                .font(LumenFont.mono(9, weight: .medium))
+                .tracking(1.4)
+                .foregroundStyle(LumenColors.ink400)
+                .padding(.leading, 4)
 
-                    Circle()
-                        .fill(Color(red: 0.10, green: 0.18, blue: 0.30))
-                        .frame(width: 40, height: 40)
-                        .overlay {
-                            Image(systemName: "camera.fill")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(LumenColors.gradientStart)
-                        }
-                        .overlay {
-                            Circle()
-                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                        }
-                        .offset(x: 6, y: 4)
-                }
+            VStack(spacing: 0) {
+                content()
             }
-
-            VStack(spacing: 5) {
-                Text(displayName)
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(.white)
-
-                Text(memberSinceText)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(LumenColors.textSecondary)
-            }
-            .frame(maxWidth: .infinity)
-        }
-    }
-
-    private var personalInformationCard: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            sectionTitle(LocalizedStrings.preferencesPersonalInformation)
-
-            settingsCard {
-                settingsField(
-                    label: LocalizedStrings.preferencesFullName,
-                    value: displayName
-                )
-
-                DividerRow()
-
-                settingsField(
-                    label: LocalizedStrings.preferencesEmailAddress,
-                    value: currentUser?.email ?? LocalizedStrings.preferencesNoEmailAvailable
-                )
-
-                DividerRow()
-
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(LocalizedStrings.preferencesNativeLanguage.uppercased())
-                        .font(.system(size: 12, weight: .bold))
-                        .tracking(1.1)
-                        .foregroundStyle(Color(red: 0.54, green: 0.60, blue: 0.71))
-
-                    Picker(LocalizedStrings.preferencesNativeLanguage, selection: $selectedNativeLanguage) {
-                        ForEach(nativeLanguages) { language in
-                            Text(language.localizedLabel).tag(language.value)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .tint(.white)
-                }
+            .background(LumenColors.ink800)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(LumenColors.ink700, lineWidth: 1)
             }
         }
     }
 
-    private var learningContextCard: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            sectionTitle(LocalizedStrings.preferencesLearningContext)
+    private func settingsListRow(label: String, value: String, isAccent: Bool = false) -> some View {
+        HStack {
+            Text(label)
+                .font(LumenFont.grotesk(14, weight: .medium))
+                .foregroundStyle(LumenColors.ink50)
+            Spacer()
+            Text(value)
+                .font(LumenFont.grotesk(13))
+                .foregroundStyle(isAccent ? LumenColors.accent : LumenColors.ink400)
+                .lineLimit(1)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(LumenColors.ink500)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
+    }
 
-            settingsCard(spacing: 24) {
+    private var learningContextSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("LEARNING CONTEXT")
+                .font(LumenFont.mono(9, weight: .medium))
+                .tracking(1.4)
+                .foregroundStyle(LumenColors.ink400)
+                .padding(.leading, 4)
+
+            VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 12) {
                     chipTitle(LocalizedStrings.preferencesInterests.uppercased())
                     ChipSelectionGrid(
@@ -226,32 +239,79 @@ struct UserPreferencesView: View {
                     levelDescription
                 }
             }
+            .padding(16)
+            .background(LumenColors.ink800)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(LumenColors.ink700, lineWidth: 1)
+            }
         }
     }
 
-    private var accountActions: some View {
-        VStack(spacing: 18) {
-            if let errorMessage, !errorMessage.isEmpty {
-                Text(errorMessage)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.red.opacity(0.95))
+    // MARK: – Legacy (kept for internal use)
+
+    private var profileHero: some View {
+        VStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                LumenColors.gradientStart.opacity(0.42),
+                                LumenColors.gradientEnd.opacity(0.22),
+                                .clear
+                            ],
+                            center: .center,
+                            startRadius: 18,
+                            endRadius: 96
+                        )
+                    )
+                    .frame(width: 176, height: 176)
+
+                ZStack(alignment: .bottomTrailing) {
+                    Circle()
+                        .fill(LumenColors.navyLight)
+                        .frame(width: 128, height: 128)
+                        .overlay {
+                            Circle()
+                                .stroke(Color.black.opacity(0.32), lineWidth: 8)
+                        }
+                        .overlay {
+                            Image(systemName: "person.crop.circle.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 92, height: 92)
+                                .foregroundStyle(.white.opacity(0.94), LumenColors.textSecondary.opacity(0.65))
+                        }
+
+                    Circle()
+                        .fill(LumenColors.ink700)
+                        .frame(width: 40, height: 40)
+                        .overlay {
+                            Image(systemName: "camera.fill")
+                                .font(LumenFont.grotesk(16, weight: .semibold))
+                                .foregroundStyle(LumenColors.gradientStart)
+                        }
+                        .overlay {
+                            Circle()
+                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        }
+                        .offset(x: 6, y: 4)
+                }
             }
 
-            GradientButton(
-                title: isSaving ? LocalizedStrings.preferencesSaving : LocalizedStrings.preferencesSaveChanges,
-                icon: "square.and.arrow.down.fill",
-                action: {
-                    Task { await save() }
-                }
-            )
-            .disabled(isSaving)
-        }
-    }
+            VStack(spacing: 5) {
+                Text(displayName)
+                    .font(LumenFont.grotesk(24, weight: .bold))
+                    .foregroundStyle(.white)
 
-    private func sectionTitle(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 17, weight: .bold))
-            .foregroundStyle(.white)
+                Text(memberSinceText)
+                    .font(LumenFont.grotesk(14, weight: .medium))
+                    .foregroundStyle(LumenColors.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+        }
     }
 
     private func settingsCard(spacing: CGFloat = 18, @ViewBuilder content: () -> some View) -> some View {
@@ -261,32 +321,32 @@ struct UserPreferencesView: View {
         .padding(18)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color.white.opacity(0.05))
+                .fill(LumenColors.ink800)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                .stroke(LumenColors.ink700, lineWidth: 1)
         }
     }
 
     private func settingsField(label: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(label)
-                .font(.system(size: 12, weight: .bold))
+                .font(LumenFont.mono(12, weight: .medium))
                 .tracking(1.1)
-                .foregroundStyle(Color(red: 0.54, green: 0.60, blue: 0.71))
+                .foregroundStyle(LumenColors.ink400)
 
             Text(value)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(.white)
+                .font(LumenFont.grotesk(16, weight: .medium))
+                .foregroundStyle(LumenColors.ink50)
         }
     }
 
     private func chipTitle(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 12, weight: .bold))
+            .font(LumenFont.mono(12, weight: .medium))
             .tracking(1.1)
-            .foregroundStyle(Color(red: 0.54, green: 0.60, blue: 0.71))
+            .foregroundStyle(LumenColors.ink400)
     }
 
     private var levelSelector: some View {
@@ -303,7 +363,7 @@ struct UserPreferencesView: View {
                         selectedLevel = level
                     } label: {
                         Text(level.rawValue)
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(LumenFont.grotesk(15, weight: .semibold))
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
                             .minimumScaleFactor(0.82)
@@ -328,7 +388,7 @@ struct UserPreferencesView: View {
 
     private var levelDescription: some View {
         Text(levelHelperText)
-            .font(.system(size: 13, weight: .medium))
+            .font(LumenFont.grotesk(13, weight: .medium))
             .foregroundStyle(LumenColors.textSecondary)
             .italic()
             .frame(maxWidth: .infinity, alignment: .center)
@@ -376,8 +436,12 @@ struct UserPreferencesView: View {
         )
 
         do {
+            let previousLanguage = NativeLanguageLocalization.preferredNativeLanguage()
             _ = try await AuthService.shared.updateCurrentUserPreferences(accessToken: accessToken, preferences: payload)
             dismiss()
+            if payload.nativeLanguage != previousLanguage {
+                NotificationCenter.default.post(name: NativeLanguageLocalization.didChangeNotification, object: nil)
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

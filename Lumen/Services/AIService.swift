@@ -4,7 +4,7 @@ import Foundation
 
 class AIService {
     static let shared = AIService()
-    private let requestTimeout: TimeInterval = 180
+    private let requestTimeout: TimeInterval = 60
     private let questionTimeout: Duration = .seconds(35)
     private let feedbackTimeout: Duration = .seconds(35)
     
@@ -263,13 +263,13 @@ class AIService {
         logger.debug("Preparing backend AI request")
         let accessToken = await MainActor.run { SessionService.shared.accessToken }
         guard let accessToken else {
-            throw AIServiceError.unauthenticated
+            throw LumenError.unauthenticated
         }
         
         // Prepare the request
         guard let url = URL(string: baseURL) else {
             logger.error("Invalid API URL: \(baseURL)")
-            throw AIServiceError.networkError("Invalid API URL")
+            throw LumenError.network()
         }
         
         var request = URLRequest(url: url)
@@ -317,11 +317,11 @@ class AIService {
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
             if let errorResponse = try? JSONDecoder().decode(BackendErrorResponse.self, from: data) {
                 logger.error("Backend Error: \(errorResponse.detail)")
-                throw AIServiceError.networkError(errorResponse.detail)
+                throw LumenError.network(errorResponse.detail)
             }
             let errorMessage = "Invalid response from server (Status: \(statusCode))"
             logger.error(errorMessage)
-            throw AIServiceError.networkError(errorMessage)
+            throw LumenError.network(errorMessage)
         }
         
         // Decode the response
@@ -330,7 +330,7 @@ class AIService {
 
         if decodedResponse.text.isEmpty {
             logger.error("Could not extract content from backend response")
-            throw AIServiceError.decodingError("Could not extract content from response")
+            throw LumenError.decoding()
         }
 
         logger.success("Successfully decoded backend response")
@@ -404,7 +404,7 @@ class AIService {
         
         guard let data = cleanedJson.data(using: .utf8) else {
             logger.error("Could not convert JSON string to data")
-            throw AIServiceError.decodingError("Could not convert response to data")
+            throw LumenError.decoding()
         }
         
         let phraseResponses = try JSONDecoder().decode([PhraseResponse].self, from: data)
@@ -577,24 +577,3 @@ struct PhraseResponse: Decodable {
     }
 }
 
-// MARK: - Error Handling
-
-enum AIServiceError: LocalizedError {
-    case networkError(String)
-    case decodingError(String)
-    case invalidAPIKey
-    case unauthenticated
-    
-    var errorDescription: String? {
-        switch self {
-        case .networkError(let message):
-            return "Network Error: \(message)"
-        case .decodingError(let message):
-            return "Decoding Error: \(message)"
-        case .invalidAPIKey:
-            return "Invalid API Key"
-        case .unauthenticated:
-            return "Authentication required. Please sign in again."
-        }
-    }
-}

@@ -6,24 +6,8 @@ import Combine
 
 @MainActor
 class FeedViewModel: ObservableObject {
-    private struct ContentPolicy {
-        let minChars: Int
-        let maxChars: Int
-        let minWords: Int
-        let maxWords: Int
-        let preferredSentenceRange: String
-    }
 
-    private enum PaginationError: LocalizedError {
-        case noNewPhrases
-
-        var errorDescription: String? {
-            switch self {
-            case .noNewPhrases:
-                return LocalizedStrings.feedErrorDescription
-            }
-        }
-    }
+    // MARK: - Public state types
 
     enum TailState: Equatable {
         case idle
@@ -37,6 +21,8 @@ class FeedViewModel: ObservableObject {
         case ready(URL?)
     }
 
+    // MARK: - Published
+
     @Published var phrases: [EnglishPhrase] = []
     @Published var backgroundURLs: [UUID: URL] = [:]
     @Published var backgroundStates: [UUID: BackgroundState] = [:]
@@ -45,19 +31,26 @@ class FeedViewModel: ObservableObject {
     @Published var tailState: TailState = .idle
     @Published var bufferedPhraseCount = 0
     @Published var isBackgroundFetching = false
-    
+
+    // MARK: - Dependencies
+
     private let aiService = AIService.shared
     private let backgroundService = ReelBackgroundService.shared
     private let authService = AuthService.shared
     private let logger = Logger.shared
+    private let contentPolicy = FeedContentPolicy()
     private let usesRemoteBackgrounds = false
-    
-    // User preferences (these would come from onboarding)
+
+    // MARK: - User preferences
+
     private var userLevel: String = "B1"
     private var userNativeLanguage: String = "Portuguese (Brazil)"
     private var userInterests: [String] = ["Technology", "Business"]
     private var userObjectives: [String] = ["Improve Speaking", "Expand Vocabulary"]
     private var favoriteCategories: [String] = []
+
+    // MARK: - Pagination state
+
     private var isFetchingMore = false
     private var loadMoreTask: Task<Void, Never>?
     private var backgroundTasks: Set<UUID> = []
@@ -70,6 +63,8 @@ class FeedViewModel: ObservableObject {
     private var fetchCooldownUntil: Date?
     private var furthestConsumedIndex = 0
     private var firstBlockingLoadingLogged = false
+    private var initialLoadTask: Task<Void, Never>?
+
     private let preloadThreshold = 24
     private let lowWatermark = 24
     private let visibleBufferFloor = 32
@@ -78,28 +73,47 @@ class FeedViewModel: ObservableObject {
     private let minimumBlockingRecoveryBuffer = 40
     private let minimumAutomaticFetchSpacing: TimeInterval = 1
     private let lowYieldFetchCooldown: TimeInterval = 12
-    private let initialPageSize = 48
-    
+    private let initialPageSize = 24
+
+    // MARK: - Tracking state (moved from FeedView)
+
+    private var currentTrackedReelID: String?
+    private var currentTrackedPhrase: EnglishPhrase?
+    private var currentReelStartedAt = Date()
+    private var viewedReelsInSession = Set<String>()
+
+    // MARK: - Init
+
     init() {
-        Task {
-            await loadPhrases()
-        }
+        Task { await loadPhrases() }
     }
-    
-    
+
+    // MARK: - Load
+
     func loadPhrases() async {
+        // Cancel any previous in-flight initial load to prevent duplicate /ai/generate requests
+        // (e.g. when the view tree is recreated due to localization change right after login).
+        initialLoadTask?.cancel()
+        let task = Task { @MainActor [weak self] in
+            await self?.performLoadPhrases()
+        }
+        initialLoadTask = task
+        await task.value
+    }
+
+    private func performLoadPhrases() async {
         isLoading = true
         errorMessage = nil
         resetFeedState()
-        
+
         do {
             let currentUserID = SessionService.shared.currentUser?.sub
             if let token = SessionService.shared.accessToken {
                 if let cachedPreferences = authService.cachedPreferences(for: currentUserID) {
                     apply(preferences: cachedPreferences)
-                    Task {
-                        await refreshPreferencesInBackground(accessToken: token)
-                    }
+                    // Don't refresh in background here: it calls fetchCurrentUserPreferences which
+                    // triggers savePreferredNativeLanguage → didChangeNotification → view tree rebuild
+                    // → duplicate FeedViewModel and duplicate /ai/generate request.
                 } else {
                     let preferences = try await authService.fetchCurrentUserPreferences(accessToken: token)
                     apply(preferences: preferences)
@@ -116,45 +130,33 @@ class FeedViewModel: ObservableObject {
                 "Feed initial load completed - requested: \(initialPageSize), visibleLoaded: \(phrases.count), queued: \(queuedPhrases.count), bufferTarget: \(targetBufferSize)"
             )
             if totalAvailableReels(after: currentVisibleIndex) < targetBufferSize {
-                logger.info(
-                    "Feed initial top-up triggered - visibleLoaded: \(phrases.count), queued: \(queuedPhrases.count), totalAvailable: \(totalAvailableReels(after: currentVisibleIndex)), targetBuffer: \(targetBufferSize)"
-                )
                 loadMoreTask = Task { [weak self] in
                     guard let self else { return }
                     defer { self.loadMoreTask = nil }
-                    do {
-                        try await self.fetchMorePhrases(force: true, trigger: "initial_top_up")
-                    } catch {
-                        await self.handleLoadMoreFailure(error)
-                    }
+                    do { try await self.fetchMorePhrases(force: true, trigger: "initial_top_up") }
+                    catch { await self.handleLoadMoreFailure(error) }
                 }
             }
         } catch {
             errorMessage = error.localizedDescription
             isLoading = false
-            
-            // Fallback to mock phrases if API fails
             phrases = EnglishPhrase.mockPhrases
         }
     }
 
+    // MARK: - Background management
+
     func prefetchBackgrounds(around index: Int) {
-        guard usesRemoteBackgrounds else { return }
-        guard !phrases.isEmpty else { return }
+        guard usesRemoteBackgrounds, !phrases.isEmpty else { return }
         let start = max(0, index - 1)
         let end = min(phrases.count - 1, index + 2)
         guard start <= end else { return }
-        for i in start...end {
-            ensureBackground(for: phrases[i])
-        }
+        for i in start...end { ensureBackground(for: phrases[i]) }
     }
 
     func isBackgroundReady(for phraseID: UUID) -> Bool {
         guard usesRemoteBackgrounds else { return true }
-        if let state = backgroundStates[phraseID] {
-            if case .ready = state { return true }
-            return false
-        }
+        if let state = backgroundStates[phraseID], case .ready = state { return true }
         return false
     }
 
@@ -163,13 +165,10 @@ class FeedViewModel: ObservableObject {
             backgroundStates[phrase.id] = .ready(nil)
             return
         }
-        if let state = backgroundStates[phrase.id], case .ready = state {
-            return
-        }
+        if let state = backgroundStates[phrase.id], case .ready = state { return }
         guard !backgroundTasks.contains(phrase.id) else { return }
         backgroundStates[phrase.id] = .loading
         backgroundTasks.insert(phrase.id)
-
         Task {
             defer { backgroundTasks.remove(phrase.id) }
             do {
@@ -182,21 +181,17 @@ class FeedViewModel: ObservableObject {
                 backgroundURLs[phrase.id] = url
                 backgroundStates[phrase.id] = .ready(url)
             } catch {
-                // Keep local dynamic background as fallback when remote generation fails.
                 backgroundStates[phrase.id] = .ready(nil)
             }
         }
     }
 
     private func primeInitialBackgrounds() async {
-        guard usesRemoteBackgrounds else { return }
-        guard !phrases.isEmpty else { return }
+        guard usesRemoteBackgrounds, !phrases.isEmpty else { return }
         let primeItems = Array(phrases.prefix(3))
         await withTaskGroup(of: Void.self) { group in
             for phrase in primeItems {
-                group.addTask { [weak self] in
-                    await self?.ensureBackgroundImmediately(for: phrase)
-                }
+                group.addTask { [weak self] in await self?.ensureBackgroundImmediately(for: phrase) }
             }
         }
         prefetchBackgrounds(around: 0)
@@ -207,9 +202,7 @@ class FeedViewModel: ObservableObject {
             backgroundStates[phrase.id] = .ready(nil)
             return
         }
-        if let state = backgroundStates[phrase.id], case .ready = state {
-            return
-        }
+        if let state = backgroundStates[phrase.id], case .ready = state { return }
         backgroundStates[phrase.id] = .loading
         do {
             let url = try await backgroundService.urlForPhrase(
@@ -225,6 +218,8 @@ class FeedViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Pagination
+
     func ensureMorePhrasesIfNeeded(currentIndex: Int) {
         guard !phrases.isEmpty || !queuedPhrases.isEmpty else { return }
         currentVisibleIndex = max(0, min(currentIndex, max(phrases.count, 0)))
@@ -234,46 +229,32 @@ class FeedViewModel: ObservableObject {
         let totalAvailable = totalAvailableReels(after: currentVisibleIndex)
         let reachedTailPage = currentIndex >= phrases.count
         if promoted > 0 {
-            logger.info(
-                "Feed buffer promoted queued reels - trigger: scroll, visibleIndex: \(currentVisibleIndex), promoted: \(promoted), visibleTotal: \(phrases.count), queuedRemaining: \(queuedPhrases.count)"
-            )
+            logger.info("Feed buffer promoted queued reels - trigger: scroll, visibleIndex: \(currentVisibleIndex), promoted: \(promoted), visibleTotal: \(phrases.count), queuedRemaining: \(queuedPhrases.count)")
         }
         if reachedTailPage && isFetchingMore {
-            if case .reconnecting = tailState {
-                return
-            }
-            if case .failed = tailState {
-                return
-            }
+            if case .reconnecting = tailState { return }
+            if case .failed = tailState { return }
             tailState = .loading
             return
         }
         let proactiveThreshold = max(lowWatermark, targetBufferSize / 2)
         let shouldPreload = totalAvailable <= proactiveThreshold || remaining <= preloadThreshold
         guard reachedTailPage || shouldPreload else { return }
-        guard !isFetchingMore else { return }
-        guard loadMoreTask == nil else { return }
+        guard !isFetchingMore, loadMoreTask == nil else { return }
         guard canStartAutomaticFetch(triggeredByTail: reachedTailPage) else {
-            logger.info(
-                "Feed preload skipped - visibleIndex: \(currentVisibleIndex), visibleTotal: \(phrases.count), queued: \(queuedPhrases.count), remainingVisible: \(remaining), totalAvailable: \(totalAvailable), lastAdded: \(lastFetchAddedCount)"
-            )
+            logger.info("Feed preload skipped - visibleIndex: \(currentVisibleIndex), visibleTotal: \(phrases.count), queued: \(queuedPhrases.count), remainingVisible: \(remaining), totalAvailable: \(totalAvailable), lastAdded: \(lastFetchAddedCount)")
             return
         }
 
         let trigger = reachedTailPage ? "tail_exhausted" : "preload_threshold"
         let requestedCount = recommendedFetchCount(currentIndex: currentVisibleIndex)
-        logger.info(
-                "Feed preload triggered - trigger: \(trigger), visibleIndex: \(currentVisibleIndex), visibleTotal: \(phrases.count), queued: \(queuedPhrases.count), remainingVisible: \(remaining), totalAvailable: \(totalAvailable), proactiveThreshold: \(proactiveThreshold), requested: \(requestedCount), preloadLead: \(totalAvailable)"
-        )
+        logger.info("Feed preload triggered - trigger: \(trigger), visibleIndex: \(currentVisibleIndex), visibleTotal: \(phrases.count), queued: \(queuedPhrases.count), remainingVisible: \(remaining), totalAvailable: \(totalAvailable), proactiveThreshold: \(proactiveThreshold), requested: \(requestedCount), preloadLead: \(totalAvailable)")
 
         loadMoreTask = Task { [weak self] in
             guard let self else { return }
             defer { self.loadMoreTask = nil }
-            do {
-                try await self.fetchMorePhrases(force: true, trigger: trigger)
-            } catch {
-                await self.handleLoadMoreFailure(error)
-            }
+            do { try await self.fetchMorePhrases(force: true, trigger: trigger) }
+            catch { await self.handleLoadMoreFailure(error) }
         }
     }
 
@@ -282,11 +263,8 @@ class FeedViewModel: ObservableObject {
         loadMoreTask = Task { [weak self] in
             guard let self else { return }
             defer { self.loadMoreTask = nil }
-            do {
-                try await self.fetchMorePhrases(force: true, trigger: "manual_retry")
-            } catch {
-                await self.handleLoadMoreFailure(error)
-            }
+            do { try await self.fetchMorePhrases(force: true, trigger: "manual_retry") }
+            catch { await self.handleLoadMoreFailure(error) }
         }
     }
 
@@ -295,32 +273,156 @@ class FeedViewModel: ObservableObject {
         loadMoreTask = nil
         isFetchingMore = false
         isBackgroundFetching = false
-        if case .loading = tailState {
-            tailState = .idle
-        }
+        if case .loading = tailState { tailState = .idle }
     }
 
     var shouldShowBlockingTail: Bool {
         guard !isLoading else { return false }
         let exhausted = totalAvailableReels(after: currentVisibleIndex) == 0
         switch tailState {
-        case .loading, .reconnecting, .failed:
-            return exhausted
-        case .idle:
-            return exhausted
+        case .loading, .reconnecting, .failed, .idle: return exhausted
         }
     }
 
     func updateFavoriteSignals(from favorites: [FavoritePhrase]) {
         favoriteCategories = Array(
-            Set(
-                favorites
-                    .map(\.category)
-                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty }
-            )
+            Set(favorites.map(\.category)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty })
         ).sorted()
     }
+
+    // MARK: - AI operations
+
+    func getPhraseFeedback(_ phrase: String) async -> String {
+        do {
+            return try await aiService.getPhraseFeedback(phrase: phrase, userLevel: userLevel)
+        } catch {
+            return LocalizedStrings.feedbackUnavailable
+        }
+    }
+
+    func translatePhrase(_ phrase: String) async -> String {
+        do {
+            return try await aiService.translatePhrase(phrase, targetLanguage: userNativeLanguage)
+        } catch {
+            return LocalizedStrings.translationUnavailable
+        }
+    }
+
+    func askAI(phrase: String, question: String) async -> String {
+        do {
+            return try await aiService.askAboutPhrase(
+                phrase: phrase,
+                question: question,
+                userLevel: userLevel,
+                nativeLanguage: userNativeLanguage
+            )
+        } catch {
+            return LocalizedStrings.feedbackUnavailable
+        }
+    }
+
+    // MARK: - Preferences
+
+    func updateUserPreferences(level: String, nativeLanguage: String, interests: [String], objectives: [String]) {
+        userLevel = level
+        userNativeLanguage = nativeLanguage
+        userInterests = interests
+        userObjectives = objectives
+        Task { await loadPhrases() }
+    }
+
+    // MARK: - Tracking (moved from FeedView)
+
+    func resetSession() {
+        viewedReelsInSession.removeAll()
+    }
+
+    func trackVisibleReel(at page: Int) {
+        guard !isLoading, page >= 0, page < phrases.count else { return }
+        let phrase = phrases[page]
+        let reelID = phrase.trackingReelID
+        currentTrackedReelID = reelID
+        currentTrackedPhrase = phrase
+        currentReelStartedAt = Date()
+
+        guard !viewedReelsInSession.contains(reelID) else {
+            Task {
+                await TrackingService.shared.heartbeatSession(.feed, metadata: [
+                    "page_index": .int(page),
+                    "reel_id": .string(reelID)
+                ])
+            }
+            return
+        }
+
+        viewedReelsInSession.insert(reelID)
+        Task {
+            await TrackingService.shared.track(
+                event: .viewed,
+                reelID: reelID,
+                sessionType: .feed,
+                metadata: trackingMetadata(for: phrase, extra: ["page_index": .int(page)])
+            )
+            await TrackingService.shared.heartbeatSession(.feed, metadata: [
+                "page_index": .int(page),
+                "reel_id": .string(reelID)
+            ], force: true)
+        }
+    }
+
+    func flushCurrentReelTime() {
+        guard let reelID = currentTrackedReelID else { return }
+        let durationMS = max(Int(Date().timeIntervalSince(currentReelStartedAt) * 1000), 0)
+        guard durationMS > 250 else {
+            currentTrackedReelID = nil
+            currentTrackedPhrase = nil
+            currentReelStartedAt = Date()
+            return
+        }
+        let trackedPhrase = currentTrackedPhrase
+        Task {
+            await TrackingService.shared.track(
+                event: .timeSpent,
+                reelID: reelID,
+                sessionType: .feed,
+                durationMS: durationMS,
+                metadata: trackedPhrase.map { trackingMetadata(for: $0, extra: ["surface": .string("feed")]) }
+                    ?? ["surface": .string("feed")]
+            )
+        }
+        currentTrackedReelID = nil
+        currentTrackedPhrase = nil
+        currentReelStartedAt = Date()
+    }
+
+    func trackingMetadata(for phrase: EnglishPhrase, extra: TrackingMetadata = [:]) -> TrackingMetadata {
+        var metadata: TrackingMetadata = [
+            "text": .string(phrase.text),
+            "translation": .string(phrase.translation),
+            "category": .string(phrase.category),
+            "difficulty": .string(phrase.difficulty.rawValue)
+        ]
+        if let goal = phrase.goal, !goal.isEmpty { metadata["goal"] = .string(goal) }
+        if let contentType = phrase.contentType, !contentType.isEmpty { metadata["content_type"] = .string(contentType) }
+        if let contentTemplate = phrase.contentTemplate, !contentTemplate.isEmpty { metadata["content_template"] = .string(contentTemplate) }
+        if let contentStyle = phrase.contentStyle, !contentStyle.isEmpty { metadata["content_style"] = .string(contentStyle) }
+        if let subtopic = phrase.subtopic, !subtopic.isEmpty { metadata["subtopic"] = .string(subtopic) }
+        if let grammarFocus = phrase.grammarFocus, !grammarFocus.isEmpty { metadata["grammar_focus"] = .string(grammarFocus) }
+        if !phrase.keywords.isEmpty { metadata["keywords"] = .string(phrase.keywords.joined(separator: ", ")) }
+        if !phrase.focusWords.isEmpty { metadata["focus_words"] = .string(phrase.focusWords.joined(separator: ", ")) }
+        metadata["speaking_suitable"] = .bool(phrase.speakingSuitable)
+        if let reviewPriorityHint = phrase.reviewPriorityHint, !reviewPriorityHint.isEmpty { metadata["review_priority_hint"] = .string(reviewPriorityHint) }
+        if let difficultyMode = phrase.difficultyMode, !difficultyMode.isEmpty { metadata["difficulty_mode"] = .string(difficultyMode) }
+        if let context = phrase.context, !context.isEmpty { metadata["context"] = .string(context) }
+        if let explanation = phrase.explanation, !explanation.isEmpty { metadata["explanation"] = .string(explanation) }
+        if let didYouKnow = phrase.didYouKnow, !didYouKnow.isEmpty { metadata["did_you_know"] = .string(didYouKnow) }
+        extra.forEach { metadata[$0.key] = $0.value }
+        return metadata
+    }
+
+    // MARK: - Private: fetch
 
     private func fetchMorePhrases(force: Bool = false, trigger: String = "unspecified") async throws {
         guard !isFetchingMore else { return }
@@ -337,17 +439,11 @@ class FeedViewModel: ObservableObject {
             tailState = .loading
             if !firstBlockingLoadingLogged {
                 firstBlockingLoadingLogged = true
-                logger.warning(
-                    "Feed first blocking loading - consumedReels: \(furthestConsumedIndex + 1), visibleIndex: \(currentVisibleIndex), visibleCount: \(phrases.count), queuedCount: \(queuedPhrases.count), trigger: \(trigger)"
-                )
+                logger.warning("Feed first blocking loading - consumedReels: \(furthestConsumedIndex + 1), visibleIndex: \(currentVisibleIndex), visibleCount: \(phrases.count), queuedCount: \(queuedPhrases.count), trigger: \(trigger)")
             }
         }
-        if trigger != "manual_retry" {
-            lastAutomaticFetchAt = Date()
-        }
-        logger.info(
-            "Feed buffer fetch starting - trigger: \(trigger), requestID: \(requestID), visibleIndex: \(currentVisibleIndex), visibleBefore: \(phrases.count), queuedBefore: \(queuedPhrases.count), bufferBefore: \(bufferBefore), requested: \(requestedCount), blocking: \(isBlockingFetch)"
-        )
+        if trigger != "manual_retry" { lastAutomaticFetchAt = Date() }
+        logger.info("Feed buffer fetch starting - trigger: \(trigger), requestID: \(requestID), visibleIndex: \(currentVisibleIndex), visibleBefore: \(phrases.count), queuedBefore: \(queuedPhrases.count), bufferBefore: \(bufferBefore), requested: \(requestedCount), blocking: \(isBlockingFetch)")
         defer {
             isFetchingMore = false
             isBackgroundFetching = false
@@ -372,61 +468,41 @@ class FeedViewModel: ObservableObject {
 
         if isBlockingFetch && bufferAfter < minimumBlockingRecoveryBuffer {
             let recoveryCount = max(refillSize, minimumBlockingRecoveryBuffer - bufferAfter + lowWatermark)
-            logger.info(
-                "Feed blocking recovery top-up starting - trigger: \(trigger), requestID: \(requestID), bufferAfter: \(bufferAfter), recoveryTarget: \(minimumBlockingRecoveryBuffer), requested: \(recoveryCount)"
-            )
-
-            let recoveryBatch = try await generateBatch(
-                excludedTexts: allKnownTexts(),
-                count: recoveryCount,
-                requestID: requestID
-            )
+            logger.info("Feed blocking recovery top-up starting - trigger: \(trigger), requestID: \(requestID), bufferAfter: \(bufferAfter), recoveryTarget: \(minimumBlockingRecoveryBuffer), requested: \(recoveryCount)")
+            let recoveryBatch = try await generateBatch(excludedTexts: allKnownTexts(), count: recoveryCount, requestID: requestID)
             guard activeFetchRequestID == requestID else {
                 logger.warning("Feed blocking recovery ignored stale response - requestID: \(requestID), activeRequestID: \(activeFetchRequestID ?? "-")")
                 return
             }
-
             returnedCount += recoveryBatch.metadata?.returnedCount ?? recoveryBatch.phrases.count
             appended += ingestIncoming(recoveryBatch.phrases, source: "\(trigger)_blocking_recovery")
             promoted += promoteBufferedPhrasesIfNeeded(trigger: "\(trigger)_blocking_recovery", desiredVisibleRemaining: visibleBufferFloor)
             bufferAfter = totalAvailableReels(after: currentVisibleIndex)
-            logger.info(
-                "Feed blocking recovery top-up completed - trigger: \(trigger), requestID: \(requestID), bufferAfter: \(bufferAfter), returnedTotal: \(returnedCount), appendedTotal: \(appended), promotedTotal: \(promoted)"
-            )
+            logger.info("Feed blocking recovery top-up completed - trigger: \(trigger), requestID: \(requestID), bufferAfter: \(bufferAfter), returnedTotal: \(returnedCount), appendedTotal: \(appended), promotedTotal: \(promoted)")
         }
 
         if appended == 0 {
             lastFetchAddedCount = 0
-            logger.warning(
-                "Feed buffer fetch yielded no acceptable phrases - trigger: \(trigger), requestID: \(requestID), requested: \(requestedCount), returned: \(returnedCount), visibleAfter: \(phrases.count), queuedAfter: \(queuedPhrases.count)"
-            )
+            logger.warning("Feed buffer fetch yielded no acceptable phrases - trigger: \(trigger), requestID: \(requestID), requested: \(requestedCount), returned: \(returnedCount), visibleAfter: \(phrases.count), queuedAfter: \(queuedPhrases.count)")
             if totalAvailableReels(after: currentVisibleIndex) == 0 {
                 throw PaginationError.noNewPhrases
             }
             tailState = .idle
             return
         }
+
         lastFetchAddedCount = appended
         fetchCooldownUntil = nil
-        logger.info(
-            "Feed buffer fetch completed - trigger: \(trigger), requestID: \(requestID), visibleAfter: \(phrases.count), queuedAfter: \(queuedPhrases.count), bufferAfter: \(bufferAfter), returned: \(returnedCount), appended: \(appended), promoted: \(promoted)"
-        )
-        if activeFetchRequestID == requestID {
-            activeFetchRequestID = nil
-        }
+        logger.info("Feed buffer fetch completed - trigger: \(trigger), requestID: \(requestID), visibleAfter: \(phrases.count), queuedAfter: \(queuedPhrases.count), bufferAfter: \(bufferAfter), returned: \(returnedCount), appended: \(appended), promoted: \(promoted)")
+        if activeFetchRequestID == requestID { activeFetchRequestID = nil }
         tailState = .idle
 
         let shouldContinueTopUp =
             trigger != "manual_retry" &&
-            (
-                bufferAfter < targetBufferSize ||
-                appended < max(lowWatermark, requestedCount / 2)
-            )
+            (bufferAfter < targetBufferSize || appended < max(lowWatermark, requestedCount / 2))
 
         if shouldContinueTopUp && loadMoreTask == nil {
-            logger.info(
-                "Feed chained top-up scheduled - previousTrigger: \(trigger), requestID: \(requestID), bufferAfter: \(bufferAfter), targetBuffer: \(targetBufferSize), requested: \(requestedCount), returned: \(returnedCount), appended: \(appended)"
-            )
+            logger.info("Feed chained top-up scheduled - previousTrigger: \(trigger), requestID: \(requestID), bufferAfter: \(bufferAfter), targetBuffer: \(targetBufferSize), requested: \(requestedCount), returned: \(returnedCount), appended: \(appended)")
             loadMoreTask = Task { [weak self] in
                 guard let self else { return }
                 defer { self.loadMoreTask = nil }
@@ -440,18 +516,16 @@ class FeedViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Private: error handling
+
     private func handleLoadMoreFailure(_ error: Error) async {
         if let retryDelay = retryDelaySeconds(for: error) {
             fetchCooldownUntil = Date().addingTimeInterval(retryDelay)
         }
         if totalAvailableReels(after: currentVisibleIndex) > 0 {
-            logger.warning(
-                "Feed background fetch failed but buffer remains usable - visibleIndex: \(currentVisibleIndex), visibleTotal: \(phrases.count), queued: \(queuedPhrases.count), error: \(error.localizedDescription)"
-            )
+            logger.warning("Feed background fetch failed but buffer remains usable - visibleIndex: \(currentVisibleIndex), visibleTotal: \(phrases.count), queued: \(queuedPhrases.count), error: \(error.localizedDescription)")
             tailState = .idle
-            if fetchCooldownUntil == nil {
-                fetchCooldownUntil = Date().addingTimeInterval(lowYieldFetchCooldown)
-            }
+            if fetchCooldownUntil == nil { fetchCooldownUntil = Date().addingTimeInterval(lowYieldFetchCooldown) }
             return
         }
         guard shouldRetryLoadMore(after: error) else {
@@ -464,10 +538,7 @@ class FeedViewModel: ObservableObject {
     private func retryFetchMoreAfterConnectionDrop() async {
         let deadline = Date().addingTimeInterval(12)
         while Date() < deadline {
-            if Task.isCancelled {
-                tailState = .idle
-                return
-            }
+            if Task.isCancelled { tailState = .idle; return }
             let remaining = max(Int(ceil(deadline.timeIntervalSinceNow)), 0)
             tailState = .reconnecting(remainingSeconds: remaining)
             do {
@@ -486,61 +557,37 @@ class FeedViewModel: ObservableObject {
     }
 
     private func shouldRetryLoadMore(after error: Error) -> Bool {
-        if error is PaginationError {
-            return false
-        }
-
+        if error is PaginationError { return false }
         if let urlError = error as? URLError {
             switch urlError.code {
             case .notConnectedToInternet, .networkConnectionLost, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
                 return true
-            case .timedOut:
-                return false
             default:
                 return false
             }
         }
-
-        if let serviceError = error as? AIServiceError {
-            if case let .networkError(message) = serviceError {
-                let normalized = message.lowercased()
-                if normalized.contains("timed out") || normalized.contains("timeout") {
-                    return false
-                }
-                if normalized.contains("quota") || normalized.contains("resource_exhausted") || normalized.contains("rate limit") || normalized.contains("retry in") {
-                    return false
-                }
-                if normalized.contains("not connected") ||
-                    normalized.contains("network connection") ||
-                    normalized.contains("cannot find host") ||
-                    normalized.contains("cannot connect to host") ||
-                    normalized.contains("dns") {
-                    return true
-                }
-            }
+        if let lumenError = error as? LumenError, case let .network(message) = lumenError, let message {
+            let n = message.lowercased()
+            if n.contains("timed out") || n.contains("timeout") || n.contains("quota") || n.contains("resource_exhausted") || n.contains("rate limit") || n.contains("retry in") { return false }
+            if n.contains("not connected") || n.contains("network connection") || n.contains("cannot find host") || n.contains("cannot connect to host") || n.contains("dns") { return true }
         }
-
         return false
     }
 
     private func retryDelaySeconds(for error: Error) -> TimeInterval? {
         let rawMessage: String
-        if let serviceError = error as? AIServiceError {
-            switch serviceError {
-            case .networkError(let message), .decodingError(let message):
-                rawMessage = message
-            case .invalidAPIKey, .unauthenticated:
-                return nil
+        if let lumenError = error as? LumenError {
+            switch lumenError {
+            case .network(let message): rawMessage = message ?? ""
+            case .decoding(let message): rawMessage = message ?? ""
+            case .invalidAPIKey, .unauthenticated: return nil
+            default: rawMessage = error.localizedDescription
             }
         } else {
             rawMessage = error.localizedDescription
         }
-
         let lowered = rawMessage.lowercased()
-        guard lowered.contains("retry in") || lowered.contains("retry after") || lowered.contains("quota") || lowered.contains("resource_exhausted") || lowered.contains("rate limit") else {
-            return nil
-        }
-
+        guard lowered.contains("retry in") || lowered.contains("retry after") || lowered.contains("quota") || lowered.contains("resource_exhausted") || lowered.contains("rate limit") else { return nil }
         if let regex = try? NSRegularExpression(pattern: "retry (?:in|after) ([0-9]+(?:\\.[0-9]+)?)s", options: [.caseInsensitive]) {
             let range = NSRange(rawMessage.startIndex..<rawMessage.endIndex, in: rawMessage)
             if let match = regex.firstMatch(in: rawMessage, options: [], range: range),
@@ -550,14 +597,14 @@ class FeedViewModel: ObservableObject {
                 return max(seconds, lowYieldFetchCooldown)
             }
         }
-
         return max(15, lowYieldFetchCooldown)
     }
 
+    // MARK: - Private: buffer helpers
+
     private func remainingReels(after index: Int) -> Int {
         guard !phrases.isEmpty else { return 0 }
-        let clampedIndex = max(0, min(index, phrases.count))
-        return max(phrases.count - clampedIndex - 1, 0)
+        return max(phrases.count - max(0, min(index, phrases.count)) - 1, 0)
     }
 
     private func totalAvailableReels(after index: Int) -> Int {
@@ -565,149 +612,21 @@ class FeedViewModel: ObservableObject {
     }
 
     private func canStartAutomaticFetch(triggeredByTail: Bool) -> Bool {
-        if let fetchCooldownUntil, Date() < fetchCooldownUntil {
-            return false
-        }
-        if let lastAutomaticFetchAt,
-           Date().timeIntervalSince(lastAutomaticFetchAt) < minimumAutomaticFetchSpacing {
-            return false
-        }
+        if let fetchCooldownUntil, Date() < fetchCooldownUntil { return false }
+        if let lastAutomaticFetchAt, Date().timeIntervalSince(lastAutomaticFetchAt) < minimumAutomaticFetchSpacing { return false }
         return true
     }
 
     private func recommendedFetchCount(currentIndex: Int) -> Int {
         let totalAvailable = totalAvailableReels(after: currentIndex)
         let missingToTarget = max(targetBufferSize - totalAvailable, 0)
-        if lastFetchAddedCount > 0 && lastFetchAddedCount < lowWatermark {
-            return max(refillSize, 48)
-        }
+        if lastFetchAddedCount > 0 && lastFetchAddedCount < lowWatermark { return max(refillSize, 48) }
         return max(refillSize, min(max(refillSize, missingToTarget), 56))
-    }
-
-    private func isAcceptableFeedPhrase(_ phrase: EnglishPhrase) -> Bool {
-        let text = phrase.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return false }
-
-        let charCount = text.count
-        let wordCount = text.split { $0.isWhitespace || $0.isNewline }.count
-        let policy = contentPolicy
-        let relaxedMinChars = max(10, policy.minChars - 8)
-        let relaxedMaxChars = policy.maxChars + 40
-        let relaxedMinWords = max(3, policy.minWords - 2)
-        let relaxedMaxWords = policy.maxWords + 6
-
-        return charCount >= relaxedMinChars &&
-            charCount <= relaxedMaxChars &&
-            wordCount >= relaxedMinWords &&
-            wordCount <= relaxedMaxWords
-    }
-
-    private func deduplicate(_ items: [EnglishPhrase]) -> [EnglishPhrase] {
-        var seen = Set<String>()
-        var unique: [EnglishPhrase] = []
-        for item in items {
-            let key = dedupeKey(for: item)
-            guard !key.isEmpty, !seen.contains(key) else { continue }
-            seen.insert(key)
-            unique.append(item)
-        }
-        return unique
-    }
-
-    private func dedupeKey(for phrase: EnglishPhrase) -> String {
-        if !phrase.reelID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "reel:\(phrase.reelID.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())"
-        }
-        return "text:\(normalize(phrase.text))"
-    }
-
-    private func normalize(_ text: String) -> String {
-        text
-            .lowercased()
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-    }
-
-    private var contentPolicy: ContentPolicy {
-        let normalized = userLevel
-            .lowercased()
-            .replacingOccurrences(of: "_", with: "-")
-            .replacingOccurrences(of: " ", with: "-")
-
-        if normalized.contains("a1") {
-            return ContentPolicy(
-                minChars: 12,
-                maxChars: 90,
-                minWords: 4,
-                maxWords: 10,
-                preferredSentenceRange: "1 short sentence"
-            )
-        }
-
-        if normalized.contains("a2") {
-            return ContentPolicy(
-                minChars: 18,
-                maxChars: 110,
-                minWords: 5,
-                maxWords: 12,
-                preferredSentenceRange: "1 short sentence"
-            )
-        }
-
-        if normalized.contains("b2") {
-            return ContentPolicy(
-                minChars: 28,
-                maxChars: 140,
-                minWords: 7,
-                maxWords: 16,
-                preferredSentenceRange: "1 short sentence"
-            )
-        }
-
-        if normalized.contains("c1") {
-            return ContentPolicy(
-                minChars: 32,
-                maxChars: 160,
-                minWords: 8,
-                maxWords: 18,
-                preferredSentenceRange: "1 short sentence"
-            )
-        }
-
-        if normalized.contains("c2") {
-            return ContentPolicy(
-                minChars: 36,
-                maxChars: 180,
-                minWords: 8,
-                maxWords: 20,
-                preferredSentenceRange: "1 short sentence"
-            )
-        }
-
-        return ContentPolicy(
-            minChars: 24,
-            maxChars: 130,
-            minWords: 6,
-            maxWords: 14,
-            preferredSentenceRange: "1 short sentence"
-        )
-    }
-
-    private func isWithinTargetLength(_ text: String) -> Bool {
-        let charCount = text.trimmingCharacters(in: .whitespacesAndNewlines).count
-        let wordCount = text
-            .split { $0.isWhitespace || $0.isNewline }
-            .count
-        let policy = contentPolicy
-        return charCount >= policy.minChars &&
-            charCount <= policy.maxChars &&
-            wordCount >= policy.minWords &&
-            wordCount <= policy.maxWords
     }
 
     private func generateBatch(excludedTexts: [String], count: Int? = nil, requestID: String? = nil) async throws -> GeneratedPhraseBatch {
         let effectiveInterests = Array(Set(userInterests + favoriteCategories)).sorted()
-        let policy = contentPolicy
+        let limits = contentPolicy.limits(for: userLevel)
         return try await aiService.generatePhrases(
             level: userLevel,
             nativeLanguage: userNativeLanguage,
@@ -715,21 +634,22 @@ class FeedViewModel: ObservableObject {
             objectives: userObjectives,
             count: count ?? refillSize,
             excludedTexts: excludedTexts,
-            minWordsPerCard: policy.minWords,
-            maxWordsPerCard: policy.maxWords,
-            minCharactersPerCard: policy.minChars,
-            maxCharactersPerCard: policy.maxChars,
-            preferredSentenceRange: policy.preferredSentenceRange,
+            minWordsPerCard: limits.minWords,
+            maxWordsPerCard: limits.maxWords,
+            minCharactersPerCard: limits.minChars,
+            maxCharactersPerCard: limits.maxChars,
+            preferredSentenceRange: limits.preferredSentenceRange,
             requestID: requestID
         )
     }
 
     private func ingestIncoming(_ items: [EnglishPhrase], source: String) -> Int {
-        let uniqueIncoming = deduplicate(items)
+        let limits = contentPolicy.limits(for: userLevel)
+        let uniqueIncoming = contentPolicy.deduplicate(items)
         var appended = 0
         var deduplicated = 0
-        for item in uniqueIncoming where isAcceptableFeedPhrase(item) {
-            let key = dedupeKey(for: item)
+        for item in uniqueIncoming where contentPolicy.isAcceptable(item, limits: limits) {
+            let key = contentPolicy.dedupeKey(for: item)
             guard !key.isEmpty else { continue }
             if seenPhraseKeys.insert(key).inserted {
                 queuedPhrases.append(item)
@@ -739,32 +659,21 @@ class FeedViewModel: ObservableObject {
             }
         }
         bufferedPhraseCount = queuedPhrases.count
-        logger.info(
-            "Feed buffer ingest - source: \(source), incoming: \(items.count), appendedToQueue: \(appended), deduplicated: \(deduplicated), queuedNow: \(queuedPhrases.count)"
-        )
+        logger.info("Feed buffer ingest - source: \(source), incoming: \(items.count), appendedToQueue: \(appended), deduplicated: \(deduplicated), queuedNow: \(queuedPhrases.count)")
         return appended
     }
 
     private func promoteBufferedPhrasesIfNeeded(trigger: String, desiredVisibleRemaining: Int) -> Int {
-        guard !queuedPhrases.isEmpty else {
-            bufferedPhraseCount = 0
-            return 0
-        }
+        guard !queuedPhrases.isEmpty else { bufferedPhraseCount = 0; return 0 }
         let remainingVisible = remainingReels(after: currentVisibleIndex)
         let needed = max(desiredVisibleRemaining - remainingVisible, 0)
-        guard needed > 0 else {
-            bufferedPhraseCount = queuedPhrases.count
-            return 0
-        }
-
+        guard needed > 0 else { bufferedPhraseCount = queuedPhrases.count; return 0 }
         let promotedCount = min(needed, queuedPhrases.count)
         let promoted = Array(queuedPhrases.prefix(promotedCount))
         queuedPhrases.removeFirst(promotedCount)
         phrases.append(contentsOf: promoted)
         bufferedPhraseCount = queuedPhrases.count
-        logger.info(
-            "Feed buffer promote - trigger: \(trigger), promoted: \(promotedCount), visibleNow: \(phrases.count), queuedRemaining: \(queuedPhrases.count)"
-        )
+        logger.info("Feed buffer promote - trigger: \(trigger), promoted: \(promotedCount), visibleNow: \(phrases.count), queuedRemaining: \(queuedPhrases.count)")
         return promotedCount
     }
 
@@ -787,77 +696,14 @@ class FeedViewModel: ObservableObject {
         isBackgroundFetching = false
         tailState = .idle
     }
-    
-    // MARK: - Get AI Feedback
-    
-    func getPhraseFeedback(_ phrase: String) async -> String {
-        do {
-            let feedback = try await aiService.getPhraseFeedback(
-                phrase: phrase,
-                userLevel: userLevel
-            )
-            return feedback
-        } catch {
-            return LocalizedStrings.feedbackUnavailable
-        }
-    }
-    
-    // MARK: - Translate Phrase
-    
-    func translatePhrase(_ phrase: String) async -> String {
-        do {
-            let translation = try await aiService.translatePhrase(
-                phrase,
-                targetLanguage: userNativeLanguage
-            )
-            return translation
-        } catch {
-            return LocalizedStrings.translationUnavailable
-        }
-    }
 
-    // MARK: - Ask AI
-
-    func askAI(phrase: String, question: String) async -> String {
-        do {
-            return try await aiService.askAboutPhrase(
-                phrase: phrase,
-                question: question,
-                userLevel: userLevel,
-                nativeLanguage: userNativeLanguage
-            )
-        } catch {
-            return LocalizedStrings.feedbackUnavailable
-        }
-    }
-    
-    // MARK: - Update User Preferences
-    
-    func updateUserPreferences(
-        level: String,
-        nativeLanguage: String,
-        interests: [String],
-        objectives: [String]
-    ) {
-        self.userLevel = level
-        self.userNativeLanguage = nativeLanguage
-        self.userInterests = interests
-        self.userObjectives = objectives
-        
-        Task {
-            await loadPhrases()
-        }
-    }
+    // MARK: - Private: preferences
 
     private func apply(preferences: UserPreferences) {
         userLevel = preferences.level
         userNativeLanguage = preferences.nativeLanguage
-        if !preferences.interests.isEmpty {
-            userInterests = preferences.interests
-        }
-        if !preferences.objectives.isEmpty {
-            userObjectives = preferences.objectives
-        }
+        if !preferences.interests.isEmpty { userInterests = preferences.interests }
+        if !preferences.objectives.isEmpty { userObjectives = preferences.objectives }
     }
 
     private func refreshPreferencesInBackground(accessToken: String) async {
@@ -865,7 +711,14 @@ class FeedViewModel: ObservableObject {
             let preferences = try await authService.fetchCurrentUserPreferences(accessToken: accessToken)
             apply(preferences: preferences)
         } catch {
-            // Keep the feed responsive; remote refresh is best-effort here.
+            // Best-effort; mantém o feed responsivo
         }
+    }
+
+    // MARK: - Private: pagination error
+
+    private enum PaginationError: LocalizedError {
+        case noNewPhrases
+        var errorDescription: String? { LocalizedStrings.feedErrorDescription }
     }
 }
