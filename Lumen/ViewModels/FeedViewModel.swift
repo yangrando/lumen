@@ -94,8 +94,9 @@ class FeedViewModel: ObservableObject {
         // Cancel any previous in-flight initial load to prevent duplicate /ai/generate requests
         // (e.g. when the view tree is recreated due to localization change right after login).
         initialLoadTask?.cancel()
-        let task = Task { @MainActor [weak self] in
-            await self?.performLoadPhrases()
+        let task = Task<Void, Never> { @MainActor [weak self] in
+            guard let self else { return }
+            await self.performLoadPhrases()
         }
         initialLoadTask = task
         await task.value
