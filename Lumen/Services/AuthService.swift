@@ -143,7 +143,7 @@ final class AuthService {
 
     func login(provider: AuthProvider, idToken: String) async throws -> AuthResponse {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid auth base URL")
+            throw LumenError.network()
         }
 
         let endpoint = base.appendingPathComponent("auth").appendingPathComponent(provider.rawValue)
@@ -157,7 +157,7 @@ final class AuthService {
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             let message = Self.extractBackendErrorDetail(from: data) ?? "Authentication failed"
             logger.error("Auth failed: \(message)")
-            throw AIServiceError.networkError(message)
+            throw LumenError.network(message)
         }
 
         return try JSONDecoder().decode(AuthResponse.self, from: data)
@@ -165,7 +165,7 @@ final class AuthService {
 
     func signUpWithEmail(name: String?, email: String, password: String) async throws -> AuthResponse {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid auth base URL")
+            throw LumenError.network()
         }
 
         let endpoint = base.appendingPathComponent("auth").appendingPathComponent("signup")
@@ -177,7 +177,7 @@ final class AuthService {
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Sign up failed")
+            throw LumenError.network(Self.extractBackendErrorDetail(from: data))
         }
 
         return try JSONDecoder().decode(AuthResponse.self, from: data)
@@ -185,7 +185,7 @@ final class AuthService {
 
     func loginWithEmail(email: String, password: String) async throws -> AuthResponse {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid auth base URL")
+            throw LumenError.network()
         }
 
         let endpoint = base.appendingPathComponent("auth").appendingPathComponent("login")
@@ -197,7 +197,7 @@ final class AuthService {
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Login failed")
+            throw LumenError.network(Self.extractBackendErrorDetail(from: data))
         }
 
         return try JSONDecoder().decode(AuthResponse.self, from: data)
@@ -205,7 +205,7 @@ final class AuthService {
 
     func fetchCurrentUser(accessToken: String) async throws -> AuthUser {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid auth base URL")
+            throw LumenError.network()
         }
 
         let endpoint = base.appendingPathComponent("auth").appendingPathComponent("me")
@@ -216,7 +216,7 @@ final class AuthService {
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Session validation failed")
+            throw LumenError.network(Self.extractBackendErrorDetail(from: data))
         }
 
         return try JSONDecoder().decode(AuthMeResponse.self, from: data).user
@@ -224,7 +224,7 @@ final class AuthService {
 
     func logout(accessToken: String) async throws {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid auth base URL")
+            throw LumenError.network()
         }
 
         let endpoint = base.appendingPathComponent("auth").appendingPathComponent("logout")
@@ -234,13 +234,13 @@ final class AuthService {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Logout failed")
+            throw LumenError.network(Self.extractBackendErrorDetail(from: data))
         }
     }
 
     func deleteAccount(accessToken: String) async throws {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid auth base URL")
+            throw LumenError.network()
         }
 
         let endpoint = base.appendingPathComponent("auth").appendingPathComponent("account")
@@ -250,23 +250,24 @@ final class AuthService {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Delete account failed")
+            throw LumenError.network(Self.extractBackendErrorDetail(from: data))
         }
     }
 
     func fetchCurrentUserPreferences(accessToken: String) async throws -> UserPreferences {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid auth base URL")
+            throw LumenError.network()
         }
 
         let endpoint = base.appendingPathComponent("users").appendingPathComponent("me").appendingPathComponent("preferences")
         var request = URLRequest(url: endpoint)
         request.httpMethod = "GET"
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 30
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Failed to load preferences")
+            throw LumenError.network(Self.extractBackendErrorDetail(from: data))
         }
 
         let preferences = try JSONDecoder().decode(UserPreferencesResponse.self, from: data).preferences
@@ -277,7 +278,7 @@ final class AuthService {
 
     func updateCurrentUserPreferences(accessToken: String, preferences: UserPreferences) async throws -> UserPreferences {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid auth base URL")
+            throw LumenError.network()
         }
 
         let endpoint = base.appendingPathComponent("users").appendingPathComponent("me").appendingPathComponent("preferences")
@@ -299,7 +300,7 @@ final class AuthService {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Failed to save preferences")
+            throw LumenError.network(Self.extractBackendErrorDetail(from: data))
         }
 
         let saved = try JSONDecoder().decode(UserPreferencesResponse.self, from: data).preferences
