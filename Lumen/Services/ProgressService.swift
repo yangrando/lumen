@@ -278,7 +278,7 @@ final class ProgressService {
         }
 
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid progress base URL")
+            throw LumenError.network()
         }
 
         var components = URLComponents(url: base.appendingPathComponent("v1").appendingPathComponent("progress").appendingPathComponent("overview"), resolvingAgainstBaseURL: false)
@@ -287,17 +287,17 @@ final class ProgressService {
         ]
 
         guard let url = components?.url else {
-            throw AIServiceError.networkError("Invalid progress overview URL")
+            throw LumenError.network()
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        request.timeoutInterval = 30
+        request.timeoutInterval = 45
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Failed to load progress overview")
+            throw LumenError.network(Self.extractBackendErrorDetail(from: data))
         }
 
         return try JSONDecoder().decode(ProgressOverview.self, from: data)
