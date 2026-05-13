@@ -73,12 +73,6 @@ struct UserPreferencesView: View {
                             .padding(.horizontal, 14)
                             .padding(.vertical, 14)
 
-                            Divider().background(LumenColors.ink700)
-
-                            settingsListRow(
-                                label: LocalizedStrings.preferencesEnglishLevel,
-                                value: selectedLevel.rawValue
-                            )
                         }
 
                         // Learning context — collapsible sections

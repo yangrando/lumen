@@ -164,10 +164,15 @@ final class ReviewService {
     }
 
     func fetchToday(accessToken: String, timeZoneIdentifier: String = TimeZone.current.identifier) async throws -> ReviewTodayResponse {
-        // Await the flush so the server computes today's review queue against
-        // fully-flushed tracking events. Fire-and-forget would lose the ordering
-        // guarantee and the server could read stale data.
-        await TrackingService.shared.flushIfNeeded(force: true)
+        // Flush tracking events before reading review queue so the server sees
+        // up-to-date data. Cap the wait at 4 seconds: if tracking is slow or
+        // unavailable, we proceed rather than blocking the whole review load.
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await TrackingService.shared.flushIfNeeded(force: true) }
+            group.addTask { try? await Task.sleep(nanoseconds: 4_000_000_000) }
+            _ = await group.next()
+            group.cancelAll()
+        }
 
         guard let base = apiBaseURL else {
             throw LumenError.network()
