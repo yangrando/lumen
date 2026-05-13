@@ -467,19 +467,30 @@ class FeedViewModel: ObservableObject {
         promoted += promoteBufferedPhrasesIfNeeded(trigger: trigger, desiredVisibleRemaining: visibleBufferFloor)
         bufferAfter = totalAvailableReels(after: currentVisibleIndex)
 
+        // If the first batch didn't fully recover the buffer, schedule a second
+        // fetch as a background Task rather than awaiting it sequentially. This
+        // lets the user see content from the first batch immediately instead of
+        // waiting for both network round-trips before anything is visible.
         if isBlockingFetch && bufferAfter < minimumBlockingRecoveryBuffer {
             let recoveryCount = max(refillSize, minimumBlockingRecoveryBuffer - bufferAfter + lowWatermark)
-            logger.info("Feed blocking recovery top-up starting - trigger: \(trigger), requestID: \(requestID), bufferAfter: \(bufferAfter), recoveryTarget: \(minimumBlockingRecoveryBuffer), requested: \(recoveryCount)")
-            let recoveryBatch = try await generateBatch(excludedTexts: allKnownTexts(), count: recoveryCount, requestID: requestID)
-            guard activeFetchRequestID == requestID else {
-                logger.warning("Feed blocking recovery ignored stale response - requestID: \(requestID), activeRequestID: \(activeFetchRequestID ?? "-")")
-                return
+            let recoveryTrigger = "\(trigger)_blocking_recovery"
+            logger.info("Feed blocking recovery top-up scheduled in background - trigger: \(trigger), requestID: \(requestID), bufferAfter: \(bufferAfter), recoveryTarget: \(minimumBlockingRecoveryBuffer), requested: \(recoveryCount)")
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    let recoveryBatch = try await self.generateBatch(
+                        excludedTexts: self.allKnownTexts(),
+                        count: recoveryCount,
+                        requestID: requestID
+                    )
+                    _ = self.ingestIncoming(recoveryBatch.phrases, source: recoveryTrigger)
+                    _ = self.promoteBufferedPhrasesIfNeeded(trigger: recoveryTrigger, desiredVisibleRemaining: self.visibleBufferFloor)
+                    self.logger.info("Feed blocking recovery top-up completed in background - trigger: \(recoveryTrigger), bufferAfter: \(self.totalAvailableReels(after: self.currentVisibleIndex))")
+                } catch {
+                    // Non-critical: first batch already served content to the user.
+                    self.logger.warning("Feed blocking recovery top-up failed - trigger: \(recoveryTrigger), error: \(error.localizedDescription)")
+                }
             }
-            returnedCount += recoveryBatch.metadata?.returnedCount ?? recoveryBatch.phrases.count
-            appended += ingestIncoming(recoveryBatch.phrases, source: "\(trigger)_blocking_recovery")
-            promoted += promoteBufferedPhrasesIfNeeded(trigger: "\(trigger)_blocking_recovery", desiredVisibleRemaining: visibleBufferFloor)
-            bufferAfter = totalAvailableReels(after: currentVisibleIndex)
-            logger.info("Feed blocking recovery top-up completed - trigger: \(trigger), requestID: \(requestID), bufferAfter: \(bufferAfter), returnedTotal: \(returnedCount), appendedTotal: \(appended), promotedTotal: \(promoted)")
         }
 
         if appended == 0 {
@@ -679,7 +690,9 @@ class FeedViewModel: ObservableObject {
     }
 
     private func allKnownTexts() -> [String] {
-        (phrases + queuedPhrases).map(\.text)
+        // Backend uses only the first 50 entries; capping here avoids sending
+        // unnecessary payload data on every fetch request.
+        Array((phrases + queuedPhrases).map(\.text).prefix(50))
     }
 
     private func resetFeedState() {

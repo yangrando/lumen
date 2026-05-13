@@ -273,9 +273,10 @@ final class ProgressService {
     }
 
     func fetchOverview(accessToken: String, timeZoneIdentifier: String = TimeZone.current.identifier) async throws -> ProgressOverview {
-        Task {
-            await TrackingService.shared.flushIfNeeded(force: true)
-        }
+        // Await the flush so the server computes progress against fully-flushed
+        // tracking events. Fire-and-forget (Task {}) would lose the ordering
+        // guarantee and the server could read stale data.
+        await TrackingService.shared.flushIfNeeded(force: true)
 
         guard let base = apiBaseURL else {
             throw LumenError.network()
