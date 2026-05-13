@@ -20,21 +20,14 @@ struct ManualSignUpView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.03, green: 0.07, blue: 0.14),
-                    LumenColors.navyDark
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            LumenColors.ink900
+                .ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     Button(action: onBack) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(LumenFont.grotesk(18, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(width: 42, height: 42)
                             .background(Color.white.opacity(0.06))
@@ -44,21 +37,29 @@ struct ManualSignUpView: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         Text(mode == .signIn ? LocalizedStrings.signinTitle : LocalizedStrings.signupTitle)
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundStyle(.white)
+                            .font(LumenFont.grotesk(32, weight: .bold))
+                            .foregroundStyle(LumenColors.ink50)
 
                         Text(mode == .signIn ? LocalizedStrings.signinSubtitle : LocalizedStrings.signupSubtitle)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(LumenColors.textSecondary)
+                            .font(LumenFont.grotesk(16, weight: .medium))
+                            .foregroundStyle(LumenColors.ink300)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
                     VStack(spacing: 14) {
                         if mode == .signUp {
-                            inputField(title: LocalizedStrings.signupName, text: $fullName)
+                            LumenInput(
+                                label: LocalizedStrings.signupName,
+                                placeholder: "",
+                                text: $fullName
+                            )
                         }
 
-                        inputField(title: LocalizedStrings.signupEmail, text: $email, keyboard: .emailAddress)
+                        LumenInput(
+                            label: LocalizedStrings.signupEmail,
+                            placeholder: "",
+                            text: $email
+                        )
                         secureField(title: LocalizedStrings.signupPassword, text: $password, isVisible: $showPassword)
 
                         if mode == .signUp {
@@ -68,30 +69,25 @@ struct ManualSignUpView: View {
 
                     if let errorMessage {
                         Text(errorMessage)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color(red: 1.0, green: 0.62, blue: 0.62))
+                            .font(LumenFont.grotesk(13, weight: .medium))
+                            .foregroundStyle(LumenColors.bad)
                     }
 
-                    Button {
-                        Task { await submit() }
-                    } label: {
+                    if isSubmitting {
                         HStack {
-                            if isSubmitting {
-                                ProgressView()
-                                    .tint(.white)
-                            } else {
-                                Text(mode == .signIn ? LocalizedStrings.signinButton : LocalizedStrings.signupCreateButton)
-                                    .font(.system(size: 17, weight: .bold))
-                            }
+                            ProgressView()
+                                .tint(LumenColors.ink900)
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 58)
-                        .foregroundStyle(.white)
-                        .background(LinearGradient.primaryGradient)
+                        .frame(height: 56)
+                        .background(LumenColors.accent)
                         .clipShape(Capsule())
+                    } else {
+                        LumenButton(kind: .primary, size: .lg, isDisabled: isLoading, isFullWidth: true,
+                                    label: mode == .signIn ? LocalizedStrings.signinButton : LocalizedStrings.signupCreateButton) {
+                            Task { await submit() }
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .disabled(isSubmitting || isLoading)
 
                     VStack(spacing: 18) {
                         socialDivider
@@ -112,15 +108,15 @@ struct ManualSignUpView: View {
                     }
 
                     HStack(spacing: 5) {
-                        Text(mode == .signIn ? "Ainda não tem conta?" : "Já tem conta?")
+                        Text(mode == .signIn ? LocalizedStrings.signupNoAccountPrompt : LocalizedStrings.welcomeSignInPrompt)
                             .foregroundStyle(LumenColors.textSecondary)
-                        Button(mode == .signIn ? "Criar conta" : "Entrar") {
+                        Button(mode == .signIn ? LocalizedStrings.welcomeModeSignUp : LocalizedStrings.welcomeModeSignIn) {
                             onToggleMode(mode == .signIn ? .signUp : .signIn)
                         }
                         .foregroundStyle(LinearGradient.primaryGradient)
                         .fontWeight(.bold)
                     }
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(LumenFont.grotesk(15, weight: .semibold))
                     .frame(maxWidth: .infinity, alignment: .center)
                 }
                 .padding(.horizontal, 24)
@@ -137,7 +133,7 @@ struct ManualSignUpView: View {
                 .frame(height: 1)
 
             Text(LocalizedStrings.commonOrContinueWith)
-                .font(.system(size: 10, weight: .bold))
+                .font(LumenFont.grotesk(10, weight: .bold))
                 .tracking(2.1)
                 .foregroundStyle(Color.white.opacity(0.28))
                 .fixedSize()
@@ -152,11 +148,11 @@ struct ManualSignUpView: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(LumenFont.grotesk(16, weight: .bold))
                     .foregroundStyle(.white)
 
                 Text(title)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(LumenFont.grotesk(14, weight: .bold))
                     .tracking(0.6)
                     .foregroundStyle(.white)
 
@@ -177,29 +173,13 @@ struct ManualSignUpView: View {
         .opacity((isLoading || isSubmitting) ? 0.6 : 1.0)
     }
 
-    private func inputField(title: String, text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.88))
-
-            TextField("", text: text)
-                .keyboardType(keyboard)
-                .textInputAutocapitalization(keyboard == .emailAddress ? .never : .words)
-                .autocorrectionDisabled(keyboard == .emailAddress)
-                .foregroundStyle(.white)
-                .padding(.horizontal, 16)
-                .frame(height: 54)
-                .background(Color.white.opacity(0.07))
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        }
-    }
-
     private func secureField(title: String, text: Binding<String>, isVisible: Binding<Bool>) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.88))
+                .font(LumenFont.mono(10, weight: .medium))
+                .kerning(10 * 0.14)
+                .textCase(.uppercase)
+                .foregroundColor(LumenColors.ink400)
 
             HStack(spacing: 12) {
                 Group {
@@ -209,21 +189,28 @@ struct ManualSignUpView: View {
                         SecureField("", text: text)
                     }
                 }
+                .font(LumenFont.grotesk(15))
+                .kerning(15 * -0.01)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-                .foregroundStyle(.white)
+                .foregroundColor(LumenColors.ink100)
+                .tint(LumenColors.accent)
 
                 Button {
                     isVisible.wrappedValue.toggle()
                 } label: {
                     Image(systemName: isVisible.wrappedValue ? "eye.slash" : "eye")
-                        .foregroundStyle(LumenColors.textSecondary)
+                        .foregroundStyle(LumenColors.ink400)
                 }
             }
             .padding(.horizontal, 16)
-            .frame(height: 54)
-            .background(Color.white.opacity(0.07))
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .frame(height: 52)
+            .background(LumenColors.ink850)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(LumenColors.ink600, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14))
         }
     }
 

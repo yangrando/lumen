@@ -45,16 +45,8 @@ struct ObjectivesView: View {
 
     private var onboardingBackground: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.03, green: 0.08, blue: 0.16),
-                    Color(red: 0.05, green: 0.10, blue: 0.20),
-                    Color(red: 0.04, green: 0.08, blue: 0.15)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            LumenColors.ink900
+                .ignoresSafeArea()
 
             RadialGradient(
                 colors: [
@@ -73,7 +65,7 @@ struct ObjectivesView: View {
         VStack(alignment: .leading, spacing: 18) {
             Button(action: onBack) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(LumenFont.grotesk(18, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 42, height: 42)
                     .background(Color.white.opacity(0.06))
@@ -81,12 +73,12 @@ struct ObjectivesView: View {
             }
 
             Text(LocalizedStrings.objectivesPrimaryTitle)
-                .font(.system(size: 24, weight: .bold))
+                .font(LumenFont.grotesk(24, weight: .bold))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.leading)
 
             Text(LocalizedStrings.objectivesPrimaryDescription)
-                .font(.system(size: 16, weight: .medium))
+                .font(LumenFont.grotesk(16, weight: .medium))
                 .foregroundStyle(LumenColors.textSecondary)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
@@ -100,25 +92,15 @@ struct ObjectivesView: View {
                 .frame(height: 1)
 
             VStack(spacing: 0) {
-                Button(action: {
+                LumenButton(
+                    kind: .primary, size: .lg,
+                    isDisabled: selectedObjectives.isEmpty,
+                    isFullWidth: true,
+                    label: LocalizedStrings.objectivesCompleteButton
+                ) {
                     let selectedArray = Array(selectedObjectives).sorted { $0.rawValue < $1.rawValue }
                     onContinue(selectedArray)
-                }) {
-                    Text(LocalizedStrings.objectivesCompleteButton)
-                        .font(.system(size: 17, weight: .bold))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 58)
-                        .foregroundStyle(.white)
-                        .background(
-                            selectedObjectives.isEmpty
-                            ? AnyShapeStyle(Color.white.opacity(0.10))
-                            : AnyShapeStyle(LinearGradient.primaryGradient)
-                        )
-                        .clipShape(Capsule())
                 }
-                .buttonStyle(.plain)
-                .disabled(selectedObjectives.isEmpty)
-                .opacity(selectedObjectives.isEmpty ? 0.55 : 1)
             }
             .padding(.horizontal, 24)
             .padding(.top, 30)

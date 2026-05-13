@@ -90,16 +90,16 @@ struct SpeakingPracticeView: View {
     private var targetCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(LocalizedStrings.speakingPracticeRepeatExactly)
-                .font(.system(size: 14, weight: .semibold))
+                .font(LumenFont.grotesk(14, weight: .semibold))
                 .foregroundStyle(LumenColors.gradientStart)
 
             Text(targetText)
-                .font(.system(size: 24, weight: .bold))
+                .font(LumenFont.grotesk(24, weight: .bold))
                 .foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(LocalizedStrings.speakingPracticeInstruction)
-                .font(.system(size: 14))
+                .font(LumenFont.grotesk(14))
                 .foregroundStyle(LumenColors.textSecondary)
 
             Button {
@@ -110,7 +110,7 @@ struct SpeakingPracticeView: View {
                     Image(systemName: "speaker.wave.2.fill")
                     Text(LocalizedStrings.speakingPracticeListenToTarget)
                 }
-                .font(.system(size: 14, weight: .semibold))
+                .font(LumenFont.grotesk(14, weight: .semibold))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 14)
                 .frame(height: 42)
@@ -135,13 +135,13 @@ struct SpeakingPracticeView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text(viewModel.isRecording ? LocalizedStrings.speakingPracticeRecording : (viewModel.isUploading ? LocalizedStrings.speakingPracticeAnalyzing : LocalizedStrings.speakingPracticeReady))
-                    .font(.system(size: 18, weight: .bold))
+                    .font(LumenFont.grotesk(18, weight: .bold))
                     .foregroundStyle(.white)
 
                 Spacer()
 
                 Text(timeString(from: viewModel.elapsedSeconds))
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(LumenFont.grotesk(16, weight: .semibold))
                     .foregroundStyle(LumenColors.textSecondary)
             }
 
@@ -151,7 +151,13 @@ struct SpeakingPracticeView: View {
             }
 
             HStack(spacing: 12) {
-                Button {
+                LumenButton(
+                    kind: .primary, size: .lg,
+                    isDisabled: viewModel.isUploading,
+                    isFullWidth: true,
+                    label: viewModel.isRecording ? LocalizedStrings.speakingPracticeStopAndSubmit : LocalizedStrings.speakingPracticeStartRecording,
+                    icon: Image(systemName: viewModel.isRecording ? "stop.fill" : "mic.fill")
+                ) {
                     Task {
                         audioService.stop()
                         if viewModel.isRecording {
@@ -162,37 +168,15 @@ struct SpeakingPracticeView: View {
                             await viewModel.startRecording()
                         }
                     }
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: viewModel.isRecording ? "stop.fill" : "mic.fill")
-                        Text(viewModel.isRecording ? LocalizedStrings.speakingPracticeStopAndSubmit : LocalizedStrings.speakingPracticeStartRecording)
-                    }
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(LinearGradient.primaryGradient)
-                    .clipShape(Capsule())
                 }
-                .buttonStyle(.plain)
-                .disabled(viewModel.isUploading)
 
-                Button {
+                LumenButton(
+                    kind: .secondary, size: .lg,
+                    isDisabled: viewModel.isRecording || viewModel.isUploading,
+                    label: LocalizedStrings.speakingPracticeRetry
+                ) {
                     viewModel.retry()
-                } label: {
-                    Text(LocalizedStrings.speakingPracticeRetry)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.9)
-                        .padding(.horizontal, 10)
-                        .frame(width: 118, height: 54)
-                        .background(Color.white.opacity(0.10))
-                        .clipShape(Capsule())
                 }
-                .buttonStyle(.plain)
-                .disabled(viewModel.isRecording || viewModel.isUploading)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -213,11 +197,11 @@ struct SpeakingPracticeView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(LocalizedStrings.speakingPracticeScore)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(LumenFont.grotesk(13, weight: .semibold))
                         .foregroundStyle(LumenColors.textSecondary)
 
                     Text("\(attempt.score)")
-                        .font(.system(size: 36, weight: .bold))
+                        .font(LumenFont.grotesk(36, weight: .bold))
                         .foregroundStyle(summary.scoreColor)
                 }
 
@@ -225,21 +209,21 @@ struct SpeakingPracticeView: View {
 
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(LocalizedStrings.speakingPracticeSimilarity)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(LumenFont.grotesk(13, weight: .semibold))
                         .foregroundStyle(LumenColors.textSecondary)
 
                     Text("\(attempt.similarityScore)%")
-                        .font(.system(size: 28, weight: .bold))
+                        .font(LumenFont.grotesk(28, weight: .bold))
                         .foregroundStyle(.white)
                 }
             }
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(summary.title)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(LumenFont.grotesk(18, weight: .bold))
                     .foregroundStyle(.white)
                 Text(summary.subtitle)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(LumenFont.grotesk(13, weight: .medium))
                     .foregroundStyle(LumenColors.textSecondary)
             }
 
@@ -254,17 +238,17 @@ struct SpeakingPracticeView: View {
             if !attempt.incorrectWords.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(LocalizedStrings.speakingPracticePronunciationDifferences)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(LumenFont.grotesk(12, weight: .semibold))
                         .foregroundStyle(LumenColors.textSecondary)
 
                     ForEach(attempt.incorrectWords.prefix(3)) { pair in
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(LocalizedStrings.speakingPracticeYouSaidLabel) \"\(pair.heard)\"")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(Color(red: 1.0, green: 0.63, blue: 0.25))
+                                .font(LumenFont.grotesk(15, weight: .medium))
+                                .foregroundStyle(LumenColors.warn)
                             Text("\(LocalizedStrings.speakingPracticeExpectedLabel) \"\(pair.expected)\"")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(Color(red: 0.42, green: 0.88, blue: 0.99))
+                                .font(LumenFont.grotesk(15, weight: .semibold))
+                                .foregroundStyle(LumenColors.accent)
                         }
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -277,7 +261,7 @@ struct SpeakingPracticeView: View {
             detailBlock(title: LocalizedStrings.speakingPracticeFeedback, value: attempt.feedback)
 
             Text(attempt.recommendation == "good_job" ? LocalizedStrings.feedbackSuccessTitle : LocalizedStrings.commonRetry)
-                .font(.system(size: 14, weight: .semibold))
+                .font(LumenFont.grotesk(14, weight: .semibold))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
@@ -290,10 +274,7 @@ struct SpeakingPracticeView: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [
-                            Color(red: 0.15, green: 0.24, blue: 0.40),
-                            Color(red: 0.20, green: 0.16, blue: 0.36)
-                        ],
+                        colors: [LumenColors.ink700, LumenColors.ink600],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -304,10 +285,10 @@ struct SpeakingPracticeView: View {
     private func detailBlock(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.system(size: 12, weight: .semibold))
+                .font(LumenFont.grotesk(12, weight: .semibold))
                 .foregroundStyle(LumenColors.textSecondary)
             Text(value)
-                .font(.system(size: 15, weight: .medium))
+                .font(LumenFont.grotesk(15, weight: .medium))
                 .foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -315,7 +296,7 @@ struct SpeakingPracticeView: View {
 
     private func errorCard(message: String) -> some View {
         Text(message)
-            .font(.system(size: 14, weight: .medium))
+            .font(LumenFont.grotesk(14, weight: .medium))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)

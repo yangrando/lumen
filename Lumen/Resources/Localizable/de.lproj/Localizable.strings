@@ -295,3 +295,48 @@
 "reel.progress.label" = "Progress:";
 "reel.completed" = "Reel completed";
 "interests.hint" = "Lumen AI will use these topics to generate contextual English phrases based on what you like.";
+
+// MARK: - Objectives (extended)
+"objective.understand.podcasts" = "Podcasts verstehen";
+"objective.professional.presentations" = "Professionelle Präsentationen";
+"objective.job.interviews" = "Vorstellungsgespräche";
+"objective.airport.conversations" = "Gespräche am Flughafen";
+"objective.hotel.interactions" = "Hotelinteraktionen";
+"objective.making.friends" = "Freunde finden";
+"objective.improve.pronunciation" = "Aussprache verbessern";
+"objective.writing.emails" = "E-Mails schreiben";
+"objective.writing.messages" = "Nachrichten schreiben";
+"objective.academic.english" = "Akademisches Englisch";
+"objective.storytelling" = "Geschichten erzählen";
+"objective.debating" = "Debattieren";
+"subtopics.title" = "Optionale Unterthemen";
+"subtopics.description" = "Wählen Sie spezifischere Bereiche in Ihren gewählten Themen. Sie können diesen Schritt überspringen.";
+"subtopics.continue.button" = "Weiter";
+"subtopics.skip.button" = "Jetzt überspringen";
+"content.style.title" = "Welchen Inhaltsstil bevorzugen Sie?";
+"content.style.description" = "Sie können es gemischt lassen oder ein bevorzugtes Format hervorheben.";
+"content.style.continue.button" = "Weiter";
+"profession.title" = "Ihr Beruf ist optional";
+"profession.description" = "Das hilft, Beispiele und Kontexte relevanter für Sie zu gestalten.";
+"profession.skip.button" = "Überspringen";
+"profession.continue.button" = "Fertigstellen";
+"preferences.subtopics" = "Unterthemen";
+"preferences.content.style" = "Inhaltsstil";
+"preferences.profession" = "Beruf";
+"feed.context" = "Kontext";
+"feed.explanation" = "Warum das nützlich ist";
+"feed.did.you.know" = "Wussten Sie?";
+"feed.show.details" = "Mehr anzeigen";
+"feed.hide.details" = "Weniger anzeigen";
+"signup.no.account.prompt" = "Noch kein Konto?";
+"review.type.quick" = "Schnelle Wiederholung";
+"review.type.speaking" = "Sprechwiederholung";
+"review.type.saved" = "Gespeicherte Wiederholung";
+"review.type.vocabulary" = "Vokabelwiederholung";
+"review.type.contextual" = "Kontextuelle Wiederholung";
+"review.overdue.days" = "%dT überfällig";
+"phrase.badge.fact" = "FAKT";
+"phrase.badge.dialogue" = "DIALOG";
+
+// MARK: - Error
+"error.quota.exceeded" = "Die Phrasengenerierung ist vorübergehend ausgelastet. Bitte versuche es in ein paar Sekunden erneut.";

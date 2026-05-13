@@ -11,17 +11,17 @@ struct ReelProgressIndicator: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Text(LocalizedStrings.reelProgressLabel)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.72))
+                    .font(LumenFont.mono(11))
+                    .foregroundStyle(LumenColors.ink300)
                 Text("\(state.progressCount) / \(ReelLearningState.totalSteps)")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.white)
+                    .font(LumenFont.mono(11, weight: .medium))
+                    .foregroundStyle(LumenColors.ink100)
             }
 
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color.white.opacity(0.14))
+                        .fill(LumenColors.ink700)
                     Capsule()
                         .fill(LinearGradient.primaryGradient)
                         .frame(width: max(18, geometry.size.width * progress))
@@ -32,8 +32,8 @@ struct ReelProgressIndicator: View {
 
             if state.isCompleted {
                 Text("✔ \(LocalizedStrings.reelCompleted)")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color(red: 0.50, green: 0.93, blue: 0.72))
+                    .font(LumenFont.mono(11, weight: .medium))
+                    .foregroundStyle(LumenColors.good)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
@@ -41,11 +41,11 @@ struct ReelProgressIndicator: View {
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(red: 0.09, green: 0.16, blue: 0.27).opacity(0.78))
+                .fill(LumenColors.ink800.opacity(0.78))
         )
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                .stroke(LumenColors.ink700, lineWidth: 1)
         }
     }
 }

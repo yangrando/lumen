@@ -28,7 +28,21 @@
       "Bash(curl -sA \"Mozilla/5.0\" \"https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap\")",
       "Bash(xcodebuild -project Lumen.xcodeproj -scheme Lumen -destination 'platform=iOS Simulator,name=iPhone 16' -quiet build)",
       "Bash(xcodebuild -project Lumen.xcodeproj -scheme Lumen -destination 'generic/platform=iOS Simulator' -quiet build)",
-      "Bash(xcodebuild -project Lumen.xcodeproj -scheme Lumen -destination 'generic/platform=iOS Simulator' build)"
+      "Bash(xcodebuild -project Lumen.xcodeproj -scheme Lumen -destination 'generic/platform=iOS Simulator' build)",
+      "Bash(sed -i '' 's/throw AIServiceError\\\\.networkError\\(\"Invalid progress base URL\"\\)/throw LumenError.network\\(\\)/g' Lumen/Services/ProgressService.swift)",
+      "Bash(sed -i '' 's/throw AIServiceError\\\\.networkError\\(\"Invalid progress overview URL\"\\)/throw LumenError.network\\(\\)/g' Lumen/Services/ProgressService.swift)",
+      "Bash(sed -i '' 's/throw AIServiceError\\\\.networkError\\(Self\\\\.extractBackendErrorDetail\\(from: data\\) ?? \"Failed to load progress overview\"\\)/throw LumenError.network\\(Self.extractBackendErrorDetail\\(from: data\\)\\)/g' Lumen/Services/ProgressService.swift)",
+      "Bash(sed -i '' 's/throw AIServiceError\\\\.networkError\\(\"Invalid review base URL\"\\)/throw LumenError.network\\(\\)/g' Lumen/Services/ReviewService.swift)",
+      "Bash(sed -i '' 's/throw AIServiceError\\\\.networkError\\(\"Invalid review URL\"\\)/throw LumenError.network\\(\\)/g' Lumen/Services/ReviewService.swift)",
+      "Bash(sed -i '' 's/throw AIServiceError\\\\.networkError\\(\"Invalid saved reels base URL\"\\)/throw LumenError.network\\(\\)/g' Lumen/Services/SavedReelsService.swift)",
+      "Bash(sed -i '' 's/throw AIServiceError\\\\.networkError\\(extractSavedReelsBackendErrorDetail\\(from: data\\) ?? \"Failed to load saved reels\"\\)/throw LumenError.network\\(extractSavedReelsBackendErrorDetail\\(from: data\\)\\)/g' Lumen/Services/SavedReelsService.swift)",
+      "Bash(sed -i '' 's/throw AIServiceError\\\\.networkError\\(extractSavedReelsBackendErrorDetail\\(from: data\\) ?? \"Failed to migrate saved reels\"\\)/throw LumenError.network\\(extractSavedReelsBackendErrorDetail\\(from: data\\)\\)/g' Lumen/Services/SavedReelsService.swift)",
+      "Bash(sed -i '' 's/throw AIServiceError\\\\.networkError\\(extractSavedReelsBackendErrorDetail\\(from: data\\) ?? \"Failed to save reel\"\\)/throw LumenError.network\\(extractSavedReelsBackendErrorDetail\\(from: data\\)\\)/g' Lumen/Services/SavedReelsService.swift)",
+      "Bash(sed -i '' 's/throw AIServiceError\\\\.networkError\\(extractSavedReelsBackendErrorDetail\\(from: data\\) ?? \"Failed to unsave reel\"\\)/throw LumenError.network\\(extractSavedReelsBackendErrorDetail\\(from: data\\)\\)/g' Lumen/Services/SavedReelsService.swift)",
+      "Bash(git -C /Users/yanfelipegrando/Documents/GitHub/Lumen stash list)",
+      "Bash(git -C /Users/yanfelipegrando/Documents/GitHub/Lumen diff --name-only)",
+      "Bash(mkdir -p lumen_design)",
+      "Bash(tar -xf lumen_design.html -C lumen_design)"
     ]
   }
 }

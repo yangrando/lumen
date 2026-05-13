@@ -11,29 +11,37 @@ struct ProfileView: View {
     @State private var showLogoutConfirm = false
     @State private var showDeleteConfirm = false
     @State private var feedbackMessage: AppFeedbackMessage?
-    @State private var animateLogoGlow = false
 
     var body: some View {
         NavigationStack {
             ZStack {
-                LumenColors.navyDark
+                // Background — ink900 + accent radial top-right
+                LumenColors.ink900
                     .ignoresSafeArea()
 
+                RadialGradient(
+                    colors: [LumenColors.accent.opacity(0.13), .clear],
+                    center: .init(x: 1.1, y: -0.05),
+                    startRadius: 0,
+                    endRadius: 340
+                )
+                .ignoresSafeArea()
+
                 VStack(spacing: 0) {
-                    header
+                    profileHeader
 
                     ScrollView(showsIndicators: false) {
-                        VStack(spacing: 28) {
-                            profileHero
-                            settingsSection
+                        VStack(spacing: 14) {
+                            avatarRow
+                            statsStrip
+                            navigationSection
                             accountActions
                         }
-                        .padding(.horizontal, 24)
+                        .padding(.horizontal, 22)
                         .padding(.top, 22)
-                        .padding(.bottom, 44)
+                        .padding(.bottom, 52)
                     }
                 }
-
             }
             .appFeedbackBanner($feedbackMessage)
             .toolbar(.hidden, for: .navigationBar)
@@ -85,7 +93,9 @@ struct ProfileView: View {
         }
     }
 
-    private var header: some View {
+    // MARK: – Header
+
+    private var profileHeader: some View {
         ZStack {
             HStack {
                 Button {
@@ -93,217 +103,205 @@ struct ProfileView: View {
                     dismiss()
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(LumenColors.ink50)
                         .frame(width: 36, height: 36)
                 }
-
                 Spacer()
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 22)
 
             Text(LocalizedStrings.profileTitle)
-                .font(.system(size: 26, weight: .bold))
-                .foregroundStyle(.white)
-
-            HStack {
-                Spacer()
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.92))
-                    .opacity(0)
-            }
-            .padding(.horizontal, 24)
+                .font(LumenFont.grotesk(22, weight: .semibold))
+                .foregroundStyle(LumenColors.ink50)
         }
         .padding(.top, 14)
         .padding(.bottom, 18)
         .background(
             Rectangle()
-                .fill(LumenColors.navyDark.opacity(0.98))
+                .fill(LumenColors.ink900.opacity(0.98))
                 .overlay(alignment: .bottom) {
                     Rectangle()
-                        .fill(Color.white.opacity(0.08))
+                        .fill(LumenColors.ink700)
                         .frame(height: 1)
                 }
         )
     }
 
-    private var profileHero: some View {
-        VStack(spacing: 18) {
+    // MARK: – Avatar row
+
+    private var avatarRow: some View {
+        HStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .fill(LumenColors.gradientStart.opacity(0.22))
-                    .frame(width: 150, height: 150)
-                    .blur(radius: 24)
-                    .scaleEffect(animateLogoGlow ? 1.08 : 0.88)
-
-                Circle()
-                    .stroke(
+                    .fill(
                         LinearGradient(
-                            colors: [
-                                LumenColors.gradientStart.opacity(0.32),
-                                Color.white.opacity(0.04),
-                                LumenColors.gradientEnd.opacity(0.18)
-                            ],
+                            colors: [LumenColors.accent, LumenColors.gradientEnd.opacity(0.75)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.2
+                        )
                     )
-                    .frame(width: 140, height: 140)
-                    .rotationEffect(.degrees(animateLogoGlow ? 12 : -12))
+                    .frame(width: 64, height: 64)
 
-                Image("LumenLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 104, height: 104)
-                    .shadow(color: LumenColors.gradientStart.opacity(0.22), radius: 18, x: 0, y: 8)
-            }
-            .frame(height: 170)
-            .onAppear {
-                withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
-                    animateLogoGlow = true
-                }
+                Text(initials)
+                    .font(LumenFont.grotesk(24, weight: .medium))
+                    .foregroundStyle(LumenColors.ink900)
             }
 
-            VStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(displayName)
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(.white)
-                    .multilineTextAlignment(.center)
+                    .font(LumenFont.grotesk(19, weight: .semibold))
+                    .foregroundStyle(LumenColors.ink50)
+                    .lineLimit(1)
 
-                Text(displayHandle)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(LumenColors.textSecondary)
+                Text(userMetaLine)
+                    .font(LumenFont.mono(10, weight: .medium))
+                    .tracking(1.4)
+                    .foregroundStyle(LumenColors.ink400)
             }
+
+            Spacer()
         }
     }
 
-    private var settingsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(LocalizedStrings.profileSettingsTitle)
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.white)
+    // MARK: – Stats strip
 
-            VStack(spacing: 14) {
-                NavigationLink {
-                    ReviewTodayView(accessToken: accessToken)
-                } label: {
-                    settingsRow(
-                        icon: "arrow.clockwise.circle.fill",
-                        title: LocalizedStrings.profileReviewToday,
-                        tint: Color(red: 0.20, green: 0.36, blue: 0.52),
-                        showsChevron: true
-                    )
-                }
-                .buttonStyle(.plain)
+    private var statsStrip: some View {
+        HStack(spacing: 0) {
+            statCell(key: "STREAK", value: "--", unit: "days")
 
-                NavigationLink {
-                    ProgressOverviewView(accessToken: accessToken)
-                } label: {
-                    settingsRow(
-                        icon: "chart.line.uptrend.xyaxis",
-                        title: LocalizedStrings.profileProgressOverview,
-                        tint: Color(red: 0.18, green: 0.40, blue: 0.56),
-                        showsChevron: true
-                    )
-                }
-                .buttonStyle(.plain)
+            Rectangle()
+                .fill(LumenColors.ink700)
+                .frame(width: 1)
 
-                NavigationLink {
-                    UserPreferencesView(accessToken: accessToken)
-                } label: {
-                    settingsRow(
-                        icon: "person.fill",
-                        title: LocalizedStrings.profileProfileSettings,
-                        tint: Color(red: 0.22, green: 0.28, blue: 0.43),
-                        showsChevron: true
-                    )
-                }
-                .buttonStyle(.plain)
+            statCell(key: "PHRASES", value: "--", unit: "spoken")
 
-                Button(action: {}) {
-                    settingsRow(
-                        icon: "bell.fill",
-                        title: LocalizedStrings.profileNotifications,
-                        tint: Color(red: 0.22, green: 0.28, blue: 0.43),
-                        showsChevron: true
-                    )
-                }
-                .buttonStyle(.plain)
+            Rectangle()
+                .fill(LumenColors.ink700)
+                .frame(width: 1)
 
-                Button(action: {}) {
-                    settingsRow(
-                        icon: "questionmark.circle.fill",
-                        title: LocalizedStrings.profileHelpFeedback,
-                        tint: Color(red: 0.22, green: 0.28, blue: 0.43),
-                        showsChevron: true
-                    )
-                }
-                .buttonStyle(.plain)
-            }
+            statCell(key: "SCORE", value: "--", unit: "avg %")
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(LumenColors.ink700, lineWidth: 1)
         }
     }
 
-    private var accountActions: some View {
-        VStack(spacing: 18) {
-            Button(LocalizedStrings.accountLogout) {
-                showLogoutConfirm = true
-            }
-            .font(.system(size: 17, weight: .semibold))
-            .foregroundStyle(Color(red: 1.0, green: 0.42, blue: 0.45))
+    private func statCell(key: String, value: String, unit: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(key)
+                .font(LumenFont.mono(9, weight: .medium))
+                .tracking(1.4)
+                .foregroundStyle(LumenColors.ink400)
 
-            Button {
-                showDeleteConfirm = true
+            Text(value)
+                .font(LumenFont.grotesk(24, weight: .medium))
+                .foregroundStyle(LumenColors.ink50)
+
+            Text(unit)
+                .font(LumenFont.grotesk(11))
+                .foregroundStyle(LumenColors.ink300)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
+    }
+
+    // MARK: – Navigation list
+
+    private var navigationSection: some View {
+        VStack(spacing: 8) {
+            NavigationLink {
+                SavedPhrasesView()
             } label: {
-                Text(LocalizedStrings.accountDelete)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Color(red: 1.0, green: 0.29, blue: 0.29))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 58)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .stroke(Color(red: 0.79, green: 0.24, blue: 0.27), lineWidth: 1)
-                    )
+                navRow(label: LocalizedStrings.feedSavedPhrases, rightText: "")
+            }
+            .buttonStyle(.plain)
+
+            NavigationLink {
+                ReviewTodayView(accessToken: accessToken)
+            } label: {
+                navRow(label: LocalizedStrings.profileReviewToday, rightText: "")
+            }
+            .buttonStyle(.plain)
+
+            NavigationLink {
+                ProgressOverviewView(accessToken: accessToken)
+            } label: {
+                navRow(label: LocalizedStrings.profileProgressOverview, rightText: "")
+            }
+            .buttonStyle(.plain)
+
+            NavigationLink {
+                UserPreferencesView(accessToken: accessToken)
+            } label: {
+                navRow(label: LocalizedStrings.profileProfileSettings, rightText: "")
+            }
+            .buttonStyle(.plain)
+
+            Button(action: {}) {
+                navRow(label: LocalizedStrings.profileNotifications, rightText: "08:30 · 19:00")
+            }
+            .buttonStyle(.plain)
+
+            Button(action: {}) {
+                navRow(label: LocalizedStrings.profileHelpFeedback, rightText: "")
             }
             .buttonStyle(.plain)
         }
     }
 
-    private func settingsRow(icon: String, title: String, tint: Color, showsChevron: Bool) -> some View {
-        HStack(spacing: 18) {
-            ZStack {
-                Circle()
-                    .fill(tint.opacity(0.9))
-                    .frame(width: 40, height: 40)
-
-                Image(systemName: icon)
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(.white)
-            }
-
-            Text(title)
-                .font(.system(size: 17, weight: .medium))
-                .foregroundStyle(.white.opacity(0.95))
+    private func navRow(label: String, rightText: String) -> some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .font(LumenFont.grotesk(14, weight: .medium))
+                .foregroundStyle(LumenColors.ink50)
 
             Spacer()
 
-            if showsChevron {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Color(red: 0.47, green: 0.56, blue: 0.67))
+            if !rightText.isEmpty {
+                Text(rightText)
+                    .font(LumenFont.grotesk(13))
+                    .foregroundStyle(LumenColors.ink400)
+            }
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(LumenColors.ink500)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(LumenColors.ink800)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(LumenColors.ink700, lineWidth: 1)
+        }
+    }
+
+    // MARK: – Account actions
+
+    private var accountActions: some View {
+        VStack(spacing: 10) {
+            LumenButton(kind: .text, label: LocalizedStrings.accountLogout) {
+                showLogoutConfirm = true
+            }
+
+            LumenButton(kind: .danger, size: .lg, isFullWidth: true, label: LocalizedStrings.accountDelete) {
+                showDeleteConfirm = true
             }
         }
-        .padding(.horizontal, 18)
-        .frame(height: 96)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.white.opacity(0.04))
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.white.opacity(0.03), lineWidth: 1)
-        }
+        .padding(.top, 6)
+    }
+
+    // MARK: – Helpers
+
+    private var initials: String {
+        let name = displayName
+        let parts = name.split(separator: " ").prefix(2)
+        return parts.map { String($0.prefix(1)).uppercased() }.joined()
     }
 
     private var displayName: String {
@@ -311,13 +309,10 @@ struct ProfileView: View {
         return trimmed.isEmpty ? LocalizedStrings.profileDefaultName : trimmed
     }
 
-    private var displayHandle: String {
-        let email = currentUser?.email?.lowercased() ?? "lumen_learner"
-        let handleBase = email
-            .components(separatedBy: "@")
-            .first?
-            .replacingOccurrences(of: " ", with: "_") ?? "lumen_learner"
-        return "@\(handleBase)"
+    private var userMetaLine: String {
+        let email = currentUser?.email?.lowercased() ?? ""
+        let handle = email.components(separatedBy: "@").first ?? "lumen"
+        return handle.uppercased()
     }
 }
 

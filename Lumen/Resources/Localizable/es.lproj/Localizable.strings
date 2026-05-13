@@ -288,3 +288,48 @@
 "reel.progress.label" = "Progreso:";
 "reel.completed" = "Reel completado";
 "interests.hint" = "La IA de Lumen usará estos temas para generar frases en inglés contextualizadas según lo que te gusta.";
+
+// MARK: - Objectives (extended)
+"objective.understand.podcasts" = "Entender podcasts";
+"objective.professional.presentations" = "Presentaciones profesionales";
+"objective.job.interviews" = "Entrevistas de trabajo";
+"objective.airport.conversations" = "Conversaciones en el aeropuerto";
+"objective.hotel.interactions" = "Interacciones en el hotel";
+"objective.making.friends" = "Hacer amigos";
+"objective.improve.pronunciation" = "Mejorar pronunciación";
+"objective.writing.emails" = "Escribir correos";
+"objective.writing.messages" = "Escribir mensajes";
+"objective.academic.english" = "Inglés académico";
+"objective.storytelling" = "Contar historias";
+"objective.debating" = "Debatir";
+"subtopics.title" = "Subtemas opcionales";
+"subtopics.description" = "Selecciona áreas más específicas dentro de tus temas elegidos. Puedes omitir este paso.";
+"subtopics.continue.button" = "Continuar";
+"subtopics.skip.button" = "Omitir por ahora";
+"content.style.title" = "¿Qué estilo de contenido prefieres?";
+"content.style.description" = "Puedes dejarlo en mixto o destacar un formato favorito.";
+"content.style.continue.button" = "Continuar";
+"profession.title" = "Tu profesión es opcional";
+"profession.description" = "Esto ayuda a personalizar ejemplos y contextos más relevantes para ti.";
+"profession.skip.button" = "Omitir";
+"profession.continue.button" = "Finalizar";
+"preferences.subtopics" = "Subtemas";
+"preferences.content.style" = "Estilo de contenido";
+"preferences.profession" = "Profesión";
+"feed.context" = "Contexto";
+"feed.explanation" = "Por qué es útil";
+"feed.did.you.know" = "¿Sabías que...?";
+"feed.show.details" = "Ver más";
+"feed.hide.details" = "Ver menos";
+"signup.no.account.prompt" = "¿Aún no tienes cuenta?";
+"review.type.quick" = "Repaso rápido";
+"review.type.speaking" = "Repaso oral";
+"review.type.saved" = "Repaso de guardados";
+"review.type.vocabulary" = "Repaso de vocabulario";
+"review.type.contextual" = "Repaso contextual";
+"review.overdue.days" = "%dd atrasado";
+"phrase.badge.fact" = "DATO";
+"phrase.badge.dialogue" = "DIÁLOGO";
+
+// MARK: - Error
+"error.quota.exceeded" = "La generación de frases está temporalmente ocupada. Por favor, inténtalo de nuevo en unos segundos.";

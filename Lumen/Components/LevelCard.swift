@@ -18,17 +18,17 @@ struct LevelCard: View {
                         .frame(width: 56, height: 56)
 
                     Text(level.rawValue)
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .font(LumenFont.grotesk(18, weight: .bold))
                         .foregroundStyle(.white)
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(level.shortTitle)
-                        .font(.system(size: 18, weight: .bold))
+                        .font(LumenFont.grotesk(18, weight: .bold))
                         .foregroundStyle(.white)
 
                     Text(level.description)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(LumenFont.grotesk(13, weight: .medium))
                         .foregroundStyle(Color.white.opacity(0.68))
                         .fixedSize(horizontal: false, vertical: true)
                 }

@@ -10,7 +10,7 @@ struct ReviewTodayView: View {
 
     var body: some View {
         ZStack {
-            LumenColors.navyDark
+            LumenColors.ink900
                 .ignoresSafeArea()
 
             if viewModel.isLoading {
@@ -88,11 +88,11 @@ struct ReviewTodayView: View {
             ProgressView()
                 .tint(.white)
             Text(LocalizedStrings.reviewTodayLoadingTitle)
-                .font(.system(size: 20, weight: .bold))
+                .font(LumenFont.grotesk(20, weight: .bold))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
             Text(LocalizedStrings.reviewTodayLoadingDescription)
-                .font(.system(size: 14))
+                .font(LumenFont.grotesk(14))
                 .foregroundStyle(LumenColors.textSecondary)
                 .multilineTextAlignment(.center)
         }
@@ -102,30 +102,20 @@ struct ReviewTodayView: View {
     private func errorState(message: String) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "arrow.clockwise.circle")
-                .font(.system(size: 42))
+                .font(LumenFont.grotesk(42))
                 .foregroundStyle(.white.opacity(0.86))
 
             Text(LocalizedStrings.reviewTodayErrorTitle)
-                .font(.system(size: 20, weight: .bold))
+                .font(LumenFont.grotesk(20, weight: .bold))
                 .foregroundStyle(.white)
 
             Text(message)
-                .font(.system(size: 14))
+                .font(LumenFont.grotesk(14))
                 .foregroundStyle(LumenColors.textSecondary)
                 .multilineTextAlignment(.center)
 
-            Button {
-                Task {
-                    await viewModel.load(accessToken: accessToken)
-                }
-            } label: {
-                Text(LocalizedStrings.commonRetry)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(LinearGradient.primaryGradient)
-                    .clipShape(Capsule())
+            LumenButton(kind: .primary, size: .md, isFullWidth: true, label: LocalizedStrings.commonRetry) {
+                Task { await viewModel.load(accessToken: accessToken) }
             }
         }
         .padding(.horizontal, 24)
@@ -134,15 +124,15 @@ struct ReviewTodayView: View {
     private var emptyState: some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle")
-                .font(.system(size: 44))
+                .font(LumenFont.grotesk(44))
                 .foregroundStyle(.white.opacity(0.88))
 
             Text(LocalizedStrings.reviewTodayEmptyTitle)
-                .font(.system(size: 22, weight: .bold))
+                .font(LumenFont.grotesk(22, weight: .bold))
                 .foregroundStyle(.white)
 
             Text(LocalizedStrings.reviewTodayEmptyDescription)
-                .font(.system(size: 14))
+                .font(LumenFont.grotesk(14))
                 .foregroundStyle(LumenColors.textSecondary)
                 .multilineTextAlignment(.center)
         }
@@ -151,14 +141,20 @@ struct ReviewTodayView: View {
 
     private func content(response: ReviewTodayResponse) -> some View {
         ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 18) {
-                headerCard(response: response)
+            VStack(alignment: .leading, spacing: 16) {
+                // Design-spec header: title + goal ring card
+                dailyReviewHeader(response: response)
 
+                // All items grouped by review type
                 ForEach(response.groups) { group in
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(displayTitle(for: group.reviewType))
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundStyle(.white)
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("\(displayTitle(for: group.reviewType).uppercased()) · \(group.items.count)")
+                                .font(LumenFont.mono(9, weight: .medium))
+                                .tracking(1.4)
+                                .foregroundStyle(LumenColors.ink400)
+                            Spacer()
+                        }
 
                         ForEach(group.items) { item in
                             reviewCard(item)
@@ -172,181 +168,224 @@ struct ReviewTodayView: View {
         }
     }
 
-    private func headerCard(response: ReviewTodayResponse) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(LocalizedStrings.reviewTodayTitle)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.white.opacity(0.70))
+    // MARK: — Daily review header (design-spec)
 
-            Text("\(response.totalDueCount) \(response.totalDueCount == 1 ? LocalizedStrings.reviewTodayItem : LocalizedStrings.reviewTodayItems)")
-                .font(.system(size: 30, weight: .bold))
-                .foregroundStyle(.white)
+    private func dailyReviewHeader(response: ReviewTodayResponse) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // "● TODAY" + streak
+            HStack {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(LumenColors.accent)
+                        .frame(width: 8, height: 8)
+                    Text("TODAY")
+                        .font(LumenFont.mono(10, weight: .medium))
+                        .tracking(1.4)
+                        .foregroundStyle(LumenColors.accent)
+                }
+                Spacer()
+                Text("\(response.totalDueCount) ITEMS DUE")
+                    .font(LumenFont.mono(10, weight: .medium))
+                    .tracking(1.4)
+                    .foregroundStyle(LumenColors.ink400)
+            }
 
-            if let generated = response.generatedToday["total"] {
-                Text(String(format: LocalizedStrings.reviewTodayGeneratedSummary, String(generated)))
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(LumenColors.textSecondary)
+            // "Daily review." title — italic accent for "review"
+            (
+                Text("Daily ")
+                    .font(LumenFont.grotesk(32, weight: .medium))
+                    .foregroundStyle(LumenColors.ink50)
+                + Text("review")
+                    .font(LumenFont.serifItalic(32))
+                    .foregroundStyle(LumenColors.accent)
+                + Text(".")
+                    .font(LumenFont.grotesk(32, weight: .medium))
+                    .foregroundStyle(LumenColors.ink50)
+            )
+            .kerning(-0.5)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+
+            // Goal ring card
+            HStack(spacing: 18) {
+                LumenProgressRing(
+                    percent: goalProgress(response: response) * 100,
+                    size: 92
+                )
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("GOAL")
+                        .font(LumenFont.mono(9, weight: .medium))
+                        .tracking(1.4)
+                        .foregroundStyle(LumenColors.ink400)
+
+                    HStack(alignment: .lastTextBaseline, spacing: 4) {
+                        Text("\(response.totalDueCount)")
+                            .font(LumenFont.grotesk(28, weight: .medium))
+                            .foregroundStyle(LumenColors.ink50)
+                        Text("items")
+                            .font(LumenFont.grotesk(16))
+                            .foregroundStyle(LumenColors.ink400)
+                    }
+
+                    Text("due today")
+                        .font(LumenFont.grotesk(12))
+                        .foregroundStyle(LumenColors.ink300)
+                }
+                Spacer()
+            }
+            .padding(18)
+            .background(LumenColors.ink800)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(LumenColors.ink700, lineWidth: 1)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.15, green: 0.24, blue: 0.40),
-                            Color(red: 0.20, green: 0.16, blue: 0.36)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
     }
 
-    private func reviewCard(_ item: ReviewItem) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(displayTitle(for: item.reviewType))
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(LumenColors.gradientStart)
+    private func goalProgress(response: ReviewTodayResponse) -> Double {
+        let total = response.totalDueCount
+        guard total > 0 else { return 1.0 }
+        // Show progress based on items completed (submitted)
+        let remaining = response.groups.flatMap(\.items).count
+        let done = max(0, total - remaining)
+        return min(Double(done) / Double(total), 1.0)
+    }
 
-                    Text(item.promptText)
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(.white)
+
+    private func reviewCard(_ item: ReviewItem) -> some View {
+        HStack(spacing: 0) {
+            // Colored left border strip (design spec)
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(itemAccentColor(item))
+                .frame(width: 4)
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(displayTitle(for: item.reviewType).uppercased())
+                            .font(LumenFont.mono(9, weight: .medium))
+                            .tracking(1.4)
+                            .foregroundStyle(LumenColors.ink400)
+
+                        Text(item.promptText)
+                            .font(LumenFont.grotesk(13, weight: .medium))
+                            .foregroundStyle(LumenColors.ink50)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Spacer()
+                }
+
+                if let translation = item.translation, !translation.isEmpty {
+                    Text(translation)
+                        .font(LumenFont.grotesk(12))
+                        .foregroundStyle(LumenColors.ink400)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                Spacer()
-
-                let audioID = reviewAudioID(for: item)
-                Button {
-                    audioService.togglePlayback(for: audioID, text: item.promptText)
-                } label: {
-                    Image(systemName: audioService.currentlyPlayingPhraseID == audioID ? "stop.fill" : "speaker.wave.2.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 38, height: 38)
-                        .background(Color.white.opacity(0.10))
-                        .clipShape(Circle())
+                if let explanation = item.explanation, !explanation.isEmpty {
+                    Text(explanation)
+                        .font(LumenFont.grotesk(12))
+                        .foregroundStyle(LumenColors.ink400)
+                        .lineLimit(2)
                 }
-                .buttonStyle(.plain)
-            }
 
-            if let translation = item.translation, !translation.isEmpty {
-                Text(translation)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(LumenColors.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if let explanation = item.explanation, !explanation.isEmpty {
-                Text(explanation)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.72))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            HStack(spacing: 8) {
-                if let topic = item.topic, !topic.isEmpty {
-                    tag(topic)
-                }
-                if let difficulty = item.difficulty, !difficulty.isEmpty {
-                    tag(difficulty)
-                }
                 if item.overdueDays > 0 {
-                    tag("\(item.overdueDays)d overdue")
+                    Text(LocalizedStrings.reviewOverdueDays(item.overdueDays))
+                        .font(LumenFont.mono(9, weight: .medium))
+                        .tracking(1.4)
+                        .foregroundStyle(LumenColors.ink400)
                 }
-            }
 
-            if item.reviewType == "speaking_review" {
-                Button {
-                    speakingReviewItem = item
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "mic.fill")
-                        Text(LocalizedStrings.reviewTodayPracticeSpeaking)
+                if item.reviewType == "speaking_review" {
+                    LumenButton(
+                        kind: .primary, size: .sm,
+                        isFullWidth: true,
+                        label: LocalizedStrings.reviewTodayPracticeSpeaking,
+                        icon: Image(systemName: "mic.fill")
+                    ) {
+                        speakingReviewItem = item
                     }
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 42)
-                    .background(LinearGradient.primaryGradient)
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-            } else {
-                HStack(spacing: 8) {
-                    ForEach(ReviewResultValue.allCases) { result in
+                } else {
+                    HStack(spacing: 8) {
+                        // Listen button
+                        let audioID = reviewAudioID(for: item)
                         Button {
-                            Task {
-                                await viewModel.submit(accessToken: accessToken, item: item, result: result)
-                            }
+                            audioService.togglePlayback(for: audioID, text: item.promptText)
                         } label: {
-                            Text(result.title)
+                            Image(systemName: audioService.currentlyPlayingPhraseID == audioID ? "stop.fill" : "speaker.wave.2.fill")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 38)
-                                .background(buttonBackground(for: result))
-                                .clipShape(Capsule())
+                                .foregroundStyle(LumenColors.ink100)
+                                .frame(width: 36, height: 36)
+                                .background(Color.white.opacity(0.06))
+                                .clipShape(Circle())
+                                .overlay(Circle().stroke(LumenColors.ink700, lineWidth: 1))
                         }
                         .buttonStyle(.plain)
-                        .disabled(viewModel.submittingItemIDs.contains(item.id))
+
+                        ForEach(ReviewResultValue.allCases) { result in
+                            Button {
+                                Task { await viewModel.submit(accessToken: accessToken, item: item, result: result) }
+                            } label: {
+                                Text(result.title)
+                                    .font(LumenFont.grotesk(12, weight: .medium))
+                                    .foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 34)
+                                    .background(buttonBackground(for: result))
+                                    .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(viewModel.submittingItemIDs.contains(item.id))
+                        }
                     }
                 }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
         }
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(LumenColors.navyLight)
-        )
+        .background(LumenColors.ink800)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(LumenColors.ink700, lineWidth: 1)
         }
     }
 
-    private func tag(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(.white.opacity(0.84))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color.white.opacity(0.08))
-            .clipShape(Capsule())
+    private func itemAccentColor(_ item: ReviewItem) -> Color {
+        switch item.lastResult?.lowercased() {
+        case "failed":        return LumenColors.bad
+        case "hard":          return LumenColors.warn
+        case "medium":        return LumenColors.info
+        case "easy":          return LumenColors.good
+        default:              return LumenColors.warn
+        }
     }
 
     private func buttonBackground(for result: ReviewResultValue) -> Color {
         switch result {
         case .failed:
-            return Color(red: 0.58, green: 0.18, blue: 0.24)
+            return LumenColors.bad.opacity(0.5)
         case .hard:
-            return Color(red: 0.65, green: 0.39, blue: 0.16)
+            return LumenColors.warn.opacity(0.4)
         case .medium:
-            return Color(red: 0.24, green: 0.40, blue: 0.62)
+            return LumenColors.info.opacity(0.35)
         case .easy:
-            return Color(red: 0.20, green: 0.52, blue: 0.43)
+            return LumenColors.good.opacity(0.35)
         }
     }
 
     private func displayTitle(for reviewType: String) -> String {
         switch reviewType {
-        case "quick_review":
-            return "Quick Review"
-        case "speaking_review":
-            return "Speaking Review"
-        case "saved_review":
-            return "Saved Review"
-        case "vocabulary_review":
-            return "Vocabulary Review"
-        case "contextual_review":
-            return "Contextual Review"
-        default:
-            return reviewType.replacingOccurrences(of: "_", with: " ").capitalized
+        case "quick_review":       return LocalizedStrings.reviewTypeQuick
+        case "speaking_review":    return LocalizedStrings.reviewTypeSpeaking
+        case "saved_review":       return LocalizedStrings.reviewTypeSaved
+        case "vocabulary_review":  return LocalizedStrings.reviewTypeVocabulary
+        case "contextual_review":  return LocalizedStrings.reviewTypeContextual
+        default:                   return reviewType.replacingOccurrences(of: "_", with: " ").capitalized
         }
     }
 

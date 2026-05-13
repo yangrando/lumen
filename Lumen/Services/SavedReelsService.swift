@@ -98,7 +98,7 @@ actor SavedReelsService {
 
     func fetchSavedReels(accessToken: String) async throws -> [SavedReelRecord] {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid saved reels base URL")
+            throw LumenError.network()
         }
 
         let endpoint = base.appendingPathComponent("v1").appendingPathComponent("reels").appendingPathComponent("saved")
@@ -108,7 +108,7 @@ actor SavedReelsService {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(extractSavedReelsBackendErrorDetail(from: data) ?? "Failed to load saved reels")
+            throw LumenError.network(extractSavedReelsBackendErrorDetail(from: data))
         }
 
         return try makeLumenISO8601Decoder().decode(SavedReelsResponse.self, from: data).items
@@ -173,7 +173,7 @@ actor SavedReelsService {
 
     func migrateLegacyFavorites(accessToken: String, items: [SavedReelMigrationItem]) async throws -> [SavedReelRecord] {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid saved reels base URL")
+            throw LumenError.network()
         }
         guard !items.isEmpty else { return [] }
 
@@ -191,7 +191,7 @@ actor SavedReelsService {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(extractSavedReelsBackendErrorDetail(from: data) ?? "Failed to migrate saved reels")
+            throw LumenError.network(extractSavedReelsBackendErrorDetail(from: data))
         }
 
         return try makeLumenISO8601Decoder().decode(SavedReelsMigrationResponse.self, from: data).items
@@ -199,7 +199,7 @@ actor SavedReelsService {
 
     private func saveReel(accessToken: String, reelID: String, payload: SavedReelMigrationItem) async throws -> SavedReelRecord {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid saved reels base URL")
+            throw LumenError.network()
         }
 
         let endpoint = base
@@ -222,7 +222,7 @@ actor SavedReelsService {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(extractSavedReelsBackendErrorDetail(from: data) ?? "Failed to save reel")
+            throw LumenError.network(extractSavedReelsBackendErrorDetail(from: data))
         }
 
         return try makeLumenISO8601Decoder().decode(SaveReelResponse.self, from: data).item
@@ -230,7 +230,7 @@ actor SavedReelsService {
 
     private func unsaveReel(accessToken: String, reelID: String) async throws {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid saved reels base URL")
+            throw LumenError.network()
         }
 
         let endpoint = base
@@ -244,7 +244,7 @@ actor SavedReelsService {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(extractSavedReelsBackendErrorDetail(from: data) ?? "Failed to unsave reel")
+            throw LumenError.network(extractSavedReelsBackendErrorDetail(from: data))
         }
     }
 

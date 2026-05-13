@@ -9,7 +9,7 @@ struct ProgressOverviewView: View {
 
     var body: some View {
         ZStack {
-            LumenColors.navyDark
+            LumenColors.ink900
                 .ignoresSafeArea()
 
             Group {
@@ -56,11 +56,11 @@ struct ProgressOverviewView: View {
                 .tint(.white)
 
             Text(LocalizedStrings.progressLoadingTitle)
-                .font(.system(size: 20, weight: .semibold))
+                .font(LumenFont.grotesk(20, weight: .semibold))
                 .foregroundStyle(.white)
 
             Text(LocalizedStrings.progressLoadingDescription)
-                .font(.system(size: 14))
+                .font(LumenFont.grotesk(14))
                 .foregroundStyle(LumenColors.textSecondary)
         }
         .padding(.horizontal, 24)
@@ -69,30 +69,20 @@ struct ProgressOverviewView: View {
     private func errorState(message: String) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "chart.line.uptrend.xyaxis.circle")
-                .font(.system(size: 42))
+                .font(LumenFont.grotesk(42))
                 .foregroundStyle(.white.opacity(0.88))
 
             Text(LocalizedStrings.progressErrorTitle)
-                .font(.system(size: 20, weight: .bold))
+                .font(LumenFont.grotesk(20, weight: .bold))
                 .foregroundStyle(.white)
 
             Text(message)
-                .font(.system(size: 14))
+                .font(LumenFont.grotesk(14))
                 .foregroundStyle(LumenColors.textSecondary)
                 .multilineTextAlignment(.center)
 
-            Button {
-                Task {
-                    await viewModel.load(accessToken: accessToken)
-                }
-            } label: {
-                Text(LocalizedStrings.commonRetry)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(LinearGradient.primaryGradient)
-                    .clipShape(Capsule())
+            LumenButton(kind: .primary, size: .md, isFullWidth: true, label: LocalizedStrings.commonRetry) {
+                Task { await viewModel.load(accessToken: accessToken) }
             }
         }
         .padding(.horizontal, 24)
@@ -101,41 +91,50 @@ struct ProgressOverviewView: View {
     private var emptyState: some View {
         VStack(spacing: 16) {
             Image(systemName: "sparkles.rectangle.stack")
-                .font(.system(size: 42))
+                .font(LumenFont.grotesk(42))
                 .foregroundStyle(.white.opacity(0.88))
 
             Text(LocalizedStrings.progressEmptyTitle)
-                .font(.system(size: 20, weight: .bold))
+                .font(LumenFont.grotesk(20, weight: .bold))
                 .foregroundStyle(.white)
 
             Text(LocalizedStrings.progressEmptyDescription)
-                .font(.system(size: 14))
+                .font(LumenFont.grotesk(14))
                 .foregroundStyle(LumenColors.textSecondary)
                 .multilineTextAlignment(.center)
         }
         .padding(.horizontal, 28)
     }
 
+    @State private var selectedPeriod = 0 // 0=7D, 1=30D, 2=ALL
+
     private func content(overview: ProgressOverview) -> some View {
         ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 18) {
-                highlightCard(overview: overview)
+            VStack(alignment: .leading, spacing: 16) {
+
+                // ── Hero number (design: large avg score)
+                heroScore(overview: overview)
+
+                // ── Today's goal progress (ring-style card)
                 todayGoalCard(overview: overview)
 
-                HStack(spacing: 14) {
+                // ── Stats grid (2 columns)
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
                     statCard(title: LocalizedStrings.progressStudyDays, value: "\(overview.totalStudyDays)", caption: LocalizedStrings.progressAllTime)
                     statCard(title: LocalizedStrings.progressThisWeek, value: "\(overview.minutesStudiedThisWeek)m", caption: "\(overview.meaningfulReelsCompleted) \(LocalizedStrings.progressMeaningfulReels)")
-                }
-
-                HStack(spacing: 14) {
                     statCard(title: LocalizedStrings.progressReviews, value: "\(overview.reviewsCompleted)", caption: LocalizedStrings.progressCompletedThisWeek)
                     statCard(title: LocalizedStrings.progressSpeaking, value: "\(overview.speakingSessionsCompleted)", caption: LocalizedStrings.progressCompletedThisWeek)
                 }
 
+                // ── XP card
                 statCard(title: LocalizedStrings.progressXP, value: "\(xpTracker.totalXP)", caption: LocalizedStrings.progressEarnedFromLearningActions)
 
+                // ── Skill breakdown (design-spec)
+                skillBreakdown(overview: overview)
+
+                // ── Topic sections
                 topicSection(title: LocalizedStrings.progressStrongestTopics, topics: overview.strongestTopics, accent: LumenColors.gradientStart)
-                topicSection(title: LocalizedStrings.progressWeakestTopics, topics: overview.weakestTopics, accent: Color(red: 1.0, green: 0.58, blue: 0.36))
+                topicSection(title: LocalizedStrings.progressWeakestTopics, topics: overview.weakestTopics, accent: LumenColors.warn)
             }
             .padding(.horizontal, 20)
             .padding(.top, 18)
@@ -143,181 +142,188 @@ struct ProgressOverviewView: View {
         }
     }
 
-    private func highlightCard(overview: ProgressOverview) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(LocalizedStrings.progressStreakLabel)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.74))
+    // MARK: — Hero score (design: large accent number)
 
-                    HStack(alignment: .firstTextBaseline, spacing: 10) {
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color(red: 1.0, green: 0.67, blue: 0.30), Color(red: 1.0, green: 0.42, blue: 0.22)],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-
-                        Text("\(overview.currentStreak) \(overview.currentStreak == 1 ? LocalizedStrings.progressDay : LocalizedStrings.progressDays)")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
-
-                    Text(streakSupportCopy(for: overview))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(LumenColors.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+    private func heroScore(overview: ProgressOverview) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Period picker (7D / 30D / ALL)
+            HStack {
+                Text(LocalizedStrings.progressTitle)
+                    .font(LumenFont.grotesk(22, weight: .semibold))
+                    .foregroundStyle(LumenColors.ink50)
 
                 Spacer()
 
-                VStack(alignment: .trailing, spacing: 10) {
-                    scoreBadge(title: LocalizedStrings.progressComprehension, score: overview.comprehensionScore)
-                    scoreBadge(title: LocalizedStrings.progressSpeaking, score: overview.speakingConfidenceScore)
-                }
-            }
-
-            HStack(spacing: 12) {
-                summaryPill(
-                    title: LocalizedStrings.progressLongestStreak,
-                    value: "\(overview.longestStreak)"
-                )
-                summaryPill(
-                    title: LocalizedStrings.progressTodayStatus,
-                    value: overview.todayStreakEligible ? LocalizedStrings.progressStreakAlive : LocalizedStrings.progressStreakKeepAlive
-                )
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text(LocalizedStrings.progressWeeklyGoal)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.78))
-                    Spacer()
-                    Text("\(overview.weeklyGoalProgress)/\(overview.weeklyGoalTarget)")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
-                }
-
-                GeometryReader { geometry in
-                    let progress = overview.weeklyGoalTarget > 0 ? min(CGFloat(overview.weeklyGoalProgress) / CGFloat(overview.weeklyGoalTarget), 1) : 0
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(Color.white.opacity(0.10))
-                        Capsule()
-                            .fill(LinearGradient.primaryGradient)
-                            .frame(width: geometry.size.width * progress)
+                HStack(spacing: 2) {
+                    ForEach(["7D", "30D", "ALL"].indices, id: \.self) { i in
+                        let labels = ["7D", "30D", "ALL"]
+                        Button {
+                            selectedPeriod = i
+                        } label: {
+                            Text(labels[i])
+                                .font(LumenFont.mono(9, weight: .medium))
+                                .tracking(1.4)
+                                .foregroundStyle(selectedPeriod == i ? LumenColors.ink900 : LumenColors.ink300)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(selectedPeriod == i ? LumenColors.accent : .clear)
+                                .clipShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
-                .frame(height: 10)
+                .padding(3)
+                .background(LumenColors.ink800)
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(LumenColors.ink700, lineWidth: 1))
             }
 
-            Text("\(LocalizedStrings.progressWeekRange): \(overview.weekStartDate) to \(overview.weekEndDate)")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(LumenColors.textSecondary)
+            // Avg score
+            Text("AVG SCORE · 7 DAYS")
+                .font(LumenFont.mono(9, weight: .medium))
+                .tracking(1.4)
+                .foregroundStyle(LumenColors.ink400)
+
+            HStack(alignment: .lastTextBaseline, spacing: 10) {
+                HStack(alignment: .lastTextBaseline, spacing: 0) {
+                    Text("\(overview.comprehensionScore ?? 0)")
+                        .font(LumenFont.grotesk(64, weight: .light))
+                        .foregroundStyle(LumenColors.accent)
+                        .kerning(-2)
+                    Text("%")
+                        .font(LumenFont.grotesk(24))
+                        .foregroundStyle(LumenColors.ink400)
+                }
+
+                if overview.currentStreak > 0 {
+                    Text("🔥 \(overview.currentStreak) day streak")
+                        .font(LumenFont.mono(10, weight: .medium))
+                        .tracking(1.0)
+                        .foregroundStyle(LumenColors.good)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(LumenColors.good.opacity(0.12))
+                        .clipShape(Capsule())
+                }
+            }
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.16, green: 0.23, blue: 0.38),
-                            Color(red: 0.18, green: 0.15, blue: 0.34)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+    }
+
+    // MARK: — Skill breakdown (design-spec rows)
+
+    private func skillBreakdown(overview: ProgressOverview) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("SKILL BREAKDOWN")
+                .font(LumenFont.mono(9, weight: .medium))
+                .tracking(1.4)
+                .foregroundStyle(LumenColors.ink400)
+
+            let skills: [(String, Int?)] = [
+                (LocalizedStrings.progressComprehension, overview.comprehensionScore),
+                (LocalizedStrings.progressSpeaking, overview.speakingConfidenceScore),
+            ]
+
+            ForEach(skills, id: \.0) { name, score in
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(name)
+                            .font(LumenFont.grotesk(13, weight: .medium))
+                            .foregroundStyle(LumenColors.ink50)
+                        Spacer()
+                        HStack(alignment: .lastTextBaseline, spacing: 1) {
+                            Text(score.map(String.init) ?? "--")
+                                .font(LumenFont.grotesk(14, weight: .semibold))
+                                .foregroundStyle(LumenColors.ink50)
+                            if score != nil {
+                                Text("%")
+                                    .font(LumenFont.mono(10))
+                                    .foregroundStyle(LumenColors.ink400)
+                            }
+                        }
+                    }
+
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(LumenColors.ink700)
+                            Capsule()
+                                .fill(LumenColors.accent)
+                                .frame(width: geo.size.width * CGFloat(score ?? 0) / 100)
+                        }
+                    }
+                    .frame(height: 3)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(LumenColors.ink800)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(LumenColors.ink700, lineWidth: 1)
+                }
+            }
         }
+    }
+
+    private func highlightCard(overview: ProgressOverview) -> some View {
+        EmptyView() // Replaced by heroScore() in content()
     }
 
     private func todayGoalCard(overview: ProgressOverview) -> some View {
         let target = overview.todayGoalTarget ?? overview.todayActivitySummary.goalTarget ?? 0
         let progress = overview.todayGoalProgress
+        let pct: Double = target > 0 ? min(Double(progress) / Double(target) * 100, 100) : 0
 
-        return VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(LocalizedStrings.progressTodayGoal)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.74))
+        return HStack(spacing: 18) {
+            // Progress ring (design-spec: 92px)
+            LumenProgressRing(percent: pct, size: 92)
 
-                    Text(target > 0 ? "\(progress) / \(target)" : "\(progress)")
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundStyle(.white)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("GOAL")
+                    .font(LumenFont.mono(9, weight: .medium))
+                    .tracking(1.4)
+                    .foregroundStyle(LumenColors.ink400)
 
-                    Text(goalSupportCopy(for: overview))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(LumenColors.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .lastTextBaseline, spacing: 4) {
+                    Text("\(progress)")
+                        .font(LumenFont.grotesk(28, weight: .medium))
+                        .foregroundStyle(LumenColors.ink50)
+                    if target > 0 {
+                        Text("/ \(target)")
+                            .font(LumenFont.grotesk(16))
+                            .foregroundStyle(LumenColors.ink400)
+                    }
                 }
 
-                Spacer()
-
-                Text(overview.todayGoalCompleted ? LocalizedStrings.progressGoalCompleted : LocalizedStrings.progressGoalInProgress)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(overview.todayGoalCompleted ? Color.white : LumenColors.textSecondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule()
-                            .fill(overview.todayGoalCompleted ? Color(red: 0.18, green: 0.53, blue: 0.42) : Color.white.opacity(0.08))
-                    )
+                Text(goalSupportCopy(for: overview))
+                    .font(LumenFont.grotesk(12))
+                    .foregroundStyle(LumenColors.ink300)
             }
 
-            GeometryReader { geometry in
-                let fraction = target > 0 ? min(CGFloat(progress) / CGFloat(target), 1) : 0
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.white.opacity(0.08))
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: overview.todayGoalCompleted
-                                    ? [Color(red: 0.24, green: 0.77, blue: 0.60), Color(red: 0.13, green: 0.67, blue: 0.51)]
-                                    : [LumenColors.gradientStart, LumenColors.gradientEnd],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: geometry.size.width * fraction)
-                }
-            }
-            .frame(height: 12)
+            Spacer()
 
-            HStack(spacing: 10) {
-                todayMetricChip(title: LocalizedStrings.progressMeaningfulReels, value: "\(overview.todayMeaningfulReels)")
-                todayMetricChip(title: LocalizedStrings.progressSpeaking, value: "\(overview.todaySpeakingCompleted)")
-                todayMetricChip(title: LocalizedStrings.progressReviews, value: "\(overview.todayReviewActions)")
+            if overview.todayGoalCompleted {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(LumenColors.good)
             }
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(LumenColors.navyLight)
-        )
+        .padding(18)
+        .background(LumenColors.ink800)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(LumenColors.ink700, lineWidth: 1)
         }
     }
 
     private func scoreBadge(title: String, score: Int?) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
             Text(title)
-                .font(.system(size: 12, weight: .medium))
+                .font(LumenFont.grotesk(12, weight: .medium))
                 .foregroundStyle(.white.opacity(0.66))
             Text(score.map { "\($0)" } ?? "--")
-                .font(.system(size: 26, weight: .bold))
+                .font(LumenFont.grotesk(26, weight: .bold))
                 .foregroundStyle(.white)
         }
     }
@@ -325,15 +331,15 @@ struct ProgressOverviewView: View {
     private func statCard(title: String, value: String, caption: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.system(size: 14, weight: .medium))
+                .font(LumenFont.grotesk(14, weight: .medium))
                 .foregroundStyle(.white.opacity(0.72))
 
             Text(value)
-                .font(.system(size: 24, weight: .bold))
+                .font(LumenFont.grotesk(24, weight: .bold))
                 .foregroundStyle(.white)
 
             Text(caption)
-                .font(.system(size: 12, weight: .medium))
+                .font(LumenFont.grotesk(12, weight: .medium))
                 .foregroundStyle(LumenColors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -341,7 +347,7 @@ struct ProgressOverviewView: View {
         .padding(18)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(LumenColors.navyLight)
+                .fill(LumenColors.ink800)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -352,11 +358,11 @@ struct ProgressOverviewView: View {
     private func summaryPill(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 11, weight: .medium))
+                .font(LumenFont.grotesk(11, weight: .medium))
                 .foregroundStyle(.white.opacity(0.62))
 
             Text(value)
-                .font(.system(size: 14, weight: .semibold))
+                .font(LumenFont.grotesk(14, weight: .semibold))
                 .foregroundStyle(.white)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -369,11 +375,11 @@ struct ProgressOverviewView: View {
     private func todayMetricChip(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 11, weight: .medium))
+                .font(LumenFont.grotesk(11, weight: .medium))
                 .foregroundStyle(.white.opacity(0.60))
 
             Text(value)
-                .font(.system(size: 16, weight: .bold))
+                .font(LumenFont.grotesk(16, weight: .bold))
                 .foregroundStyle(.white)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -406,12 +412,12 @@ struct ProgressOverviewView: View {
     private func topicSection(title: String, topics: [TopicPerformanceSummary], accent: Color) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.system(size: 20, weight: .bold))
+                .font(LumenFont.grotesk(20, weight: .bold))
                 .foregroundStyle(.white)
 
             if topics.isEmpty {
                 Text(LocalizedStrings.progressNotEnoughTopicData)
-                    .font(.system(size: 14))
+                    .font(LumenFont.grotesk(14))
                     .foregroundStyle(LumenColors.textSecondary)
             } else {
                 ForEach(topics) { topic in
@@ -427,11 +433,11 @@ struct ProgressOverviewView: View {
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text(topic.topic)
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(LumenFont.grotesk(16, weight: .semibold))
                                 .foregroundStyle(.white)
 
                             Text("\(topic.meaningfulReelsCompleted) \(LocalizedStrings.progressMeaningfulReels) • \(LocalizedStrings.progressCompShort) \(topic.comprehensionScore.map(String.init) ?? "--") • \(LocalizedStrings.progressSpeakShort) \(topic.speakingScore.map(String.init) ?? "--")")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(LumenFont.grotesk(13, weight: .medium))
                                 .foregroundStyle(LumenColors.textSecondary)
                         }
 
@@ -440,7 +446,7 @@ struct ProgressOverviewView: View {
                     .padding(16)
                     .background(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(LumenColors.navyLight)
+                            .fill(LumenColors.ink800)
                     )
                 }
             }

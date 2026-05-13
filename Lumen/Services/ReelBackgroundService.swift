@@ -33,7 +33,7 @@ actor ReelBackgroundService {
         let key = cacheKey(text: text, category: category, difficulty: difficulty, seed: seed)
 
         if let holdUntil = failedUntil[key], holdUntil > Date() {
-            throw AIServiceError.networkError("Background generation temporarily unavailable")
+            throw LumenError.backgroundUnavailable
         }
 
         if let cached = cache[key] {
@@ -41,10 +41,10 @@ actor ReelBackgroundService {
         }
 
         guard let endpoint = generateEndpoint else {
-            throw AIServiceError.networkError("Invalid background endpoint")
+            throw LumenError.network()
         }
         guard let token = await MainActor.run(body: { SessionService.shared.accessToken }) else {
-            throw AIServiceError.unauthenticated
+            throw LumenError.unauthenticated
         }
 
         var request = URLRequest(url: endpoint)
@@ -64,8 +64,7 @@ actor ReelBackgroundService {
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
-            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-            throw AIServiceError.networkError("Invalid response from server (Status: \(statusCode))")
+            throw LumenError.network()
         }
 
         let payload = try JSONDecoder().decode(ReelBackgroundResponse.self, from: data)
@@ -73,14 +72,14 @@ actor ReelBackgroundService {
         if payload.fallback == true {
             let retryAfter = TimeInterval(payload.retryAfterSeconds ?? 600)
             failedUntil[key] = Date().addingTimeInterval(max(60, retryAfter))
-            throw AIServiceError.networkError("Background provider unavailable")
+            throw LumenError.backgroundUnavailable
         }
 
         guard let imageURL = payload.imageURL,
               !imageURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               let url = URL(string: imageURL) else {
             failedUntil[key] = Date().addingTimeInterval(300)
-            throw AIServiceError.decodingError("Invalid background URL")
+            throw LumenError.invalidBackgroundURL
         }
 
         cache[key] = url

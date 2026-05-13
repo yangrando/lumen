@@ -57,14 +57,14 @@ struct HighlightedPhraseTextContent: View {
 
     private func tokenView(_ token: HighlightedWord) -> some View {
         Text(token.rawToken.uppercased())
-            .font(.custom("AvenirNext-Heavy", size: 20))
+            .font(LumenFont.grotesk(20, weight: .bold))
             .tracking(-0.4)
-            .foregroundStyle(token.isHighlighted ? Color(red: 0.42, green: 0.88, blue: 0.99) : .white)
+            .foregroundStyle(token.isHighlighted ? LumenColors.accent : LumenColors.ink50)
             .padding(.horizontal, token.isHighlighted ? 4 : 0)
             .padding(.vertical, token.isHighlighted ? 2 : 0)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(token.isHighlighted ? Color(red: 0.20, green: 0.73, blue: 0.94).opacity(0.14) : .clear)
+                    .fill(token.isHighlighted ? LumenColors.accentSoft : .clear)
             )
             .contentShape(Rectangle())
             .onTapGesture {

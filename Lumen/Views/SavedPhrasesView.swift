@@ -79,7 +79,7 @@ struct SavedPhrasesView: View {
                                     Text(category)
                                         .lineLimit(1)
                                 }
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(LumenFont.grotesk(13, weight: .semibold))
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
                                 .foregroundStyle(selectedCategory == category ? .white : LumenColors.textSecondary)
@@ -106,15 +106,15 @@ struct SavedPhrasesView: View {
                 if filteredPhrases.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "books.vertical")
-                            .font(.system(size: 48))
+                            .font(LumenFont.grotesk(48))
                             .foregroundStyle(LumenColors.textSecondary)
 
                         Text(LocalizedStrings.libraryEmptyTitle)
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(LumenFont.grotesk(18, weight: .semibold))
                             .foregroundStyle(.white)
 
                         Text(LocalizedStrings.libraryEmptyDescription)
-                            .font(.system(size: 14))
+                            .font(LumenFont.grotesk(14))
                             .foregroundStyle(LumenColors.textSecondary)
                             .multilineTextAlignment(.center)
                     }
@@ -294,18 +294,18 @@ struct SavedPhraseRow: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(phrase.text)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(LumenFont.grotesk(16, weight: .semibold))
                         .foregroundStyle(.white)
                     
                     Text(phrase.translation)
-                        .font(.system(size: 14))
+                        .font(LumenFont.grotesk(14))
                         .foregroundStyle(LumenColors.textSecondary)
                 }
                 
                 Spacer()
                 
                 Text(phrase.difficulty)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(LumenFont.grotesk(12, weight: .semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
@@ -314,7 +314,7 @@ struct SavedPhraseRow: View {
             }
 
             Text(phrase.category)
-                .font(.system(size: 12, weight: .medium))
+                .font(LumenFont.grotesk(12, weight: .medium))
                 .foregroundStyle(LumenColors.textSecondary)
 
             HStack(spacing: 10) {
@@ -323,7 +323,7 @@ struct SavedPhraseRow: View {
                         Image(systemName: isPlaying ? "stop.fill" : "play.fill")
                         Text(isPlaying ? LocalizedStrings.feedStopAudio : LocalizedStrings.feedListen)
                     }
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(LumenFont.grotesk(13, weight: .semibold))
                     .frame(maxWidth: .infinity)
                     .frame(height: 36)
                     .foregroundStyle(.white)
@@ -337,14 +337,14 @@ struct SavedPhraseRow: View {
                         Image(systemName: "heart.slash.fill")
                         Text(LocalizedStrings.feedUnsaveButton)
                     }
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(LumenFont.grotesk(13, weight: .semibold))
                     .padding(.horizontal, 14)
                     .frame(height: 36)
-                    .foregroundStyle(Color(red: 1.0, green: 0.76, blue: 0.80))
-                    .background(Color(red: 0.42, green: 0.12, blue: 0.20).opacity(0.45))
+                    .foregroundStyle(LumenColors.bad)
+                    .background(LumenColors.bad.opacity(0.18))
                     .overlay(
                         Capsule()
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            .stroke(LumenColors.bad.opacity(0.35), lineWidth: 1)
                     )
                     .clipShape(Capsule())
                 }

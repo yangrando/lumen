@@ -295,3 +295,48 @@
 "reel.progress.label" = "Progress:";
 "reel.completed" = "Reel completed";
 "interests.hint" = "Lumen AI will use these topics to generate contextual English phrases based on what you like.";
+
+// MARK: - Objectives (extended)
+"objective.understand.podcasts" = "听懂播客";
+"objective.professional.presentations" = "专业演示";
+"objective.job.interviews" = "求职面试";
+"objective.airport.conversations" = "机场对话";
+"objective.hotel.interactions" = "酒店交流";
+"objective.making.friends" = "结交朋友";
+"objective.improve.pronunciation" = "改善发音";
+"objective.writing.emails" = "写电子邮件";
+"objective.writing.messages" = "写消息";
+"objective.academic.english" = "学术英语";
+"objective.storytelling" = "讲故事";
+"objective.debating" = "辩论";
+"subtopics.title" = "可选子主题";
+"subtopics.description" = "在所选主题中选择更具体的领域。您可以跳过此步骤。";
+"subtopics.continue.button" = "继续";
+"subtopics.skip.button" = "暂时跳过";
+"content.style.title" = "您偏好哪种内容风格？";
+"content.style.description" = "您可以保持混合，或突出最喜欢的格式。";
+"content.style.continue.button" = "继续";
+"profession.title" = "您的职业是可选的";
+"profession.description" = "这有助于个性化与您更相关的示例和情境。";
+"profession.skip.button" = "跳过";
+"profession.continue.button" = "完成";
+"preferences.subtopics" = "子主题";
+"preferences.content.style" = "内容风格";
+"preferences.profession" = "职业";
+"feed.context" = "背景";
+"feed.explanation" = "为什么有用";
+"feed.did.you.know" = "您知道吗？";
+"feed.show.details" = "显示更多";
+"feed.hide.details" = "显示更少";
+"signup.no.account.prompt" = "还没有账号？";
+"review.type.quick" = "快速复习";
+"review.type.speaking" = "口语复习";
+"review.type.saved" = "已保存的复习";
+"review.type.vocabulary" = "词汇复习";
+"review.type.contextual" = "情境复习";
+"review.overdue.days" = "已逾期%d天";
+"phrase.badge.fact" = "事实";
+"phrase.badge.dialogue" = "对话";
+
+// MARK: - Error
+"error.quota.exceeded" = "短语生成暂时繁忙，请几秒钟后重试。";

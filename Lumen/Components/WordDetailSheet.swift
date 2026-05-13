@@ -26,22 +26,22 @@ struct WordDetailSheet: View {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(detail.word)
-                            .font(.system(size: 28, weight: .bold))
+                            .font(LumenFont.grotesk(28, weight: .bold))
                             .foregroundStyle(.white)
                         Text(detail.phonetic)
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(LumenFont.grotesk(15, weight: .semibold))
                             .foregroundStyle(LumenColors.gradientStart)
                         Text(detail.translation)
-                            .font(.system(size: 18, weight: .medium))
+                            .font(LumenFont.grotesk(18, weight: .medium))
                             .foregroundStyle(LumenColors.textSecondary)
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text(LocalizedStrings.wordDetailsExample)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(LumenFont.grotesk(12, weight: .semibold))
                             .foregroundStyle(LumenColors.textSecondary)
                         Text(detail.exampleSentence)
-                            .font(.system(size: 16, weight: .medium))
+                            .font(LumenFont.grotesk(16, weight: .medium))
                             .foregroundStyle(.white)
                     }
 
@@ -50,7 +50,7 @@ struct WordDetailSheet: View {
                             saveWord()
                         } label: {
                             Text(isSaved ? LocalizedStrings.wordDetailsSaved : LocalizedStrings.wordDetailsSaveWord)
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(LumenFont.grotesk(15, weight: .semibold))
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 50)
@@ -66,7 +66,7 @@ struct WordDetailSheet: View {
                                 Image(systemName: "speaker.wave.2.fill")
                                 Text(LocalizedStrings.wordDetailsHearPronunciation)
                             }
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(LumenFont.grotesk(15, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)

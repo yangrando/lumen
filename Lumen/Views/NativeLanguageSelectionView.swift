@@ -50,7 +50,7 @@ struct NativeLanguageSelectionView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Button(action: onBack) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(LumenFont.grotesk(18, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(width: 42, height: 42)
                             .background(Color.white.opacity(0.06))
@@ -58,12 +58,12 @@ struct NativeLanguageSelectionView: View {
                     }
 
                     Text(LocalizedStrings.nativeLanguageTitle)
-                        .font(.system(size: 24, weight: .bold))
+                        .font(LumenFont.grotesk(24, weight: .bold))
                         .foregroundStyle(.white)
                         .multilineTextAlignment(.leading)
 
                     Text(LocalizedStrings.nativeLanguageDescription)
-                        .font(.system(size: 15))
+                        .font(LumenFont.grotesk(15))
                         .foregroundStyle(LumenColors.textSecondary)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
@@ -79,7 +79,7 @@ struct NativeLanguageSelectionView: View {
                         } label: {
                             HStack {
                                 Text(localizedLanguageLabels[language] ?? language)
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(LumenFont.grotesk(16, weight: .semibold))
                                     .foregroundStyle(.white)
                                 Spacer()
                                 if currentLanguage == language {
@@ -109,26 +109,14 @@ struct NativeLanguageSelectionView: View {
 
     private var footer: some View {
         VStack(spacing: 0) {
-            Button {
-                if let currentLanguage {
-                    onContinue(currentLanguage)
-                }
-            } label: {
-                Text(LocalizedStrings.levelContinueButton)
-                    .font(.system(size: 17, weight: .bold))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 58)
-                    .foregroundStyle(.white)
-                    .background(
-                        currentLanguage == nil
-                        ? AnyShapeStyle(Color.white.opacity(0.10))
-                        : AnyShapeStyle(LinearGradient.primaryGradient)
-                    )
-                    .clipShape(Capsule())
+            LumenButton(
+                kind: .primary, size: .lg,
+                isDisabled: currentLanguage == nil,
+                isFullWidth: true,
+                label: LocalizedStrings.levelContinueButton
+            ) {
+                if let currentLanguage { onContinue(currentLanguage) }
             }
-            .buttonStyle(.plain)
-            .disabled(currentLanguage == nil)
-            .opacity(currentLanguage == nil ? 0.55 : 1.0)
         }
         .padding(.horizontal, 24)
         .padding(.top, 30)
@@ -149,16 +137,8 @@ struct NativeLanguageSelectionView: View {
 
     private var onboardingBackground: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.03, green: 0.08, blue: 0.16),
-                    Color(red: 0.05, green: 0.10, blue: 0.20),
-                    Color(red: 0.04, green: 0.08, blue: 0.15)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            LumenColors.ink900
+                .ignoresSafeArea()
 
             RadialGradient(
                 colors: [

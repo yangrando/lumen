@@ -3,31 +3,6 @@ import AuthenticationServices
 import GoogleSignIn
 import UIKit
 
-enum SocialAuthError: LocalizedError {
-    case appleTokenUnavailable
-    case googleNotConfigured
-    case googleSessionFailed
-    case googleMissingIDToken
-    case invalidGoogleCallback
-    case userCancelled
-
-    var errorDescription: String? {
-        switch self {
-        case .appleTokenUnavailable:
-            return "Apple identity token unavailable."
-        case .googleNotConfigured:
-            return "Google Sign-In is not configured."
-        case .googleSessionFailed:
-            return "Google authentication failed."
-        case .googleMissingIDToken:
-            return "Google did not return an identity token."
-        case .invalidGoogleCallback:
-            return "Invalid Google callback."
-        case .userCancelled:
-            return "Authentication cancelled by user."
-        }
-    }
-}
 
 @MainActor
 final class SocialAuthService: NSObject {
@@ -66,7 +41,7 @@ final class SocialAuthService: NSObject {
             let clientID = Bundle.main.object(forInfoDictionaryKey: "GOOGLE_CLIENT_ID") as? String,
             !clientID.isEmpty
         else {
-            throw SocialAuthError.googleNotConfigured
+            throw LumenError.googleNotConfigured
         }
 
         let trimmedServerClientID =
@@ -75,7 +50,7 @@ final class SocialAuthService: NSObject {
         let serverClientID = trimmedServerClientID?.isEmpty == false ? trimmedServerClientID : nil
 
         guard let presentingViewController = Self.presentationViewController() else {
-            throw SocialAuthError.googleSessionFailed
+            throw LumenError.googleAuthFailed
         }
 
         GIDSignIn.sharedInstance.configuration = GIDConfiguration(
@@ -88,14 +63,14 @@ final class SocialAuthService: NSObject {
         do {
             result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController)
         } catch {
-            throw SocialAuthError.googleSessionFailed
+            throw LumenError.googleAuthFailed
         }
 
         if let idToken = result.user.idToken?.tokenString, !idToken.isEmpty {
             return idToken
         }
 
-        throw SocialAuthError.googleMissingIDToken
+        throw LumenError.googleAuthFailed
     }
 
     func handleGoogleOpenURL(_ url: URL) -> Bool {
@@ -119,7 +94,7 @@ extension SocialAuthService: ASAuthorizationControllerDelegate {
                   let tokenData = credential.identityToken,
                   let idToken = String(data: tokenData, encoding: .utf8),
                   !idToken.isEmpty else {
-                appleContinuation?.resume(throwing: SocialAuthError.appleTokenUnavailable)
+                appleContinuation?.resume(throwing: LumenError.appleTokenUnavailable)
                 appleContinuation = nil
                 return
             }
@@ -135,7 +110,7 @@ extension SocialAuthService: ASAuthorizationControllerDelegate {
     ) {
         Task { @MainActor in
             if let authError = error as? ASAuthorizationError, authError.code == .canceled {
-                appleContinuation?.resume(throwing: SocialAuthError.userCancelled)
+                appleContinuation?.resume(throwing: LumenError.userCancelled)
             } else {
                 appleContinuation?.resume(throwing: error)
             }

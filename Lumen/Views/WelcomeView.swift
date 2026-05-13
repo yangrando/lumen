@@ -18,16 +18,10 @@ struct WelcomeView: View {
             VStack(spacing: 0) {
                 Spacer(minLength: 36)
 
-                VStack(spacing: 18) {
-                    Image("LumenLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 88, height: 88)
-                        .shadow(color: LumenColors.gradientEnd.opacity(0.22), radius: 28, x: 0, y: 14)
+                VStack(spacing: 16) {
+                    LumenMark(size: 88, color: LumenColors.accent, glowEnabled: true)
 
-                    Text(LocalizedStrings.appName)
-                        .font(.system(size: 34, weight: .bold))
-                        .foregroundStyle(.white)
+                    LumenWordmark(size: 34, color: LumenColors.ink50, accent: LumenColors.accent)
                 }
 
                 Spacer(minLength: 52)
@@ -37,11 +31,11 @@ struct WelcomeView: View {
                         Text(LocalizedStrings.welcomeTitlePart1).foregroundStyle(.white)
                         + Text(LocalizedStrings.welcomeTitlePart2).foregroundStyle(LinearGradient.primaryGradient)
                     )
-                    .font(.system(size: 28, weight: .bold))
+                    .font(LumenFont.grotesk(28, weight: .bold))
                     .multilineTextAlignment(.center)
 
                     Text(LocalizedStrings.welcomeDescription)
-                        .font(.system(size: 16, weight: .medium))
+                        .font(LumenFont.grotesk(16, weight: .medium))
                         .foregroundStyle(LumenColors.textSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 18)
@@ -53,7 +47,7 @@ struct WelcomeView: View {
                 VStack(spacing: 18) {
                     Button(action: onCreateAccount) {
                         Text(LocalizedStrings.welcomeModeSignUp)
-                            .font(.system(size: 18, weight: .bold))
+                            .font(LumenFont.grotesk(18, weight: .bold))
                             .frame(maxWidth: .infinity)
                             .frame(height: 58)
                             .foregroundStyle(.white)
@@ -73,7 +67,7 @@ struct WelcomeView: View {
                         .foregroundStyle(LinearGradient.primaryGradient)
                         .fontWeight(.bold)
                     }
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(LumenFont.grotesk(16, weight: .semibold))
 
                     if isLoading {
                         ProgressView()
@@ -82,7 +76,7 @@ struct WelcomeView: View {
 
                     if let errorMessage, !errorMessage.isEmpty {
                         Text(errorMessage)
-                            .font(.system(size: 13, weight: .medium))
+                            .font(LumenFont.grotesk(13, weight: .medium))
                             .foregroundStyle(.white.opacity(0.92))
                             .multilineTextAlignment(.center)
                             .padding(.top, 2)
@@ -99,16 +93,8 @@ struct WelcomeView: View {
 
     private var background: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.03, green: 0.07, blue: 0.14),
-                    Color(red: 0.05, green: 0.09, blue: 0.16),
-                    Color(red: 0.04, green: 0.08, blue: 0.15)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            LumenColors.ink900
+                .ignoresSafeArea()
 
             RadialGradient(
                 colors: [
@@ -135,7 +121,7 @@ struct WelcomeView: View {
             }
             .foregroundStyle(LumenColors.gradientStart)
         }
-        .font(.system(size: 12, weight: .medium))
+        .font(LumenFont.grotesk(12, weight: .medium))
         .multilineTextAlignment(.center)
     }
 }

@@ -63,36 +63,36 @@ struct LocalizedStrings {
     static var objectiveBusinessCommunication: String { localized("objective.business.communication", comment: "") }
     static var objectiveTravelConfidence: String { localized("objective.travel.confidence", comment: "") }
     static var objectiveUnderstandMovies: String { localized("objective.understand.movies", comment: "") }
-    static var objectiveUnderstandPodcasts: String { localized("objective.understand.podcasts", fallback: "Entender podcasts") }
+    static var objectiveUnderstandPodcasts: String { localized("objective.understand.podcasts", fallback: "Understand podcasts") }
     static var objectiveExpandVocabulary: String { localized("objective.expand.vocabulary", comment: "") }
     static var objectivePassExams: String { localized("objective.pass.exams", comment: "") }
     static var objectiveImproveSpeaking: String { localized("objective.improve.speaking", comment: "") }
     static var objectiveDailyConversation: String { localized("objective.daily.conversation", comment: "") }
-    static var objectiveProfessionalPresentations: String { localized("objective.professional.presentations", fallback: "Apresentações profissionais") }
-    static var objectiveJobInterviews: String { localized("objective.job.interviews", fallback: "Entrevistas de emprego") }
-    static var objectiveAirportConversations: String { localized("objective.airport.conversations", fallback: "Conversas no aeroporto") }
-    static var objectiveHotelInteractions: String { localized("objective.hotel.interactions", fallback: "Interações no hotel") }
-    static var objectiveMakingFriends: String { localized("objective.making.friends", fallback: "Fazer amizades") }
-    static var objectiveImprovePronunciation: String { localized("objective.improve.pronunciation", fallback: "Melhorar pronúncia") }
+    static var objectiveProfessionalPresentations: String { localized("objective.professional.presentations", fallback: "Professional presentations") }
+    static var objectiveJobInterviews: String { localized("objective.job.interviews", fallback: "Job interviews") }
+    static var objectiveAirportConversations: String { localized("objective.airport.conversations", fallback: "Airport conversations") }
+    static var objectiveHotelInteractions: String { localized("objective.hotel.interactions", fallback: "Hotel interactions") }
+    static var objectiveMakingFriends: String { localized("objective.making.friends", fallback: "Making friends") }
+    static var objectiveImprovePronunciation: String { localized("objective.improve.pronunciation", fallback: "Improve pronunciation") }
     static var objectiveImproveAccent: String { localized("objective.improve.accent", comment: "") }
-    static var objectiveWritingEmails: String { localized("objective.writing.emails", fallback: "Escrever e-mails") }
-    static var objectiveWritingMessages: String { localized("objective.writing.messages", fallback: "Escrever mensagens") }
-    static var objectiveAcademicEnglish: String { localized("objective.academic.english", fallback: "Inglês acadêmico") }
-    static var objectiveStorytelling: String { localized("objective.storytelling", fallback: "Contar histórias") }
-    static var objectiveDebating: String { localized("objective.debating", fallback: "Debater") }
+    static var objectiveWritingEmails: String { localized("objective.writing.emails", fallback: "Write emails") }
+    static var objectiveWritingMessages: String { localized("objective.writing.messages", fallback: "Write messages") }
+    static var objectiveAcademicEnglish: String { localized("objective.academic.english", fallback: "Academic English") }
+    static var objectiveStorytelling: String { localized("objective.storytelling", fallback: "Storytelling") }
+    static var objectiveDebating: String { localized("objective.debating", fallback: "Debating") }
     static var objectiveReadingComprehension: String { localized("objective.reading.comprehension", comment: "") }
     static var objectiveWritingSkills: String { localized("objective.writing.skills", comment: "") }
-    static var subtopicsTitle: String { localized("subtopics.title", fallback: "Escolha subtópicos opcionais") }
-    static var subtopicsDescription: String { localized("subtopics.description", fallback: "Selecione áreas mais específicas dentro dos temas escolhidos. Você pode pular esta etapa.") }
-    static var subtopicsContinueButton: String { localized("subtopics.continue.button", fallback: "Continuar") }
-    static var subtopicsSkipButton: String { localized("subtopics.skip.button", fallback: "Pular por enquanto") }
-    static var contentStyleTitle: String { localized("content.style.title", fallback: "Qual estilo de conteúdo você prefere?") }
-    static var contentStyleDescription: String { localized("content.style.description", fallback: "Você pode deixar em misto ou destacar um formato favorito.") }
-    static var contentStyleContinueButton: String { localized("content.style.continue.button", fallback: "Continuar") }
-    static var professionTitle: String { localized("profession.title", fallback: "Sua profissão é opcional") }
-    static var professionDescription: String { localized("profession.description", fallback: "Isso ajuda a personalizar exemplos e contextos mais relevantes para você.") }
-    static var professionSkipButton: String { localized("profession.skip.button", fallback: "Pular") }
-    static var professionContinueButton: String { localized("profession.continue.button", fallback: "Finalizar") }
+    static var subtopicsTitle: String { localized("subtopics.title", fallback: "Optional subtopics") }
+    static var subtopicsDescription: String { localized("subtopics.description", fallback: "Select more specific areas within your chosen topics. You can skip this step.") }
+    static var subtopicsContinueButton: String { localized("subtopics.continue.button", fallback: "Continue") }
+    static var subtopicsSkipButton: String { localized("subtopics.skip.button", fallback: "Skip for now") }
+    static var contentStyleTitle: String { localized("content.style.title", fallback: "What content style do you prefer?") }
+    static var contentStyleDescription: String { localized("content.style.description", fallback: "You can keep it mixed or highlight a favorite format.") }
+    static var contentStyleContinueButton: String { localized("content.style.continue.button", fallback: "Continue") }
+    static var professionTitle: String { localized("profession.title", fallback: "Your profession is optional") }
+    static var professionDescription: String { localized("profession.description", fallback: "This helps personalize examples and contexts more relevant to you.") }
+    static var professionSkipButton: String { localized("profession.skip.button", fallback: "Skip") }
+    static var professionContinueButton: String { localized("profession.continue.button", fallback: "Finish") }
     
     static var completionTitle: String { localized("completion.title", comment: "") }
     static var completionDescription: String { localized("completion.description", comment: "") }
@@ -113,11 +113,11 @@ struct LocalizedStrings {
     static var feedReadingPause: String { localized("feed.reading.pause", comment: "") }
     static var feedReadingSpeed: String { localized("feed.reading.speed", comment: "") }
     static var feedDifficulty: String { localized("feed.difficulty", comment: "") }
-    static var feedContext: String { localized("feed.context", fallback: "Contexto") }
-    static var feedExplanation: String { localized("feed.explanation", fallback: "Por que isso é útil") }
-    static var feedDidYouKnow: String { localized("feed.did.you.know", fallback: "Você sabia?") }
-    static var feedShowDetails: String { localized("feed.show.details", fallback: "Ver mais") }
-    static var feedHideDetails: String { localized("feed.hide.details", fallback: "Ver menos") }
+    static var feedContext: String { localized("feed.context", fallback: "Context") }
+    static var feedExplanation: String { localized("feed.explanation", fallback: "Why this is useful") }
+    static var feedDidYouKnow: String { localized("feed.did.you.know", fallback: "Did you know?") }
+    static var feedShowDetails: String { localized("feed.show.details", fallback: "Show more") }
+    static var feedHideDetails: String { localized("feed.hide.details", fallback: "Show less") }
     static var feedSpeak: String { localized("feed.speak", fallback: "Speak") }
     static var feedSpeakThisReel: String { localized("feed.speak.this.reel", fallback: "Speak This Reel") }
     static var feedTabFeed: String { localized("feed.tab.feed", fallback: "FEED") }
@@ -229,10 +229,10 @@ struct LocalizedStrings {
     static var preferencesEnglishLevel: String { localized("preferences.english.level", comment: "") }
     static var preferencesNativeLanguage: String { localized("preferences.native.language", comment: "") }
     static var preferencesInterests: String { localized("preferences.interests", comment: "") }
-    static var preferencesSubtopics: String { localized("preferences.subtopics", fallback: "Subtópicos") }
+    static var preferencesSubtopics: String { localized("preferences.subtopics", fallback: "Subtopics") }
     static var preferencesObjectives: String { localized("preferences.objectives", comment: "") }
-    static var preferencesContentStyle: String { localized("preferences.content.style", fallback: "Estilo de conteúdo") }
-    static var preferencesProfession: String { localized("preferences.profession", fallback: "Profissão") }
+    static var preferencesContentStyle: String { localized("preferences.content.style", fallback: "Content style") }
+    static var preferencesProfession: String { localized("preferences.profession", fallback: "Profession") }
     static var preferencesSaveChanges: String { localized("preferences.save.changes", comment: "") }
     static var preferencesSaving: String { localized("preferences.saving", comment: "") }
     static var preferencesEditProfileTitle: String { localized("preferences.edit.profile.title", comment: "") }
@@ -318,4 +318,24 @@ struct LocalizedStrings {
     static let feedTailIdleTitle = localized("feed.tail.idle.title", comment: "")
     static let feedTailIdleDescription = localized("feed.tail.idle.description", comment: "")
     static let feedTailIdleAction = localized("feed.tail.idle.action", comment: "")
+
+    // MARK: - ManualSignUpView toggle prompt
+    static var signupNoAccountPrompt: String { localized("signup.no.account.prompt", fallback: "Don't have an account yet?") }
+
+    // MARK: - Review types
+    static var reviewTypeQuick: String { localized("review.type.quick", fallback: "Quick Review") }
+    static var reviewTypeSpeaking: String { localized("review.type.speaking", fallback: "Speaking Review") }
+    static var reviewTypeSaved: String { localized("review.type.saved", fallback: "Saved Review") }
+    static var reviewTypeVocabulary: String { localized("review.type.vocabulary", fallback: "Vocabulary Review") }
+    static var reviewTypeContextual: String { localized("review.type.contextual", fallback: "Contextual Review") }
+    static func reviewOverdueDays(_ days: Int) -> String {
+        String(format: localized("review.overdue.days", fallback: "%dd late"), days)
+    }
+
+    // MARK: - Phrase badges
+    static var phraseBadgeFact: String { localized("phrase.badge.fact", fallback: "FACT") }
+    static var phraseBadgeDialogue: String { localized("phrase.badge.dialogue", fallback: "DIALOGUE") }
+
+    // MARK: - Error
+    static var errorQuotaExceeded: String { localized("error.quota.exceeded", fallback: "Phrase generation is temporarily busy. Please try again in a few seconds.") }
 }

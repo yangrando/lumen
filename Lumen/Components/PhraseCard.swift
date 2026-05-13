@@ -27,7 +27,6 @@ struct PhraseCard: View {
     
     var body: some View {
         GeometryReader { geometry in
-            let horizontalMargin = max(20, geometry.safeAreaInsets.leading + 20)
             let trailingMargin = max(28, geometry.safeAreaInsets.trailing + 28)
             let topMargin: CGFloat = 52
             let bottomMenuBottomSpacing: CGFloat = 30
@@ -115,9 +114,7 @@ struct PhraseCard: View {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 isTranslationVisible.toggle()
                             }
-                            if !wasVisible {
-                                onTranslationOpened()
-                            }
+                            if !wasVisible { onTranslationOpened() }
                         }
                     )
                     topActionButton(
@@ -175,14 +172,14 @@ struct PhraseCard: View {
 
     private var topicBadge: some View {
         HStack(spacing: 8) {
-            badgeLabel("\(phrase.category) • \(phrase.difficulty.rawValue)", accent: Color(red: 0.19, green: 0.84, blue: 0.98))
+            badgeLabel("\(phrase.category) • \(phrase.difficulty.rawValue)", accent: LumenColors.accent)
             if let subtopic = phrase.subtopic, !subtopic.isEmpty {
-                badgeLabel(prettyLabel(subtopic), accent: .white.opacity(0.88))
+                badgeLabel(prettyLabel(subtopic), accent: LumenColors.ink200)
             }
             if phrase.isFactLike {
-                badgeLabel("FACT", accent: Color(red: 1.0, green: 0.87, blue: 0.45))
+                badgeLabel(LocalizedStrings.phraseBadgeFact, accent: LumenColors.warn)
             } else if phrase.isDialogueLike {
-                badgeLabel("DIALOGUE", accent: Color(red: 0.71, green: 0.84, blue: 1.0))
+                badgeLabel(LocalizedStrings.phraseBadgeDialogue, accent: LumenColors.info)
             }
         }
     }
@@ -204,33 +201,24 @@ struct PhraseCard: View {
                     Circle()
                         .fill(
                             isPrimary
-                            ? AnyShapeStyle(
-                                LinearGradient(
-                                    colors: [
-                                        Color(red: 0.24, green: 0.80, blue: 0.99),
-                                        Color(red: 0.47, green: 0.31, blue: 0.95)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            : AnyShapeStyle(Color(red: 0.09, green: 0.16, blue: 0.27).opacity(0.80))
+                            ? AnyShapeStyle(LinearGradient.primaryGradientDiagonal)
+                            : AnyShapeStyle(LumenColors.ink800.opacity(0.80))
                         )
                         .frame(width: 44, height: 44)
                         .overlay {
                             Circle()
-                                .stroke(Color.white.opacity(isPrimary ? 0.0 : 0.12), lineWidth: 1)
+                                .stroke(isPrimary ? Color.clear : LumenColors.ink600, lineWidth: 1)
                         }
 
                     Image(systemName: icon)
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(LumenFont.grotesk(18, weight: .semibold))
                         .foregroundStyle(.white)
                 }
 
                 Text(title.uppercased())
-                    .font(.custom("AvenirNext-DemiBold", size: 9))
+                    .font(LumenFont.mono(9, weight: .medium))
                     .tracking(1.6)
-                    .foregroundStyle(isPrimary ? Color(red: 0.19, green: 0.84, blue: 0.98) : Color.white.opacity(0.62))
+                    .foregroundStyle(isPrimary ? LumenColors.accent : LumenColors.ink300)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
@@ -274,8 +262,8 @@ struct PhraseCard: View {
     private var translationText: some View {
         ScrollView(.vertical, showsIndicators: false) {
             Text(phrase.translation)
-                .font(.custom("AvenirNext-Regular", size: 18))
-                .foregroundStyle(.white.opacity(0.92))
+                .font(LumenFont.grotesk(18))
+                .foregroundStyle(LumenColors.ink100)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
                 .shadow(color: Color.black.opacity(0.45), radius: 10, x: 0, y: 4)
@@ -291,17 +279,17 @@ struct PhraseCard: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "chevron.up.circle.fill")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(LumenFont.grotesk(14, weight: .semibold))
                 Text(LocalizedStrings.feedShowDetails)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(LumenFont.grotesk(13, weight: .semibold))
                 Spacer()
             }
-            .foregroundStyle(.white.opacity(0.9))
+            .foregroundStyle(LumenColors.ink100)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .background(
                 Capsule()
-                    .fill(Color.white.opacity(0.08))
+                    .fill(LumenColors.ink700.opacity(0.6))
             )
         }
         .buttonStyle(.plain)
@@ -318,70 +306,70 @@ struct PhraseCard: View {
                     .padding(.top, 8)
 
                 Text(phrase.text)
-                    .font(.custom("AvenirNext-Bold", size: 22))
-                    .foregroundStyle(.white)
+                    .font(LumenFont.grotesk(22, weight: .bold))
+                    .foregroundStyle(LumenColors.ink50)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if !phrase.translation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Text(phrase.translation)
-                        .font(.custom("AvenirNext-Regular", size: 16))
-                        .foregroundStyle(.white.opacity(0.78))
+                        .font(LumenFont.grotesk(16))
+                        .foregroundStyle(LumenColors.ink300)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if let context = phrase.context, !context.isEmpty {
-                    infoBlock(title: LocalizedStrings.feedContext, body: context, accent: Color(red: 0.63, green: 0.85, blue: 1.0))
+                    infoBlock(title: LocalizedStrings.feedContext, body: context, accent: LumenColors.info)
                 }
                 if let explanation = phrase.explanation, !explanation.isEmpty {
-                    infoBlock(title: LocalizedStrings.feedExplanation, body: explanation, accent: Color(red: 0.70, green: 0.93, blue: 0.82))
+                    infoBlock(title: LocalizedStrings.feedExplanation, body: explanation, accent: LumenColors.good)
                 }
                 if let didYouKnow = phrase.didYouKnow, !didYouKnow.isEmpty {
-                    infoBlock(title: LocalizedStrings.feedDidYouKnow, body: didYouKnow, accent: Color(red: 1.0, green: 0.87, blue: 0.45))
+                    infoBlock(title: LocalizedStrings.feedDidYouKnow, body: didYouKnow, accent: LumenColors.warn)
                 }
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 28)
         }
-        .background(Color(red: 0.06, green: 0.10, blue: 0.18))
+        .background(LumenColors.ink850)
     }
 
     private func infoBlock(title: String, body: String, accent: Color) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title.uppercased())
-                .font(.custom("AvenirNext-DemiBold", size: 10))
+                .font(LumenFont.mono(10, weight: .medium))
                 .tracking(1.6)
                 .foregroundStyle(accent)
             Text(body)
-                .font(.custom("AvenirNext-Regular", size: 15))
-                .foregroundStyle(.white.opacity(0.93))
+                .font(LumenFont.grotesk(15))
+                .foregroundStyle(LumenColors.ink100)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(red: 0.08, green: 0.13, blue: 0.22).opacity(0.72))
+                .fill(LumenColors.ink800.opacity(0.88))
         )
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                .stroke(LumenColors.ink700, lineWidth: 1)
         }
     }
 
     private func badgeLabel(_ text: String, accent: Color) -> some View {
         Text(text)
-            .font(.custom("AvenirNext-Bold", size: 12))
+            .font(LumenFont.mono(12, weight: .medium))
             .foregroundStyle(accent)
             .multilineTextAlignment(.leading)
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
             .background(
                 Capsule()
-                    .fill(Color(red: 0.09, green: 0.16, blue: 0.27).opacity(editorialStyle == .glass ? 0.78 : 0.88))
+                    .fill(LumenColors.ink800.opacity(editorialStyle == .glass ? 0.78 : 0.88))
             )
             .overlay {
                 Capsule()
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    .stroke(LumenColors.ink600, lineWidth: 1)
             }
             .shadow(color: Color.black.opacity(0.10), radius: 8, x: 0, y: 4)
     }
@@ -399,22 +387,22 @@ struct PhraseCard: View {
             VStack(spacing: 8) {
                 ZStack {
                     Circle()
-                        .fill(Color(red: 0.11, green: 0.21, blue: 0.35).opacity(0.82))
+                        .fill(LumenColors.ink800.opacity(0.88))
                         .frame(width: 52, height: 52)
                         .overlay {
                             Circle()
-                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                .stroke(LumenColors.ink600, lineWidth: 1)
                         }
 
                     Image(systemName: localIsSaved ? "heart.fill" : "heart")
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(LumenFont.grotesk(20, weight: .semibold))
                         .foregroundStyle(.white)
                 }
 
                 Text((localIsSaved ? LocalizedStrings.feedUnsaveButton : LocalizedStrings.feedSaveButton).uppercased())
-                    .font(.custom("AvenirNext-DemiBold", size: 10))
+                    .font(LumenFont.mono(10, weight: .medium))
                     .tracking(2.1)
-                    .foregroundStyle(.white.opacity(0.82))
+                    .foregroundStyle(LumenColors.ink300)
             }
         }
         .buttonStyle(.plain)

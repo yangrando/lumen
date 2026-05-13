@@ -295,3 +295,48 @@
 "reel.progress.label" = "Progress:";
 "reel.completed" = "Reel completed";
 "interests.hint" = "Lumen AI will use these topics to generate contextual English phrases based on what you like.";
+
+// MARK: - Objectives (extended)
+"objective.understand.podcasts" = "Comprendre les podcasts";
+"objective.professional.presentations" = "Présentations professionnelles";
+"objective.job.interviews" = "Entretiens d'embauche";
+"objective.airport.conversations" = "Conversations à l'aéroport";
+"objective.hotel.interactions" = "Interactions à l'hôtel";
+"objective.making.friends" = "Se faire des amis";
+"objective.improve.pronunciation" = "Améliorer la prononciation";
+"objective.writing.emails" = "Écrire des e-mails";
+"objective.writing.messages" = "Écrire des messages";
+"objective.academic.english" = "Anglais académique";
+"objective.storytelling" = "Raconter des histoires";
+"objective.debating" = "Débattre";
+"subtopics.title" = "Sous-thèmes optionnels";
+"subtopics.description" = "Sélectionnez des domaines plus spécifiques dans vos thèmes choisis. Vous pouvez ignorer cette étape.";
+"subtopics.continue.button" = "Continuer";
+"subtopics.skip.button" = "Passer pour l'instant";
+"content.style.title" = "Quel style de contenu préférez-vous ?";
+"content.style.description" = "Vous pouvez laisser en mixte ou mettre en avant un format préféré.";
+"content.style.continue.button" = "Continuer";
+"profession.title" = "Votre profession est optionnelle";
+"profession.description" = "Cela aide à personnaliser des exemples et contextes plus pertinents pour vous.";
+"profession.skip.button" = "Ignorer";
+"profession.continue.button" = "Terminer";
+"preferences.subtopics" = "Sous-thèmes";
+"preferences.content.style" = "Style de contenu";
+"preferences.profession" = "Profession";
+"feed.context" = "Contexte";
+"feed.explanation" = "Pourquoi c'est utile";
+"feed.did.you.know" = "Le saviez-vous ?";
+"feed.show.details" = "Voir plus";
+"feed.hide.details" = "Voir moins";
+"signup.no.account.prompt" = "Vous n'avez pas encore de compte ?";
+"review.type.quick" = "Révision rapide";
+"review.type.speaking" = "Révision orale";
+"review.type.saved" = "Révision des sauvegardés";
+"review.type.vocabulary" = "Révision de vocabulaire";
+"review.type.contextual" = "Révision contextuelle";
+"review.overdue.days" = "%dj de retard";
+"phrase.badge.fact" = "FAIT";
+"phrase.badge.dialogue" = "DIALOGUE";
+
+// MARK: - Error
+"error.quota.exceeded" = "La génération de phrases est temporairement occupée. Veuillez réessayer dans quelques secondes.";

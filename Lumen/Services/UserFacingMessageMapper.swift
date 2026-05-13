@@ -13,14 +13,30 @@ enum UserFacingMessageMapper {
             }
         }
 
-        if let serviceError = error as? AIServiceError {
-            switch serviceError {
+        if let lumenError = error as? LumenError {
+            switch lumenError {
             case .unauthenticated:
                 return LocalizedStrings.commonErrorUnauthenticated
-            case .networkError(let message), .decodingError(let message):
-                return normalizeBackendMessage(message)
+            case .timeout:
+                return LocalizedStrings.commonErrorTimeout
+            case .network(let message):
+                return message.map { normalizeBackendMessage($0) } ?? LocalizedStrings.commonErrorConnection
+            case .decoding:
+                return LocalizedStrings.commonErrorGeneric
             case .invalidAPIKey:
                 return LocalizedStrings.commonErrorGeneric
+            case .appleTokenUnavailable:
+                return LocalizedStrings.authAppleTokenUnavailable
+            case .googleNotConfigured:
+                return LocalizedStrings.authGoogleNotConfigured
+            case .googleAuthFailed:
+                return LocalizedStrings.authGoogleFailed
+            case .userCancelled:
+                return LocalizedStrings.authCancelled
+            case .backgroundUnavailable, .invalidBackgroundURL:
+                return LocalizedStrings.commonErrorGeneric
+            case .generic(let message):
+                return message ?? LocalizedStrings.commonErrorGeneric
             }
         }
 
@@ -54,13 +70,13 @@ enum UserFacingMessageMapper {
             return LocalizedStrings.commonErrorConnection
         }
         if lowered.contains("quota") || lowered.contains("resource_exhausted") || lowered.contains("rate limit") || lowered.contains("retry in") {
-            return "Phrase generation is temporarily busy. Please try again in a few seconds."
+            return LocalizedStrings.errorQuotaExceeded
         }
         if lowered.hasPrefix("network error:") {
             let cleaned = trimmed.replacingOccurrences(of: "Network Error:", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
             let cleanedLowered = cleaned.lowercased()
             if cleanedLowered.contains("quota") || cleanedLowered.contains("resource_exhausted") || cleanedLowered.contains("rate limit") || cleanedLowered.contains("retry in") {
-                return "Phrase generation is temporarily busy. Please try again in a few seconds."
+                return LocalizedStrings.errorQuotaExceeded
             }
             return cleaned.isEmpty ? LocalizedStrings.commonErrorGeneric : cleaned
         }

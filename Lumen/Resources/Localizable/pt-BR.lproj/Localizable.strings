@@ -296,3 +296,60 @@
 "reel.progress.label" = "Progresso:";
 "reel.completed" = "Reel concluído";
 "interests.hint" = "A IA do Lumen vai usar esses temas para gerar frases em inglês contextualizadas com o que você gosta.";
+
+// MARK: - Objectives (extended)
+"objective.understand.podcasts" = "Entender podcasts";
+"objective.professional.presentations" = "Apresentações profissionais";
+"objective.job.interviews" = "Entrevistas de emprego";
+"objective.airport.conversations" = "Conversas no aeroporto";
+"objective.hotel.interactions" = "Interações no hotel";
+"objective.making.friends" = "Fazer amizades";
+"objective.improve.pronunciation" = "Melhorar pronúncia";
+"objective.writing.emails" = "Escrever e-mails";
+"objective.writing.messages" = "Escrever mensagens";
+"objective.academic.english" = "Inglês acadêmico";
+"objective.storytelling" = "Contar histórias";
+"objective.debating" = "Debater";
+
+// MARK: - Subtopics / Content style / Profession screens
+"subtopics.title" = "Subtópicos opcionais";
+"subtopics.description" = "Selecione áreas mais específicas dentro dos temas escolhidos. Você pode pular esta etapa.";
+"subtopics.continue.button" = "Continuar";
+"subtopics.skip.button" = "Pular por enquanto";
+"content.style.title" = "Qual estilo de conteúdo você prefere?";
+"content.style.description" = "Você pode deixar em misto ou destacar um formato favorito.";
+"content.style.continue.button" = "Continuar";
+"profession.title" = "Sua profissão é opcional";
+"profession.description" = "Isso ajuda a personalizar exemplos e contextos mais relevantes para você.";
+"profession.skip.button" = "Pular";
+"profession.continue.button" = "Finalizar";
+
+// MARK: - Preferences labels
+"preferences.subtopics" = "Subtópicos";
+"preferences.content.style" = "Estilo de conteúdo";
+"preferences.profession" = "Profissão";
+
+// MARK: - Feed detail labels
+"feed.context" = "Contexto";
+"feed.explanation" = "Por que isso é útil";
+"feed.did.you.know" = "Você sabia?";
+"feed.show.details" = "Ver mais";
+"feed.hide.details" = "Ver menos";
+
+// MARK: - Manual signup toggle
+"signup.no.account.prompt" = "Ainda não tem conta?";
+
+// MARK: - Review types
+"review.type.quick" = "Revisão Rápida";
+"review.type.speaking" = "Revisão de Fala";
+"review.type.saved" = "Revisão de Salvos";
+"review.type.vocabulary" = "Revisão de Vocabulário";
+"review.type.contextual" = "Revisão Contextual";
+"review.overdue.days" = "%dd atrasado";
+
+// MARK: - Phrase badges
+"phrase.badge.fact" = "FATO";
+"phrase.badge.dialogue" = "DIÁLOGO";
+
+// MARK: - Error
+"error.quota.exceeded" = "A geração de frases está temporariamente ocupada. Tente novamente em alguns segundos.";

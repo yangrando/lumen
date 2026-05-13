@@ -15,7 +15,7 @@ struct ChipSelectionGrid<Item: Identifiable & Hashable>: View {
                             onToggle(item)
                         } label: {
                             Text(title(item))
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(LumenFont.grotesk(12, weight: .semibold))
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.85)
                                 .padding(.horizontal, 12)

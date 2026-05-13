@@ -94,7 +94,7 @@ final class SpeakingPracticeService {
         timeZoneIdentifier: String = TimeZone.current.identifier
     ) async throws -> SpeakingAttempt {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid speaking base URL")
+            throw LumenError.network()
         }
 
         let url = base
@@ -134,7 +134,7 @@ final class SpeakingPracticeService {
             if let http = response as? HTTPURLResponse {
                 logger.logAPIResponse(statusCode: http.statusCode, body: String(data: data, encoding: .utf8))
             }
-            throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Failed to analyze speaking attempt")
+            throw LumenError.network(Self.extractBackendErrorDetail(from: data))
         }
 
         logger.logAPIResponse(
@@ -199,7 +199,7 @@ final class SpeakingPracticeService {
             logger.warning("Speaking analyze waiting for audio file readiness attempt=\(attempt + 1) path=\(url.lastPathComponent)")
             try await Task.sleep(for: .milliseconds(150))
         }
-        throw AIServiceError.networkError("Recorded audio file is not ready yet")
+        throw LumenError.network()
     }
 
     func fetchHistory(
@@ -207,7 +207,7 @@ final class SpeakingPracticeService {
         limit: Int = 20
     ) async throws -> SpeakingHistoryResponse {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid speaking base URL")
+            throw LumenError.network()
         }
 
         var components = URLComponents(
@@ -217,7 +217,7 @@ final class SpeakingPracticeService {
         components?.queryItems = [URLQueryItem(name: "limit", value: String(limit))]
 
         guard let url = components?.url else {
-            throw AIServiceError.networkError("Invalid speaking history URL")
+            throw LumenError.network()
         }
 
         var request = URLRequest(url: url)
@@ -226,7 +226,7 @@ final class SpeakingPracticeService {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Failed to load speaking history")
+            throw LumenError.network(Self.extractBackendErrorDetail(from: data))
         }
 
         return try JSONDecoder().decode(SpeakingHistoryResponse.self, from: data)

@@ -8,9 +8,9 @@ struct LumenNavigationBackButton: ToolbarContent {
             Button(action: action) {
                 ZStack {
                     Circle()
-                        .fill(Color(red: 0.11, green: 0.18, blue: 0.31).opacity(0.94))
+                        .fill(LumenColors.ink800.opacity(0.94))
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .bold))
+                        .font(LumenFont.grotesk(20, weight: .bold))
                         .foregroundStyle(.white)
                 }
                 .frame(width: 48, height: 48)

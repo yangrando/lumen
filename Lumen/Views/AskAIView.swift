@@ -26,16 +26,16 @@ struct AskAIView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         Text(LocalizedStrings.askAITitle)
-                            .font(.system(size: 28, weight: .bold))
+                            .font(LumenFont.grotesk(28, weight: .bold))
                             .foregroundStyle(.white)
 
                         Text(LocalizedStrings.askAISubtitle)
-                            .font(.system(size: 14, weight: .regular))
+                            .font(LumenFont.grotesk(14))
                             .foregroundStyle(LumenColors.textSecondary)
 
                         VStack(alignment: .leading, spacing: 8) {
                             Text(phrase.text)
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(LumenFont.grotesk(16, weight: .semibold))
                                 .foregroundStyle(.white)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -47,7 +47,7 @@ struct AskAIView: View {
                         ZStack(alignment: .topLeading) {
                             if question.isEmpty {
                                 Text(LocalizedStrings.askAIPlaceholder)
-                                    .font(.system(size: 16))
+                                    .font(LumenFont.grotesk(16))
                                     .foregroundStyle(LumenColors.textSecondary)
                                     .padding(.top, 12)
                                     .padding(.leading, 10)
@@ -85,7 +85,7 @@ struct AskAIView: View {
                                     Image(systemName: speechService.isRecording ? "stop.circle.fill" : "mic.fill")
                                     Text(speechService.isRecording ? LocalizedStrings.askAIStopRecord : LocalizedStrings.askAIRecord)
                                 }
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(LumenFont.grotesk(14, weight: .semibold))
                                 .padding(.horizontal, 14)
                                 .frame(height: 42)
                                 .foregroundStyle(.white)
@@ -101,7 +101,7 @@ struct AskAIView: View {
                                     Image(systemName: "paperplane.fill")
                                     Text(isLoading ? LocalizedStrings.askAIThinking : LocalizedStrings.askAISend)
                                 }
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(LumenFont.grotesk(14, weight: .semibold))
                                 .padding(.horizontal, 14)
                                 .frame(height: 42)
                                 .foregroundStyle(.white)
@@ -113,24 +113,24 @@ struct AskAIView: View {
 
                         if let validationError, !validationError.isEmpty {
                             Text(validationError)
-                                .font(.system(size: 13, weight: .medium))
+                                .font(LumenFont.grotesk(13, weight: .medium))
                                 .foregroundStyle(.red.opacity(0.95))
                         }
 
                         if let speechError = speechService.errorMessage, !speechError.isEmpty {
                             Text(speechError)
-                                .font(.system(size: 13, weight: .medium))
+                                .font(LumenFont.grotesk(13, weight: .medium))
                                 .foregroundStyle(.red.opacity(0.95))
                         }
 
                         if !answer.isEmpty {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text(LocalizedStrings.feedAIFeedback)
-                                    .font(.system(size: 15, weight: .semibold))
+                                    .font(LumenFont.grotesk(15, weight: .semibold))
                                     .foregroundStyle(.white)
 
                                 Text(answer)
-                                    .font(.system(size: 15, weight: .regular))
+                                    .font(LumenFont.grotesk(15))
                                     .foregroundStyle(.white.opacity(0.95))
                                     .fixedSize(horizontal: false, vertical: true)
                             }

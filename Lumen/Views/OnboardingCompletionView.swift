@@ -23,16 +23,8 @@ struct OnboardingCompletionView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.03, green: 0.07, blue: 0.14),
-                    Color(red: 0.04, green: 0.09, blue: 0.17),
-                    Color(red: 0.02, green: 0.06, blue: 0.13)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            LumenColors.ink900
+                .ignoresSafeArea()
 
             VStack(spacing: 28) {
                 Spacer()
@@ -48,19 +40,16 @@ struct OnboardingCompletionView: View {
                         .stroke(Color.white.opacity(0.08), lineWidth: 1)
                         .frame(width: 132, height: 132)
 
-                    Image("LumenLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 72, height: 72)
+                    LumenMark(size: 72, color: LumenColors.accent, glowEnabled: true)
                 }
 
                 VStack(spacing: 12) {
                     Text(LocalizedStrings.onboardingCompletionTitle)
-                        .font(.system(size: 30, weight: .bold))
+                        .font(LumenFont.grotesk(30, weight: .bold))
                         .foregroundStyle(.white)
 
                     Text(LocalizedStrings.onboardingCompletionDescription)
-                        .font(.system(size: 16, weight: .medium))
+                        .font(LumenFont.grotesk(16, weight: .medium))
                         .foregroundStyle(LumenColors.textSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 28)
@@ -107,12 +96,12 @@ struct OnboardingCompletionView: View {
                     .frame(width: 32, height: 32)
 
                 Image(systemName: isActive ? "checkmark" : "circle.fill")
-                    .font(.system(size: isActive ? 13 : 8, weight: .bold))
+                    .font(LumenFont.grotesk(isActive ? 13 : 8, weight: .bold))
                     .foregroundStyle(.white)
             }
 
             Text(title)
-                .font(.system(size: 15, weight: .semibold))
+                .font(LumenFont.grotesk(15, weight: .semibold))
                 .foregroundStyle(isActive ? .white : LumenColors.textSecondary)
 
             Spacer()

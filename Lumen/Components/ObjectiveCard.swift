@@ -14,13 +14,13 @@ struct ObjectiveCard: View {
                         .frame(width: 44, height: 44)
 
                     Image(systemName: objective.icon)
-                        .font(.system(size: 19, weight: .semibold))
+                        .font(LumenFont.grotesk(19, weight: .semibold))
                         .foregroundStyle(.white.opacity(isSelected ? 0.95 : 0.82))
                 }
 
                 Text(objective.displayTitle)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.96))
+                    .font(LumenFont.grotesk(16, weight: .semibold))
+                    .foregroundStyle(LumenColors.ink100)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -28,19 +28,19 @@ struct ObjectiveCard: View {
                     Circle()
                         .stroke(
                             isSelected
-                            ? LumenColors.gradientStart.opacity(0.95)
-                            : Color(red: 0.28, green: 0.34, blue: 0.44),
+                            ? LumenColors.accent
+                            : LumenColors.ink500,
                             lineWidth: 2
                         )
                         .frame(width: 24, height: 24)
 
                     if isSelected {
                         Circle()
-                            .fill(LumenColors.gradientStart.opacity(0.92))
+                            .fill(LumenColors.accent)
                             .frame(width: 24, height: 24)
 
                         Image(systemName: "checkmark")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(LumenFont.grotesk(11, weight: .bold))
                             .foregroundStyle(.white)
                     }
                 }
@@ -77,16 +77,13 @@ struct ObjectiveCard: View {
         if isSelected {
             return AnyShapeStyle(
                 LinearGradient(
-                    colors: [
-                        Color(red: 0.12, green: 0.20, blue: 0.36),
-                        Color(red: 0.18, green: 0.24, blue: 0.42)
-                    ],
+                    colors: [LumenColors.ink700, LumenColors.ink600],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             )
         }
 
-        return AnyShapeStyle(Color(red: 0.12, green: 0.16, blue: 0.23))
+        return AnyShapeStyle(LumenColors.ink800)
     }
 }

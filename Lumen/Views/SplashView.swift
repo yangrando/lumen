@@ -16,18 +16,13 @@ struct SplashView: View {
                 .blur(radius: 48)
                 .opacity(glowOpacity)
 
-            VStack(spacing: 14) {
-                Image("LumenLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 96, height: 96)
+            VStack(spacing: 20) {
+                LumenMark(size: 96, color: LumenColors.accent, glowEnabled: true)
                     .scaleEffect(logoScale)
                     .opacity(logoOpacity)
-                    .shadow(color: LumenColors.gradientEnd.opacity(0.38), radius: 18, y: 8)
 
-                Text(LocalizedStrings.appName)
-                    .font(.system(size: 38, weight: .bold))
-                    .foregroundStyle(.white.opacity(logoOpacity))
+                LumenWordmark(size: 38, color: LumenColors.ink50, accent: LumenColors.accent)
+                    .opacity(logoOpacity)
             }
         }
         .onAppear {

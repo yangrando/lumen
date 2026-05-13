@@ -16,7 +16,7 @@ struct InterestCard: View {
                             .stroke(
                                 isSelected
                                 ? Color.white.opacity(0.18)
-                                : Color(red: 0.30, green: 0.36, blue: 0.47),
+                                : LumenColors.ink500,
                                 lineWidth: 3
                             )
                             .frame(width: 25, height: 25)
@@ -27,7 +27,7 @@ struct InterestCard: View {
                                 .frame(width: 25, height: 25)
 
                             Image(systemName: "checkmark")
-                                .font(.system(size: 11, weight: .bold))
+                                .font(LumenFont.grotesk(11, weight: .bold))
                                 .foregroundStyle(.white)
                         }
                     }
@@ -43,7 +43,7 @@ struct InterestCard: View {
                             .frame(width: 72, height: 72)
 
                         Image(systemName: interest.icon)
-                            .font(.system(size: 30, weight: .semibold))
+                            .font(LumenFont.grotesk(30, weight: .semibold))
                             .foregroundStyle(.white.opacity(isSelected ? 0.96 : 0.82))
                     }
                     Spacer()
@@ -53,8 +53,8 @@ struct InterestCard: View {
 
                 VStack(alignment: .leading, spacing: 0) {
                     Text(interest.displayTitle)
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(.white.opacity(isSelected ? 1 : 0.92))
+                        .font(LumenFont.grotesk(17, weight: .bold))
+                        .foregroundStyle(isSelected ? LumenColors.ink900 : LumenColors.ink100)
                         .lineLimit(2)
                         .minimumScaleFactor(0.9)
                 }
@@ -68,7 +68,7 @@ struct InterestCard: View {
             .overlay {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .stroke(
-                        isSelected ? Color.white.opacity(0.18) : Color.white.opacity(0.08),
+                        isSelected ? LumenColors.accentGlow : LumenColors.ink600,
                         lineWidth: 1
                     )
             }
@@ -91,9 +91,9 @@ struct InterestCard: View {
             return AnyShapeStyle(
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        LumenColors.gradientStart.opacity(0.96),
-                        Color(red: 0.34, green: 0.52, blue: 0.95),
-                        LumenColors.gradientEnd.opacity(0.95)
+                        LumenColors.accent.opacity(0.85),
+                        LumenColors.info.opacity(0.7),
+                        LumenColors.accent.opacity(0.80)
                     ]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -101,6 +101,6 @@ struct InterestCard: View {
             )
         }
 
-        return AnyShapeStyle(Color(red: 0.14, green: 0.18, blue: 0.27))
+        return AnyShapeStyle(LumenColors.ink800)
     }
 }

@@ -10,13 +10,13 @@ struct GlassButton: View {
         Button(action: action) {
             HStack {
                 Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(LumenFont.grotesk(18, weight: .semibold))
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold, design: .default))
+                    .font(LumenFont.grotesk(16, weight: .semibold))
             }
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .foregroundStyle(.white)
+            .foregroundStyle(LumenColors.ink50)
             .background(.ultraThinMaterial)
             .clipShape(Capsule())
         }
@@ -33,13 +33,13 @@ struct GradientButton: View {
         Button(action: action) {
             HStack {
                 Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(LumenFont.grotesk(18, weight: .semibold))
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold, design: .default))
+                    .font(LumenFont.grotesk(16, weight: .semibold))
             }
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .foregroundStyle(.white)
+            .foregroundStyle(LumenColors.ink900)
             .background(LinearGradient.primaryGradient)
             .clipShape(Capsule())
             .shadow(color: LumenColors.gradientEnd.opacity(0.3), radius: 10, y: 5)

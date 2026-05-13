@@ -295,3 +295,48 @@
 "reel.progress.label" = "Progress:";
 "reel.completed" = "Reel completed";
 "interests.hint" = "Lumen AI will use these topics to generate contextual English phrases based on what you like.";
+
+// MARK: - Objectives (extended)
+"objective.understand.podcasts" = "ポッドキャストを理解する";
+"objective.professional.presentations" = "プロフェッショナルなプレゼン";
+"objective.job.interviews" = "就職面接";
+"objective.airport.conversations" = "空港での会話";
+"objective.hotel.interactions" = "ホテルでのやり取り";
+"objective.making.friends" = "友達を作る";
+"objective.improve.pronunciation" = "発音を改善する";
+"objective.writing.emails" = "メールを書く";
+"objective.writing.messages" = "メッセージを書く";
+"objective.academic.english" = "アカデミック英語";
+"objective.storytelling" = "ストーリーテリング";
+"objective.debating" = "ディベート";
+"subtopics.title" = "任意のサブトピック";
+"subtopics.description" = "選択したトピック内のより具体的な分野を選択してください。このステップはスキップできます。";
+"subtopics.continue.button" = "続ける";
+"subtopics.skip.button" = "今はスキップ";
+"content.style.title" = "どのコンテンツスタイルが好みですか？";
+"content.style.description" = "ミックスのままにするか、お気に入りのフォーマットを強調できます。";
+"content.style.continue.button" = "続ける";
+"profession.title" = "職業は任意です";
+"profession.description" = "あなたに最も関連するサンプルとコンテキストをパーソナライズするのに役立ちます。";
+"profession.skip.button" = "スキップ";
+"profession.continue.button" = "完了";
+"preferences.subtopics" = "サブトピック";
+"preferences.content.style" = "コンテンツスタイル";
+"preferences.profession" = "職業";
+"feed.context" = "コンテキスト";
+"feed.explanation" = "なぜ役立つか";
+"feed.did.you.know" = "ご存知でしたか？";
+"feed.show.details" = "もっと見る";
+"feed.hide.details" = "少なく見る";
+"signup.no.account.prompt" = "まだアカウントをお持ちでないですか？";
+"review.type.quick" = "クイック復習";
+"review.type.speaking" = "スピーキング復習";
+"review.type.saved" = "保存済み復習";
+"review.type.vocabulary" = "語彙復習";
+"review.type.contextual" = "コンテキスト復習";
+"review.overdue.days" = "%d日遅れ";
+"phrase.badge.fact" = "ファクト";
+"phrase.badge.dialogue" = "ダイアログ";
+
+// MARK: - Error
+"error.quota.exceeded" = "フレーズの生成は一時的にビジー状態です。数秒後にもう一度お試しください。";

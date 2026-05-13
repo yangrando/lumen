@@ -169,14 +169,14 @@ final class ReviewService {
         }
 
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid review base URL")
+            throw LumenError.network()
         }
 
         var components = URLComponents(url: base.appendingPathComponent("v1").appendingPathComponent("review").appendingPathComponent("today"), resolvingAgainstBaseURL: false)
         components?.queryItems = [URLQueryItem(name: "tz", value: timeZoneIdentifier)]
 
         guard let url = components?.url else {
-            throw AIServiceError.networkError("Invalid review URL")
+            throw LumenError.network()
         }
 
         var request = URLRequest(url: url)
@@ -186,7 +186,7 @@ final class ReviewService {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Failed to load review queue")
+            throw LumenError.network(Self.extractBackendErrorDetail(from: data))
         }
 
         return try JSONDecoder().decode(ReviewTodayResponse.self, from: data)
@@ -200,7 +200,7 @@ final class ReviewService {
         timeZoneIdentifier: String = TimeZone.current.identifier
     ) async throws -> ReviewResultResponse {
         guard let base = apiBaseURL else {
-            throw AIServiceError.networkError("Invalid review base URL")
+            throw LumenError.network()
         }
 
         let url = base
@@ -220,7 +220,7 @@ final class ReviewService {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw AIServiceError.networkError(Self.extractBackendErrorDetail(from: data) ?? "Failed to submit review result")
+            throw LumenError.network(Self.extractBackendErrorDetail(from: data))
         }
 
         return try JSONDecoder().decode(ReviewResultResponse.self, from: data)

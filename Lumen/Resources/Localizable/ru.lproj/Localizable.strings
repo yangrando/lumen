@@ -295,3 +295,48 @@
 "reel.progress.label" = "Progress:";
 "reel.completed" = "Reel completed";
 "interests.hint" = "Lumen AI will use these topics to generate contextual English phrases based on what you like.";
+
+// MARK: - Objectives (extended)
+"objective.understand.podcasts" = "Понимать подкасты";
+"objective.professional.presentations" = "Профессиональные презентации";
+"objective.job.interviews" = "Собеседования";
+"objective.airport.conversations" = "Разговоры в аэропорту";
+"objective.hotel.interactions" = "Общение в отеле";
+"objective.making.friends" = "Заводить друзей";
+"objective.improve.pronunciation" = "Улучшить произношение";
+"objective.writing.emails" = "Писать электронные письма";
+"objective.writing.messages" = "Писать сообщения";
+"objective.academic.english" = "Академический английский";
+"objective.storytelling" = "Рассказывать истории";
+"objective.debating" = "Дебатировать";
+"subtopics.title" = "Необязательные подтемы";
+"subtopics.description" = "Выберите более конкретные области в выбранных темах. Вы можете пропустить этот шаг.";
+"subtopics.continue.button" = "Продолжить";
+"subtopics.skip.button" = "Пропустить пока";
+"content.style.title" = "Какой стиль контента вы предпочитаете?";
+"content.style.description" = "Вы можете оставить смешанный или выделить предпочитаемый формат.";
+"content.style.continue.button" = "Продолжить";
+"profession.title" = "Ваша профессия не обязательна";
+"profession.description" = "Это помогает персонализировать примеры и контексты, наиболее актуальные для вас.";
+"profession.skip.button" = "Пропустить";
+"profession.continue.button" = "Завершить";
+"preferences.subtopics" = "Подтемы";
+"preferences.content.style" = "Стиль контента";
+"preferences.profession" = "Профессия";
+"feed.context" = "Контекст";
+"feed.explanation" = "Почему это полезно";
+"feed.did.you.know" = "Знали ли вы?";
+"feed.show.details" = "Показать больше";
+"feed.hide.details" = "Показать меньше";
+"signup.no.account.prompt" = "Ещё нет аккаунта?";
+"review.type.quick" = "Быстрое повторение";
+"review.type.speaking" = "Разговорное повторение";
+"review.type.saved" = "Повторение сохранённого";
+"review.type.vocabulary" = "Повторение лексики";
+"review.type.contextual" = "Контекстное повторение";
+"review.overdue.days" = "просрочено %dд";
+"phrase.badge.fact" = "ФАКТ";
+"phrase.badge.dialogue" = "ДИАЛОГ";
+
+// MARK: - Error
+"error.quota.exceeded" = "Генерация фраз временно перегружена. Пожалуйста, повторите попытку через несколько секунд.";
