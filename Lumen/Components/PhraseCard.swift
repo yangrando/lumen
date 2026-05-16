@@ -64,16 +64,29 @@ struct PhraseCard: View {
                     .ignoresSafeArea()
                 }
 
+                // ── Cinematic 4-stop gradient overlay ──────────────────
                 LinearGradient(
-                    colors: [
-                        Color.black.opacity(0.42),
-                        Color.black.opacity(0.10),
-                        Color.black.opacity(0.38)
+                    stops: [
+                        .init(color: .black.opacity(0.58), location: 0.00),
+                        .init(color: .black.opacity(0.10), location: 0.30),
+                        .init(color: .black.opacity(0.06), location: 0.62),
+                        .init(color: .black.opacity(0.78), location: 1.00),
                     ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
                 .ignoresSafeArea()
+
+                // ── Decorative oversized quote mark ─────────────────────
+                Text("\u{201C}")
+                    .font(.system(size: 280, weight: .black, design: .serif))
+                    .foregroundStyle(Color.white.opacity(0.04))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .offset(
+                        x: -geometry.size.width * 0.18,
+                        y: -geometry.size.height * 0.06
+                    )
+                    .allowsHitTesting(false)
 
                 VStack(spacing: 0) {
                     VStack(spacing: 20) {
@@ -251,7 +264,7 @@ struct PhraseCard: View {
             .id("manual-\(phrase.id.uuidString)")
             .frame(maxWidth: .infinity, alignment: .center)
             .frame(minHeight: minHeight, alignment: .center)
-            .shadow(color: Color.black.opacity(0.60), radius: 16, x: 0, y: 8)
+            .shadow(color: Color.black.opacity(0.72), radius: 22, x: 0, y: 10)
         }
         .id("manual-scroll-\(phrase.id.uuidString)")
         .frame(width: textWidth)
@@ -266,7 +279,7 @@ struct PhraseCard: View {
                 .foregroundStyle(LumenColors.ink100)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
-                .shadow(color: Color.black.opacity(0.45), radius: 10, x: 0, y: 4)
+                .shadow(color: Color.black.opacity(0.55), radius: 14, x: 0, y: 5)
         }
         .frame(maxWidth: 560, maxHeight: 132)
         .transition(.opacity.combined(with: .move(edge: .bottom)))
