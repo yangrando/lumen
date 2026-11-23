@@ -1,10 +1,18 @@
 import Foundation
 import Combine
 
+enum AnalysisPhase: Equatable {
+    case idle
+    case uploading   // audio bytes in transit
+    case analyzing   // server transcribing + scoring
+    case retrying    // first attempt timed out, retrying automatically
+}
+
 @MainActor
 final class SpeakingPracticeViewModel: ObservableObject {
     @Published private(set) var isRecording = false
     @Published private(set) var isUploading = false
+    @Published private(set) var analysisPhase: AnalysisPhase = .idle
     @Published private(set) var elapsedSeconds: TimeInterval = 0
     @Published private(set) var attempt: SpeakingAttempt?
     @Published var errorMessage: String?
@@ -19,6 +27,7 @@ final class SpeakingPracticeViewModel: ObservableObject {
     private var latestRecordedFileURL: URL?
     private var currentAttemptID = UUID().uuidString.lowercased()
     private var analysisTask: Task<SpeakingAttempt, Error>?
+    private var phaseTask: Task<Void, Never>?
 
     init(accessToken: String, targetText: String, reelID: String?, reviewItemID: Int?) {
         self.accessToken = accessToken
@@ -66,42 +75,37 @@ final class SpeakingPracticeViewModel: ObservableObject {
         }
 
         isUploading = true
+        analysisPhase = .uploading
         let submittedAttemptID = currentAttemptID
 
-        do {
-            let task = Task {
-                try await SpeakingPracticeService.shared.analyze(
-                    accessToken: accessToken,
-                    audioFileURL: fileURL,
-                    mode: .repeatExactly,
-                    targetText: targetText,
-                    reelID: reelID,
-                    reviewItemID: reviewItemID,
-                    durationSeconds: elapsedSeconds,
-                    clientAttemptID: submittedAttemptID
-                )
-            }
-            analysisTask = task
+        // Switch phase label after estimated upload window (5 s).
+        // Files are now ~70 % smaller (16 kHz/32 kbps), so upload is fast;
+        // remaining wait is server transcription + scoring.
+        phaseTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(5))
+            guard let self, self.isUploading else { return }
+            self.analysisPhase = .analyzing
+        }
 
-            let response = try await task.value
-            analysisTask = nil
-            isUploading = false
+        do {
+            let response = try await runAnalysisWithRetry(
+                fileURL: fileURL,
+                attemptID: submittedAttemptID
+            )
+            finishUploading()
             attempt = response
             NotificationCenter.default.post(name: .progressOverviewShouldRefresh, object: nil)
             return response
         } catch is CancellationError {
             if analysisTask?.isCancelled == true {
-                analysisTask = nil
-                isUploading = false
+                finishUploading()
                 return nil
             }
-            analysisTask = nil
-            isUploading = false
+            finishUploading()
             errorMessage = LocalizedStrings.speakingRequestTimedOut
             return nil
         } catch {
-            analysisTask = nil
-            isUploading = false
+            finishUploading()
             if let urlError = error as? URLError, urlError.code == .timedOut {
                 errorMessage = LocalizedStrings.speakingRequestTimedOut
             } else {
@@ -129,9 +133,79 @@ final class SpeakingPracticeViewModel: ObservableObject {
         errorMessage = nil
     }
 
+    // MARK: - Private
+
+    /// Runs the analysis request and retries once automatically if the server times out.
+    /// The second attempt uses a fresh `clientAttemptID` and waits 3 s so the server
+    /// can shed load before retrying.
+    private func runAnalysisWithRetry(fileURL: URL, attemptID: String) async throws -> SpeakingAttempt {
+        do {
+            let task = Task {
+                try await SpeakingPracticeService.shared.analyze(
+                    accessToken: accessToken,
+                    audioFileURL: fileURL,
+                    mode: .repeatExactly,
+                    targetText: targetText,
+                    reelID: reelID,
+                    reviewItemID: reviewItemID,
+                    durationSeconds: elapsedSeconds,
+                    clientAttemptID: attemptID
+                )
+            }
+            analysisTask = task
+            return try await task.value
+        } catch let error as URLError where error.code == .timedOut {
+            // First attempt timed out — wait 3 s and retry once automatically
+            analysisTask = nil
+            analysisPhase = .retrying
+            phaseTask?.cancel()
+
+            try await Task.sleep(for: .seconds(3))
+
+            // Guard: user may have cancelled during the sleep
+            guard isUploading else { throw CancellationError() }
+
+            analysisPhase = .uploading
+            let retryAttemptID = UUID().uuidString.lowercased()
+
+            // Restart the phase timer for the retry
+            phaseTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(5))
+                guard let self, self.isUploading else { return }
+                self.analysisPhase = .analyzing
+            }
+
+            let retryTask = Task {
+                try await SpeakingPracticeService.shared.analyze(
+                    accessToken: accessToken,
+                    audioFileURL: fileURL,
+                    mode: .repeatExactly,
+                    targetText: targetText,
+                    reelID: reelID,
+                    reviewItemID: reviewItemID,
+                    durationSeconds: elapsedSeconds,
+                    clientAttemptID: retryAttemptID
+                )
+            }
+            analysisTask = retryTask
+            return try await retryTask.value
+        }
+    }
+
+    private func finishUploading() {
+        phaseTask?.cancel()
+        phaseTask = nil
+        analysisTask = nil
+        isUploading = false
+        analysisPhase = .idle
+    }
+
     private func cancelPendingAnalysis() {
+        phaseTask?.cancel()
+        phaseTask = nil
         analysisTask?.cancel()
         analysisTask = nil
         isUploading = false
+        analysisPhase = .idle
     }
 }

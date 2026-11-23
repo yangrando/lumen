@@ -46,16 +46,16 @@ struct SpeakingPracticeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                LumenColors.navyDark
+                LumenColors.ink900
                     .ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        targetCard
+                    VStack(spacing: 14) {
+                        phraseCard
                         controlsCard
 
                         if let errorMessage = viewModel.errorMessage, !errorMessage.isEmpty {
-                            errorCard(message: errorMessage)
+                            errorBanner(message: errorMessage)
                         }
 
                         if let attempt = viewModel.attempt {
@@ -63,8 +63,8 @@ struct SpeakingPracticeView: View {
                         }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 28)
+                    .padding(.top, 16)
+                    .padding(.bottom, 36)
                 }
             }
             .navigationTitle(title)
@@ -76,9 +76,7 @@ struct SpeakingPracticeView: View {
                     dismiss()
                 }
             }
-            .onAppear {
-                onAppearTrack?()
-            }
+            .onAppear { onAppearTrack?() }
             .onDisappear {
                 audioService.stop()
                 viewModel.cancelRecording()
@@ -87,92 +85,119 @@ struct SpeakingPracticeView: View {
         }
     }
 
-    private var targetCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(LocalizedStrings.speakingPracticeRepeatExactly)
-                .font(LumenFont.grotesk(14, weight: .semibold))
-                .foregroundStyle(LumenColors.gradientStart)
+    // MARK: – Phrase card
+
+    private var phraseCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(LocalizedStrings.speakingPracticeRepeatExactly.uppercased())
+                .font(LumenFont.mono(10, weight: .medium))
+                .tracking(1.4)
+                .foregroundStyle(LumenColors.accent)
 
             Text(targetText)
-                .font(LumenFont.grotesk(24, weight: .bold))
-                .foregroundStyle(.white)
+                .font(LumenFont.grotesk(22, weight: .bold))
+                .foregroundStyle(LumenColors.ink50)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(LocalizedStrings.speakingPracticeInstruction)
-                .font(LumenFont.grotesk(14))
-                .foregroundStyle(LumenColors.textSecondary)
+                .font(LumenFont.grotesk(13))
+                .foregroundStyle(LumenColors.ink300)
+                .fixedSize(horizontal: false, vertical: true)
 
+            // Listen button
+            let audioID = UUID(uuidString: speakingAudioID(for: targetText)) ?? UUID()
             Button {
-                let audioID = UUID(uuidString: speakingAudioID(for: targetText)) ?? UUID()
                 audioService.togglePlayback(for: audioID, text: targetText)
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "speaker.wave.2.fill")
+                    Image(systemName: audioService.currentlyPlayingPhraseID == audioID
+                          ? "stop.fill" : "speaker.wave.2.fill")
+                        .font(.system(size: 13, weight: .semibold))
                     Text(LocalizedStrings.speakingPracticeListenToTarget)
+                        .font(LumenFont.grotesk(13, weight: .medium))
                 }
-                .font(LumenFont.grotesk(14, weight: .semibold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 14)
-                .frame(height: 42)
-                .background(Color.white.opacity(0.10))
+                .foregroundStyle(LumenColors.ink50)
+                .padding(.horizontal, 16)
+                .frame(height: 40)
+                .background(LumenColors.ink700)
                 .clipShape(Capsule())
+                .overlay(Capsule().stroke(LumenColors.ink600, lineWidth: 1))
             }
             .buttonStyle(.plain)
+            .disabled(viewModel.isRecording || viewModel.isUploading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(LumenColors.navyLight)
-        )
+        .background(LumenColors.ink800)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(LumenColors.ink700, lineWidth: 1)
         }
     }
 
+    // MARK: – Controls card
+
     private var controlsCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text(viewModel.isRecording ? LocalizedStrings.speakingPracticeRecording : (viewModel.isUploading ? LocalizedStrings.speakingPracticeAnalyzing : LocalizedStrings.speakingPracticeReady))
-                    .font(LumenFont.grotesk(18, weight: .bold))
-                    .foregroundStyle(.white)
+            // Status header
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(controlsStatusLabel.uppercased())
+                        .font(LumenFont.mono(9, weight: .medium))
+                        .tracking(1.4)
+                        .foregroundStyle(viewModel.isRecording ? LumenColors.accent : LumenColors.ink400)
+                        .animation(.easeInOut(duration: 0.2), value: viewModel.isRecording)
 
+                    Text(controlsStatusHeadline)
+                        .font(LumenFont.grotesk(18, weight: .semibold))
+                        .foregroundStyle(LumenColors.ink50)
+                        .animation(.easeInOut(duration: 0.2), value: viewModel.analysisPhase)
+                }
                 Spacer()
-
-                Text(timeString(from: viewModel.elapsedSeconds))
-                    .font(LumenFont.grotesk(16, weight: .semibold))
-                    .foregroundStyle(LumenColors.textSecondary)
+                if viewModel.isRecording || viewModel.elapsedSeconds > 0 && !viewModel.isUploading {
+                    Text(timeString(from: viewModel.elapsedSeconds))
+                        .font(LumenFont.mono(16, weight: .medium))
+                        .foregroundStyle(viewModel.isRecording ? LumenColors.accent : LumenColors.ink400)
+                        .monospacedDigit()
+                }
             }
 
-            if viewModel.isUploading {
-                ProgressView()
-                    .tint(.white)
+            // Waveform (recording) or progress indicator (uploading)
+            if viewModel.isRecording {
+                waveformBars
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            } else if viewModel.isUploading || viewModel.analysisPhase == .retrying {
+                uploadingIndicator
+                    .transition(.opacity)
             }
 
-            HStack(spacing: 12) {
-                LumenButton(
-                    kind: .primary, size: .lg,
-                    isDisabled: viewModel.isUploading,
-                    isFullWidth: true,
-                    label: viewModel.isRecording ? LocalizedStrings.speakingPracticeStopAndSubmit : LocalizedStrings.speakingPracticeStartRecording,
-                    icon: Image(systemName: viewModel.isRecording ? "stop.fill" : "mic.fill")
-                ) {
-                    Task {
-                        audioService.stop()
-                        if viewModel.isRecording {
-                            if let response = await viewModel.stopAndSubmit() {
-                                onCompleted?(response)
-                            }
-                        } else {
-                            await viewModel.startRecording()
+            // Primary CTA
+            LumenButton(
+                kind: .primary, size: .lg,
+                isDisabled: viewModel.isUploading,
+                isFullWidth: true,
+                label: primaryButtonLabel,
+                icon: Image(systemName: viewModel.isRecording ? "stop.fill" : "mic.fill")
+            ) {
+                Task {
+                    audioService.stop()
+                    if viewModel.isRecording {
+                        if let response = await viewModel.stopAndSubmit() {
+                            onCompleted?(response)
                         }
+                    } else {
+                        await viewModel.startRecording()
                     }
                 }
+            }
 
+            // Retry (hidden while recording/uploading)
+            if !viewModel.isRecording && !viewModel.isUploading {
                 LumenButton(
-                    kind: .secondary, size: .lg,
-                    isDisabled: viewModel.isRecording || viewModel.isUploading,
+                    kind: .text,
+                    isDisabled: false,
+                    isFullWidth: true,
                     label: LocalizedStrings.speakingPracticeRetry
                 ) {
                     viewModel.retry()
@@ -181,132 +206,243 @@ struct SpeakingPracticeView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(LumenColors.navyLight)
-        )
+        .background(LumenColors.ink800)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(LumenColors.ink700, lineWidth: 1)
+        }
+        .animation(.easeInOut(duration: 0.25), value: viewModel.isRecording)
+        .animation(.easeInOut(duration: 0.25), value: viewModel.isUploading)
+    }
+
+    // MARK: – Waveform bars (live level-driven)
+
+    private var waveformBars: some View {
+        let level = viewModel.recordingService.normalizedLevel
+        return HStack(spacing: 3) {
+            ForEach(0..<24, id: \.self) { i in
+                Capsule()
+                    .fill(LumenColors.accent.opacity(0.85))
+                    .frame(width: 3, height: barHeight(index: i, level: level))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(height: 44)
+        .animation(.spring(response: 0.18, dampingFraction: 0.65), value: level)
+    }
+
+    private func barHeight(index: Int, level: Float) -> CGFloat {
+        // Bell-curve envelope so centre bars are tallest
+        let centre = 11.5
+        let dist = abs(Double(index) - centre)
+        let envelope = max(0, 1 - dist / 13.0)
+        let noise = Double((index * 37 + Int(level * 100)) % 7) / 40.0
+        let height = (Double(level) * 0.75 + noise) * 38.0 * envelope + 4.0
+        return max(4, CGFloat(height))
+    }
+
+    // MARK: – Uploading indicator
+
+    private var uploadingIndicator: some View {
+        HStack(spacing: 10) {
+            ProgressView()
+                .tint(viewModel.analysisPhase == .retrying ? LumenColors.warn : LumenColors.accent)
+                .scaleEffect(0.85)
+
+            Text(indicatorLabel)
+                .font(LumenFont.grotesk(13))
+                .foregroundStyle(viewModel.analysisPhase == .retrying ? LumenColors.warn : LumenColors.ink300)
+                .animation(.easeInOut, value: viewModel.analysisPhase)
         }
     }
 
+    private var indicatorLabel: String {
+        switch viewModel.analysisPhase {
+        case .analyzing: return LocalizedStrings.speakingPracticeAnalyzing
+        case .retrying:  return LocalizedStrings.speakingPracticeRetrying
+        default:         return LocalizedStrings.speakingPracticeUploading
+        }
+    }
+
+    // MARK: – Error banner
+
+    private func errorBanner(message: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(LumenColors.bad)
+
+            Text(message)
+                .font(LumenFont.grotesk(13, weight: .medium))
+                .foregroundStyle(LumenColors.ink50)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .background(LumenColors.bad.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(LumenColors.bad.opacity(0.25), lineWidth: 1)
+        }
+    }
+
+    // MARK: – Result card
+
     private func resultCard(attempt: SpeakingAttempt) -> some View {
         let summary = SpeakingFeedbackService.summary(for: attempt)
-        return VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(LocalizedStrings.speakingPracticeScore)
-                        .font(LumenFont.grotesk(13, weight: .semibold))
-                        .foregroundStyle(LumenColors.textSecondary)
+        return VStack(alignment: .leading, spacing: 16) {
+            // Score row
+            HStack(alignment: .bottom, spacing: 0) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(LocalizedStrings.speakingPracticeScore.uppercased())
+                        .font(LumenFont.mono(9, weight: .medium))
+                        .tracking(1.4)
+                        .foregroundStyle(LumenColors.ink400)
 
                     Text("\(attempt.score)")
-                        .font(LumenFont.grotesk(36, weight: .bold))
+                        .font(LumenFont.grotesk(48, weight: .medium))
                         .foregroundStyle(summary.scoreColor)
+                        .kerning(-1)
                 }
 
                 Spacer()
 
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(LocalizedStrings.speakingPracticeSimilarity)
-                        .font(LumenFont.grotesk(13, weight: .semibold))
-                        .foregroundStyle(LumenColors.textSecondary)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(LocalizedStrings.speakingPracticeSimilarity.uppercased())
+                        .font(LumenFont.mono(9, weight: .medium))
+                        .tracking(1.4)
+                        .foregroundStyle(LumenColors.ink400)
 
                     Text("\(attempt.similarityScore)%")
-                        .font(LumenFont.grotesk(28, weight: .bold))
-                        .foregroundStyle(.white)
+                        .font(LumenFont.grotesk(32, weight: .medium))
+                        .foregroundStyle(LumenColors.ink50)
                 }
             }
 
-            VStack(alignment: .leading, spacing: 6) {
+            Divider().background(LumenColors.ink700)
+
+            // Feedback headline
+            VStack(alignment: .leading, spacing: 4) {
                 Text(summary.title)
-                    .font(LumenFont.grotesk(18, weight: .bold))
-                    .foregroundStyle(.white)
+                    .font(LumenFont.grotesk(16, weight: .semibold))
+                    .foregroundStyle(LumenColors.ink50)
                 Text(summary.subtitle)
-                    .font(LumenFont.grotesk(13, weight: .medium))
-                    .foregroundStyle(LumenColors.textSecondary)
+                    .font(LumenFont.grotesk(13))
+                    .foregroundStyle(LumenColors.ink300)
             }
 
+            // Transcript
             if let transcript = attempt.transcript, !transcript.isEmpty {
-                detailBlock(title: LocalizedStrings.speakingPracticeYouSaid, value: transcript)
+                resultBlock(label: LocalizedStrings.speakingPracticeYouSaid, value: transcript)
             }
 
+            // Missing words
             if !attempt.missingWords.isEmpty {
-                detailBlock(title: LocalizedStrings.speakingPracticeMissingWords, value: attempt.missingWords.joined(separator: ", "))
+                resultBlock(
+                    label: LocalizedStrings.speakingPracticeMissingWords,
+                    value: attempt.missingWords.joined(separator: " · ")
+                )
             }
 
+            // Pronunciation differences
             if !attempt.incorrectWords.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(LocalizedStrings.speakingPracticePronunciationDifferences)
-                        .font(LumenFont.grotesk(12, weight: .semibold))
-                        .foregroundStyle(LumenColors.textSecondary)
+                    Text(LocalizedStrings.speakingPracticePronunciationDifferences.uppercased())
+                        .font(LumenFont.mono(9, weight: .medium))
+                        .tracking(1.4)
+                        .foregroundStyle(LumenColors.ink400)
 
                     ForEach(attempt.incorrectWords.prefix(3)) { pair in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("\(LocalizedStrings.speakingPracticeYouSaidLabel) \"\(pair.heard)\"")
-                                .font(LumenFont.grotesk(15, weight: .medium))
-                                .foregroundStyle(LumenColors.warn)
-                            Text("\(LocalizedStrings.speakingPracticeExpectedLabel) \"\(pair.expected)\"")
-                                .font(LumenFont.grotesk(15, weight: .semibold))
-                                .foregroundStyle(LumenColors.accent)
+                        HStack(spacing: 10) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(LocalizedStrings.speakingPracticeYouSaidLabel)
+                                    .font(LumenFont.mono(8, weight: .medium))
+                                    .tracking(1.2)
+                                    .foregroundStyle(LumenColors.warn.opacity(0.7))
+                                Text("\"\(pair.heard)\"")
+                                    .font(LumenFont.grotesk(14, weight: .medium))
+                                    .foregroundStyle(LumenColors.warn)
+                            }
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(LumenColors.ink500)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(LocalizedStrings.speakingPracticeExpectedLabel)
+                                    .font(LumenFont.mono(8, weight: .medium))
+                                    .tracking(1.2)
+                                    .foregroundStyle(LumenColors.accent.opacity(0.7))
+                                Text("\"\(pair.expected)\"")
+                                    .font(LumenFont.grotesk(14, weight: .semibold))
+                                    .foregroundStyle(LumenColors.accent)
+                            }
                         }
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.white.opacity(0.06))
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .background(LumenColors.ink700.opacity(0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                 }
             }
 
-            detailBlock(title: LocalizedStrings.speakingPracticeFeedback, value: attempt.feedback)
-
-            Text(attempt.recommendation == "good_job" ? LocalizedStrings.feedbackSuccessTitle : LocalizedStrings.commonRetry)
-                .font(LumenFont.grotesk(14, weight: .semibold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.white.opacity(0.10))
-                .clipShape(Capsule())
+            // Server feedback text
+            resultBlock(label: LocalizedStrings.speakingPracticeFeedback, value: attempt.feedback)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [LumenColors.ink700, LumenColors.ink600],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
+        .background(LumenColors.ink800)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(LumenColors.ink700, lineWidth: 1)
+        }
     }
 
-    private func detailBlock(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(LumenFont.grotesk(12, weight: .semibold))
-                .foregroundStyle(LumenColors.textSecondary)
+    private func resultBlock(label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label.uppercased())
+                .font(LumenFont.mono(9, weight: .medium))
+                .tracking(1.4)
+                .foregroundStyle(LumenColors.ink400)
             Text(value)
-                .font(LumenFont.grotesk(15, weight: .medium))
-                .foregroundStyle(.white)
+                .font(LumenFont.grotesk(14, weight: .medium))
+                .foregroundStyle(LumenColors.ink50)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    private func errorCard(message: String) -> some View {
-        Text(message)
-            .font(LumenFont.grotesk(14, weight: .medium))
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .background(Color.red.opacity(0.22))
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    // MARK: – Helpers
+
+    private var controlsStatusLabel: String {
+        switch viewModel.analysisPhase {
+        case .idle:      return viewModel.isRecording ? "REC" : "PRONTO"
+        case .uploading: return "ENVIANDO"
+        case .analyzing: return "ANALISANDO"
+        case .retrying:  return "AGUARDE"
+        }
+    }
+
+    private var controlsStatusHeadline: String {
+        if viewModel.isRecording { return LocalizedStrings.speakingPracticeRecording }
+        switch viewModel.analysisPhase {
+        case .idle:      return LocalizedStrings.speakingPracticeReady
+        case .uploading: return LocalizedStrings.speakingPracticeUploading
+        case .analyzing: return LocalizedStrings.speakingPracticeAnalyzing
+        case .retrying:  return LocalizedStrings.speakingPracticeRetrying
+        }
+    }
+
+    private var primaryButtonLabel: String {
+        viewModel.isRecording
+            ? LocalizedStrings.speakingPracticeStopAndSubmit
+            : LocalizedStrings.speakingPracticeStartRecording
     }
 
     private func timeString(from duration: TimeInterval) -> String {
-        let seconds = max(Int(duration.rounded()), 0)
-        return String(format: "%01d:%02d", seconds / 60, seconds % 60)
+        let s = max(Int(duration.rounded()), 0)
+        return String(format: "%d:%02d", s / 60, s % 60)
     }
 
     private func speakingAudioID(for name: String) -> String {
@@ -332,7 +468,7 @@ struct SpeakingPracticeView: View {
 #Preview {
     SpeakingPracticeView(
         accessToken: "preview",
-        targetText: "I have been looking forward to this trip for months.",
+        targetText: "We canceled the meeting because the client wasn't available, so we rescheduled it for next week.",
         reelID: "reel-preview",
         reviewItemID: nil
     )

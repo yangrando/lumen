@@ -6,6 +6,7 @@ import Combine
 final class AudioRecordingService: NSObject, ObservableObject {
     @Published private(set) var isRecording = false
     @Published private(set) var elapsedSeconds: TimeInterval = 0
+    @Published private(set) var normalizedLevel: Float = 0
     @Published var errorMessage: String?
 
     private var recorder: AVAudioRecorder?
@@ -29,11 +30,13 @@ final class AudioRecordingService: NSObject, ObservableObject {
             .appendingPathComponent("lumen-speaking-\(UUID().uuidString.lowercased())")
             .appendingPathExtension("m4a")
 
+        // 16 kHz mono @ 32 kbps — optimal for speech; ~70 % smaller files vs 44.1 kHz / high.
         let settings: [String: Any] = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-            AVSampleRateKey: 44_100,
+            AVSampleRateKey: 16_000,
             AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+            AVEncoderBitRateKey: 32_000,
+            AVEncoderAudioQualityKey: AVAudioQuality.medium.rawValue
         ]
 
         do {
@@ -98,10 +101,14 @@ final class AudioRecordingService: NSObject, ObservableObject {
     }
 
     private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self, self.isRecording else { return }
                 self.elapsedSeconds = Date().timeIntervalSince(self.recordingStartedAt ?? Date())
+                // Expose normalised audio level (−60 dBFS → 0 dBFS mapped to 0–1)
+                self.recorder?.updateMeters()
+                let power = self.recorder?.averagePower(forChannel: 0) ?? -60
+                self.normalizedLevel = Float(max(0, min(1, (power + 60) / 60)))
             }
         }
     }

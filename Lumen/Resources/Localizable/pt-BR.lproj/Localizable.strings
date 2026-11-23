@@ -274,7 +274,9 @@
 "speaking.practice.instruction" = "Ouça primeiro se quiser e depois grave sua voz repetindo a mesma frase.";
 "speaking.practice.listen.to.target" = "Ouvir frase-alvo";
 "speaking.practice.recording" = "Gravando...";
-"speaking.practice.analyzing" = "Analisando...";
+"speaking.practice.uploading" = "Enviando áudio...";
+"speaking.practice.analyzing" = "Analisando pronúncia...";
+"speaking.practice.retrying" = "Servidor ocupado, tentando novamente...";
 "speaking.practice.ready" = "Pronto para praticar";
 "speaking.practice.stop.and.submit" = "Parar e enviar";
 "speaking.practice.start.recording" = "Começar gravação";

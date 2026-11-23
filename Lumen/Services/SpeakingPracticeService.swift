@@ -63,7 +63,7 @@ struct SpeakingHistoryResponse: Codable {
 final class SpeakingPracticeService {
     static let shared = SpeakingPracticeService()
     private let logger = Logger.shared
-    private let analyzeTimeout: Duration = .seconds(45)
+    private let analyzeTimeout: Duration = .seconds(30)
 
     private init() {}
 

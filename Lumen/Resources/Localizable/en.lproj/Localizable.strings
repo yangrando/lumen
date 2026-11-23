@@ -275,7 +275,9 @@
 "speaking.practice.instruction" = "Listen first if you want, then record your voice repeating the same sentence.";
 "speaking.practice.listen.to.target" = "Listen to target";
 "speaking.practice.recording" = "Recording...";
-"speaking.practice.analyzing" = "Analyzing...";
+"speaking.practice.uploading" = "Sending audio...";
+"speaking.practice.analyzing" = "Analyzing pronunciation...";
+"speaking.practice.retrying" = "Server busy, retrying...";
 "speaking.practice.ready" = "Ready to practice";
 "speaking.practice.stop.and.submit" = "Stop and submit";
 "speaking.practice.start.recording" = "Start recording";

@@ -296,7 +296,9 @@ struct LocalizedStrings {
     static var speakingPracticeInstruction: String { localized("speaking.practice.instruction", fallback: "Listen first if you want, then record your voice repeating the same sentence.") }
     static var speakingPracticeListenToTarget: String { localized("speaking.practice.listen.to.target", fallback: "Listen to target") }
     static var speakingPracticeRecording: String { localized("speaking.practice.recording", fallback: "Recording...") }
-    static var speakingPracticeAnalyzing: String { localized("speaking.practice.analyzing", fallback: "Analyzing...") }
+    static var speakingPracticeUploading: String { localized("speaking.practice.uploading", fallback: "Sending audio...") }
+    static var speakingPracticeAnalyzing: String { localized("speaking.practice.analyzing", fallback: "Analyzing pronunciation...") }
+    static var speakingPracticeRetrying: String { localized("speaking.practice.retrying", fallback: "Server busy, retrying...") }
     static var speakingPracticeReady: String { localized("speaking.practice.ready", fallback: "Ready to practice") }
     static var speakingPracticeStopAndSubmit: String { localized("speaking.practice.stop.and.submit", fallback: "Stop and submit") }
     static var speakingPracticeStartRecording: String { localized("speaking.practice.start.recording", fallback: "Start recording") }
